@@ -38,51 +38,32 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
 
         loading_msg = None
         try:
-            # Show typing chat action safely
             try:
                 await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
             except Exception as e:
                 logging.warning(f"Could not send typing action: {e}")
 
-            # Send Loading Message
-            loading_msg = await message.reply("🔍 កំពុងមើល និងវិភាគរូបភាព...")
+            from utils.thinking_animation import DynamicThinkingAnimation, VISION_THINKING_STEPS
 
-            # Select highest resolution photo
-            photo = message.photo[-1]
+            async with DynamicThinkingAnimation(message, VISION_THINKING_STEPS) as anim:
+                photo = message.photo[-1]
+                file_info = await message.bot.get_file(photo.file_id)
+                photo_bytes_io = await message.bot.download_file(file_info.file_path)
+                photo_bytes = photo_bytes_io.read()
 
-            # Download photo into memory
-            file_info = await message.bot.get_file(photo.file_id)
-            photo_bytes_io = await message.bot.download_file(file_info.file_path)
-            photo_bytes = photo_bytes_io.read()
+                pil_image = process_image_bytes(photo_bytes, max_size_mb=MAX_IMAGE_SIZE_MB)
+                prompt = message.caption.strip() if message.caption else DEFAULT_IMAGE_PROMPT
 
-            # Process and validate PIL image in memory
-            pil_image = process_image_bytes(photo_bytes, max_size_mb=MAX_IMAGE_SIZE_MB)
+                active_mode = "general"
+                if db_service:
+                    active_mode = await db_service.get_user_mode(user_id)
 
-            # Get user caption or default prompt
-            prompt = message.caption.strip() if message.caption else DEFAULT_IMAGE_PROMPT
+                vision_response = await gemini_service.generate_vision_chat(image=pil_image, prompt=prompt, mode=active_mode)
 
-            # Get user active mode
-            active_mode = "general"
-            if db_service:
-                active_mode = await db_service.get_user_mode(user_id)
+                if memory:
+                    await memory.add_user_message_async(user_id, prompt, message_type="image")
+                    await memory.add_assistant_message_async(user_id, vision_response, message_type="text")
 
-            # Call Gemini Vision Service asynchronously with active mode
-            vision_response = await gemini_service.generate_vision_chat(image=pil_image, prompt=prompt, mode=active_mode)
-
-
-            # Record turn in memory if available
-            if memory:
-                await memory.add_user_message_async(user_id, prompt, message_type="image")
-                await memory.add_assistant_message_async(user_id, vision_response, message_type="text")
-
-            # Clean up loading message
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
-
-            # Formats Markdown cleanly, splits long responses, and sends with Telegram HTML parse_mode
             await send_safe_response(message, vision_response)
 
         except ValueError as ve:

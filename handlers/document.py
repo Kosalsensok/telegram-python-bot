@@ -47,69 +47,56 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
             await message.reply("⚠️ File នេះមានទំហំធំពេក (លើសពី 10MB)។ សូមផ្ញើ File ដែលមានទំហំតូចជាងនេះ! / File size exceeds limit (10MB).")
             return
 
-        loading_msg = None
         try:
-            # Show typing chat action safely
             try:
                 await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
             except Exception as e:
                 logging.warning(f"Could not send typing action: {e}")
 
-            loading_msg = await message.reply(f"📄 កំពុងអាន និងវិភាគ <b>{escape(file_name)}</b>...", parse_mode="HTML")
+            from utils.thinking_animation import DynamicThinkingAnimation, get_doc_thinking_steps
 
-            # Download document
-            file_info = await message.bot.get_file(document.file_id)
-            file_bytes_io = await message.bot.download_file(file_info.file_path)
-            file_bytes = file_bytes_io.read()
+            async with DynamicThinkingAnimation(message, get_doc_thinking_steps(escape(file_name))) as anim:
+                file_info = await message.bot.get_file(document.file_id)
+                file_bytes_io = await message.bot.download_file(file_info.file_path)
+                file_bytes = file_bytes_io.read()
 
-            caption = message.caption.strip() if message.caption else DEFAULT_DOC_PROMPT
+                caption = message.caption.strip() if message.caption else DEFAULT_DOC_PROMPT
 
-            # Get user active mode
-            active_mode = "general"
-            if db_service:
-                active_mode = await db_service.get_user_mode(user_id)
+                active_mode = "general"
+                if db_service:
+                    active_mode = await db_service.get_user_mode(user_id)
 
-            is_pdf = file_ext == ".pdf" or (document.mime_type and "pdf" in document.mime_type.lower())
-            is_image_doc = document.mime_type and document.mime_type.startswith("image/")
+                is_pdf = file_ext == ".pdf" or (document.mime_type and "pdf" in document.mime_type.lower())
+                is_image_doc = document.mime_type and document.mime_type.startswith("image/")
 
-            if is_pdf or is_image_doc:
-                mime = document.mime_type or ("application/pdf" if is_pdf else "image/png")
-                doc_prompt = f"File Name: {file_name}\nTask: {caption}"
-                ai_response = await gemini_service.generate_document_chat(
-                    file_bytes=file_bytes,
-                    mime_type=mime,
-                    prompt=doc_prompt,
-                    mode=active_mode
-                )
-            else:
-                # Decode text content for code and plain text files
-                try:
-                    content_text = file_bytes.decode("utf-8")
-                except UnicodeDecodeError:
-                    content_text = file_bytes.decode("latin-1", errors="ignore")
+                if is_pdf or is_image_doc:
+                    mime = document.mime_type or ("application/pdf" if is_pdf else "image/png")
+                    doc_prompt = f"File Name: {file_name}\nTask: {caption}"
+                    ai_response = await gemini_service.generate_document_chat(
+                        file_bytes=file_bytes,
+                        mime_type=mime,
+                        prompt=doc_prompt,
+                        mode=active_mode
+                    )
+                else:
+                    try:
+                        content_text = file_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        content_text = file_bytes.decode("latin-1", errors="ignore")
 
-                # Limit text content length to 15,000 characters for optimal processing
-                if len(content_text) > 15000:
-                    content_text = content_text[:15000] + "\n...[File Content Truncated for Analysis]"
+                    if len(content_text) > 15000:
+                        content_text = content_text[:15000] + "\n...[File Content Truncated for Analysis]"
 
-                full_prompt = (
-                    f"📁 <b>File Name:</b> <code>{escape(file_name)}</code>\n\n"
-                    f"<b>Question/Task:</b> {caption}\n\n"
-                    f"<b>File Content:</b>\n```\n{content_text}\n```"
-                )
-                ai_response = await gemini_service.generate_text_chat(user_prompt=full_prompt, mode=active_mode)
+                    full_prompt = (
+                        f"📁 <b>File Name:</b> <code>{escape(file_name)}</code>\n\n"
+                        f"<b>Question/Task:</b> {caption}\n\n"
+                        f"<b>File Content:</b>\n```\n{content_text}\n```"
+                    )
+                    ai_response = await gemini_service.generate_text_chat(user_prompt=full_prompt, mode=active_mode)
 
-
-            # Add to memory if available
-            if memory:
-                await memory.add_user_message_async(user_id, f"[Document: {file_name}] {caption}")
-                await memory.add_assistant_message_async(user_id, ai_response)
-
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
+                if memory:
+                    await memory.add_user_message_async(user_id, f"[Document: {file_name}] {caption}")
+                    await memory.add_assistant_message_async(user_id, ai_response)
 
             await send_safe_response(message, ai_response)
 

@@ -36,48 +36,28 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
 
         loading_msg = None
         try:
-            # Show typing chat action safely
             try:
                 await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
             except Exception as e:
                 logging.warning(f"Could not send typing action: {e}")
 
-            # Send Loading Message
-            loading_msg = await message.reply("🤖 កំពុងគិត...")
+            from utils.thinking_animation import DynamicThinkingAnimation, TEXT_THINKING_STEPS
 
-            # Fetch user active mode
-            active_mode = "general"
-            if db_service:
-                active_mode = await db_service.get_user_mode(user_id)
+            async with DynamicThinkingAnimation(message, TEXT_THINKING_STEPS) as anim:
+                active_mode = "general"
+                if db_service:
+                    active_mode = await db_service.get_user_mode(user_id)
 
-            # Fetch user conversation history
-            history = await memory.get_history_async(user_id)
+                history = await memory.get_history_async(user_id)
+                ai_response = await gemini_service.generate_text_chat(user_prompt=user_text, history=history, mode=active_mode)
 
-            # Generate AI response asynchronously with active mode
-            ai_response = await gemini_service.generate_text_chat(user_prompt=user_text, history=history, mode=active_mode)
+                await memory.add_user_message_async(user_id, user_text)
+                await memory.add_assistant_message_async(user_id, ai_response)
 
-
-            # Record turn in memory
-            await memory.add_user_message_async(user_id, user_text)
-            await memory.add_assistant_message_async(user_id, ai_response)
-
-            # Clean up loading message
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
-
-            # Formats Markdown cleanly, splits long messages, and sends with HTML parse_mode
             await send_safe_response(message, ai_response)
 
         except Exception as e:
             logging.error(f"Error in text handler for user {user_id}: {e}", exc_info=True)
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
             await message.reply("⚠️ មានបញ្ហាក្នុងការភ្ជាប់ទៅ AI Server។ សូមព្យាយាមម្តងទៀតបន្តិចក្រោយនេះ / ⚠️ The AI service is temporarily unavailable. Please try again.")
 
     return router

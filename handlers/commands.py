@@ -469,24 +469,19 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         except Exception:
             pass
 
-        loading_msg = await message.reply("🎨 <b>កំពុងបង្កើតរូបភាព AI កម្រិត HD បំផុត (Generating Ultra HD AI Image)...</b>\n<i>សូមរង់ចាំមួយភ្លែត...</i>", parse_mode="HTML")
-
         try:
             from services.image_gen_service import ImageGenService, parse_aspect_ratio
-            img_service = ImageGenService(gemini_service=gemini_service)
+            from utils.thinking_animation import DynamicThinkingAnimation, IMAGE_GEN_STEPS
 
+            img_service = ImageGenService(gemini_service=gemini_service)
             ratio_key, width, height, clean_prompt = parse_aspect_ratio(prompt)
 
-            image_bytes, optimized_prompt, seed, cache_id = await img_service.generate_image(
-                prompt=clean_prompt,
-                width=width,
-                height=height
-            )
-
-            try:
-                await loading_msg.delete()
-            except Exception:
-                pass
+            async with DynamicThinkingAnimation(message, IMAGE_GEN_STEPS) as anim:
+                image_bytes, optimized_prompt, seed, cache_id = await img_service.generate_image(
+                    prompt=clean_prompt,
+                    width=width,
+                    height=height
+                )
 
             if image_bytes:
                 photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
@@ -506,10 +501,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             else:
                 await message.reply("❌ <b>មិនអាចបង្កើតរូបភាពបានទេនៅពេលនេះ!</b> សូមព្យាយាមម្តងទៀតជាមួយការពិពណ៌នាផ្សេង។", parse_mode="HTML")
         except Exception as e:
-            try:
-                await loading_msg.delete()
-            except Exception:
-                pass
             logging.error(f"Error in image generation command: {e}")
             await message.reply(f"⚠️ មានបញ្ហាក្នុងការបង្កើតរូបភាព: {escape(str(e))}", parse_mode="HTML")
 

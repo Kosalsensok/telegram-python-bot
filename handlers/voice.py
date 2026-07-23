@@ -31,55 +31,47 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
         else:
             user_id = message.chat.id
 
-        loading_msg = None
+        voice = message.voice or message.audio
+        mime_type = "audio/ogg"
+        if message.audio and message.audio.mime_type:
+            mime_type = message.audio.mime_type
+        elif message.voice and message.voice.mime_type:
+            mime_type = message.voice.mime_type
+
+        # Limit file size to 15MB for voice notes
+        if voice.file_size and voice.file_size > 15 * 1024 * 1024:
+            await message.reply("⚠️ File សំឡេងនេះមានទំហំធំពេក (លើសពី 15MB)។ / Voice file size exceeds limit (15MB).")
+            return
+
         try:
             try:
                 await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
             except Exception:
                 pass
 
-            loading_msg = await message.reply("🎙️ កំពុងស្តាប់ និងវិភាគសំឡេង (Processing voice note)...", parse_mode="HTML")
+            from utils.thinking_animation import DynamicThinkingAnimation, VOICE_THINKING_STEPS
 
-            voice = message.voice or message.audio
-            mime_type = "audio/ogg"
-            if message.audio and message.audio.mime_type:
-                mime_type = message.audio.mime_type
-            elif message.voice and message.voice.mime_type:
-                mime_type = message.voice.mime_type
+            async with DynamicThinkingAnimation(message, VOICE_THINKING_STEPS) as anim:
+                file_info = await message.bot.get_file(voice.file_id)
+                file_bytes_io = await message.bot.download_file(file_info.file_path)
+                voice_bytes = file_bytes_io.read()
 
-            # Limit file size to 15MB for voice notes
-            if voice.file_size and voice.file_size > 15 * 1024 * 1024:
-                if loading_msg:
-                    await loading_msg.delete()
-                await message.reply("⚠️ File សំឡេងនេះមានទំហំធំពេក (លើសពី 15MB)។ / Voice file size exceeds limit (15MB).")
-                return
+                caption = message.caption.strip() if message.caption else DEFAULT_VOICE_PROMPT
 
-            file_info = await message.bot.get_file(voice.file_id)
-            file_bytes_io = await message.bot.download_file(file_info.file_path)
-            voice_bytes = file_bytes_io.read()
+                active_mode = "general"
+                if db_service:
+                    active_mode = await db_service.get_user_mode(user_id)
 
-            caption = message.caption.strip() if message.caption else DEFAULT_VOICE_PROMPT
+                ai_response = await gemini_service.generate_audio_chat(
+                    file_bytes=voice_bytes,
+                    mime_type=mime_type,
+                    prompt=caption,
+                    mode=active_mode
+                )
 
-            active_mode = "general"
-            if db_service:
-                active_mode = await db_service.get_user_mode(user_id)
-
-            ai_response = await gemini_service.generate_audio_chat(
-                file_bytes=voice_bytes,
-                mime_type=mime_type,
-                prompt=caption,
-                mode=active_mode
-            )
-
-            if memory:
-                await memory.add_user_message_async(user_id, "[Voice Message]")
-                await memory.add_assistant_message_async(user_id, ai_response)
-
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
+                if memory:
+                    await memory.add_user_message_async(user_id, "[Voice Message]")
+                    await memory.add_assistant_message_async(user_id, ai_response)
 
             await send_safe_response(message, ai_response)
 
