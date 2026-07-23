@@ -10,6 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-🟢%2024%2F7%20LIVE%20ONLINE-brightgreen?style=for-the-badge&logo=rss" alt="Live Status" />
+  <img src="https://img.shields.io/badge/Bot-Interactive_Demo-blueviolet?style=for-the-badge&logo=telegram" alt="Bot Demo" />
 </p>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
@@ -18,6 +19,17 @@
 [![Render](https://img.shields.io/badge/Deployment-Render_24%2F7-46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
 [![UptimeRobot](https://img.shields.io/badge/Uptime-100%25_Monitored-brightgreen.svg?style=for-the-badge&logo=uptimerobot&logoColor=white)](https://uptimerobot.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+---
+
+<!-- Animated Live Preview Showcase Banner -->
+<div align="center">
+  <h3>🎬 Live Animated Demonstration (ចលនាវីដេអូដំណើរការ Bot)</h3>
+  <br>
+  <a href="https://github.com/Kosalsensok/telegram-python-bot">
+    <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,18,24&height=220&section=header&text=🤖%20Smart%20AI%20Telegram%20Bot%2024/7&fontSize=38&animation=twinkling&fontColor=ffffff" alt="Animated Header Banner" width="100%" />
+  </a>
+</div>
 
 ---
 
@@ -30,6 +42,30 @@
 ---
 
 </div>
+
+## 🎬 Animated Bot Live Workflow Demo (វីដេអូចលនាដំណើរការ)
+
+```text
+[ Telegram User ]  ───►  📷 Photo of Math Problem Uploaded
+                              │
+                              ▼
+                  🔄 [ 1/4 ] វិភាគប្រធានលំហាត់ និង រូបភាព...
+                              │
+                              ▼
+                  🧠 [ 2/4 ] គណនាតាមរូបមន្ត និង ទ្រឹស្តីបទ...
+                              │
+                              ▼
+                  🖼️ [ 3/4 ] រៀបចំ និង បង្កើតរូបភាព PNG Solution Card...
+                              │
+                              ▼
+                  ✨ [ 4/4 ] រួចរាល់! កំពុងផ្ញើចម្លើយ...
+                              │
+                              ▼
+[ Reply Sent ]     ───►  🖼️ High-Res PNG Solution Card (imsela.com layout)
+                         💬 Step-by-Step Clear Khmer Text Explanation
+```
+
+---
 
 ## 🏗️ System Architecture & Workflow (ស្ថាបត្យកម្មប្រព័ន្ធ)
 
@@ -127,7 +163,6 @@ int main() {
     return 0;
 }
 ```
-*Outputs clean un-escaped `<iostream>`, `<<`, and `<=` symbols in Telegram code blocks.*
 
 ### 3. ✨ AI Image Unblur & HD Enhancement Keyboard
 - `📥 Download HD JPG` | `🖼 Download HD PNG`
@@ -146,7 +181,6 @@ int main() {
 
 ### 1. 🤖 General AI Mode (`general`)
 - **Purpose**: General chat, problem-solving, code writing, data analysis, and general assistance.
-- **Key Features**: Auto-correction for spelling errors, expandable blockquotes for deep technical analysis.
 
 ### 2. 📐 Standard LaTeX Mode (`standard`)
 - **Purpose**: Converts math formulas, chemistry equations, physics problems, and data tables into clean LaTeX code.
@@ -196,45 +230,18 @@ int main() {
 | `GEMINI_API_KEY` | Yes | Google Gemini AI Key from AI Studio | - |
 | `PORT` | No | HTTP Health Server Port for Render | `10000` |
 | `RENDER_EXTERNAL_URL` | No | External Render Service URL for Self-Ping | `https://telegram-python-bot-yt64.onrender.com` |
-| `POLLINATIONS_API_URL` | No | Base URL for Pollinations AI Image Gen | `https://image.pollinations.ai/prompt/` |
-| `PISTON_API_URL` | No | Base URL for Piston Sandboxed Code Execution | `https://emkc.org/api/v2/piston` |
 
 ---
 
 ## 🛠️ Local Installation & Development (ការដំឡើងលើម៉ាស៊ីន)
 
-### 1. Clone Repository
 ```bash
 git clone https://github.com/Kosalsensok/telegram-python-bot.git
 cd telegram-python-bot
-```
-
-### 2. Create Virtual Environment
-```bash
 python -m venv venv
-# On Windows:
+# Windows:
 venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-```
-
-### 3. Install Dependencies & Verify
-```bash
 pip install -r requirements.txt
-python -m compileall -b .
-```
-
-### 4. Configure Environment Variables
-Create a `.env` file in the project root:
-```env
-BOT_TOKEN=your_telegram_bot_token_here
-GEMINI_API_KEY=your_gemini_api_key_here
-PORT=10000
-RENDER_EXTERNAL_URL=https://telegram-python-bot-yt64.onrender.com
-```
-
-### 5. Run the Bot
-```bash
 python main.py
 ```
 
@@ -242,13 +249,10 @@ python main.py
 
 ## 🚀 24/7 Render Deployment Guide (ការដំឡើង Render 24/7)
 
-1. Fork or Push this repository to GitHub.
-2. Log into [Render Console](https://dashboard.render.com/) and create a **New Web Service**.
-3. Select your repository `telegram-python-bot`.
-4. Configure service settings:
-   - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `python main.py`
+1. Create a **New Web Service** on [Render Console](https://dashboard.render.com/).
+2. Select your repository `telegram-python-bot`.
+3. Set Build Command: `pip install -r requirements.txt`
+4. Set Start Command: `python main.py`
 5. Add Environment Variables (`BOT_TOKEN`, `GEMINI_API_KEY`, `PORT`).
 6. Set up a **5-minute HTTP Monitor** on [UptimeRobot](https://uptimerobot.com/) targeting `https://<your-app>.onrender.com/health`.
 
