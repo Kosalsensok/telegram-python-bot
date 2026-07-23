@@ -77,6 +77,9 @@ async def start_health_server():
     app.router.add_get("/", handle_health_check)
     app.router.add_get("/health", handle_health_check)
     app.router.add_get("/ping", handle_health_check)
+    app.router.add_head("/", handle_health_check)
+    app.router.add_head("/health", handle_health_check)
+    app.router.add_head("/ping", handle_health_check)
 
     runner = web.AppRunner(app)
     await runner.setup()
