@@ -212,4 +212,18 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         )
         await callback.message.edit_text(privacy_text, parse_mode="HTML")
 
+    @router.callback_query(F.data == "cb_prompt_draw")
+    async def callback_prompt_draw(callback: types.CallbackQuery):
+        await callback.answer()
+        msg = (
+            "🎨 <b>បង្កើតរូបភាព AI ឥតដែនកំណត់ (Unlimited HD AI Image Generator):</b>\n\n"
+            "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
+            "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
+            "<b>ឧទាហរណ៍៖</b>\n"
+            "• <code>/image នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
+            "• <code>/image futuristic Phnom Penh city in 2050, 8k resolution, cinematic lighting</code>\n"
+            "• <code>/draw a cute baby cat wearing a space suit on Mars</code>"
+        )
+        await callback.message.answer(msg, parse_mode="HTML")
+
     return router

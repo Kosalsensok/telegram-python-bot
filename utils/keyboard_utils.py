@@ -13,15 +13,15 @@ def get_main_reply_keyboard() -> ReplyKeyboardMarkup:
         keyboard=[
             [
                 KeyboardButton(text="🎯 ជ្រើសរើស Mode (/mode)"),
-                KeyboardButton(text="🖼️ វិភាគរូបភាព (Vision)")
+                KeyboardButton(text="🎨 បង្កើតរូបភាព (/image)")
             ],
             [
-                KeyboardButton(text="💬 របៀបសួរសំណួរ (Help)"),
-                KeyboardButton(text="📊 ស្ថិតិ (Stats)")
+                KeyboardButton(text="🖼️ វិភាគរូបភាព (Vision)"),
+                KeyboardButton(text="💬 របៀបសួរសំណួរ (Help)")
             ],
             [
-                KeyboardButton(text="🧹 លុប History (Clear)"),
-                KeyboardButton(text="ℹ️ អំពី Bot (About)")
+                KeyboardButton(text="📊 ស្ថិតិ (Stats)"),
+                KeyboardButton(text="🧹 លុប History (Clear)")
             ]
         ],
         resize_keyboard=True,

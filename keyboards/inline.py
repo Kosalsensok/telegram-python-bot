@@ -90,3 +90,14 @@ def get_model_selection_keyboard(current_model: str) -> InlineKeyboardMarkup:
     builder.button(text="⬅️ Back to Admin", callback_data="cb_back_admin")
     builder.adjust(1, 1, 1, 1, 1)
     return builder.as_markup()
+
+
+def get_image_gen_inline_keyboard() -> InlineKeyboardMarkup:
+    """
+    Build inline keyboard for generated AI image options.
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🎨 បង្កើតរូបភាពផ្សេងទៀត (Generate Image)", callback_data="cb_prompt_draw")
+    builder.button(text="⬅️ Back to Main", callback_data="cb_back_main")
+    builder.adjust(1, 1)
+    return builder.as_markup()

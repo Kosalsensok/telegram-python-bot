@@ -205,6 +205,8 @@ async def main():
     # 7. Set Bot Commands Menu
     commands = [
         BotCommand(command="start", description="🚀 ចាប់ផ្តើមប្រើប្រាស់ (Start)"),
+        BotCommand(command="image", description="🎨 បង្កើតរូបភាព AI កម្រិត HD (Generate AI Image)"),
+        BotCommand(command="imagine", description="🎨 បង្កើតរូបភាព AI (Imagine Image)"),
         BotCommand(command="mode", description="🎯 ជ្រើសរើស AI Mode (Change Mode)"),
         BotCommand(command="run", description="⚡ ដំណើរការកូដ (Execute Code)"),
         BotCommand(command="new", description="🧹 បង្កើតការសន្ទនាថ្មី (New Chat)"),

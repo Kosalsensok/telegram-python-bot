@@ -6,7 +6,7 @@ from aiogram.filters import CommandStart, Command
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from services.bot_profile_service import update_bot_profile
-from keyboards.inline import get_welcome_inline_keyboard, get_language_inline_keyboard, get_mode_inline_keyboard
+from keyboards.inline import get_welcome_inline_keyboard, get_language_inline_keyboard, get_mode_inline_keyboard, get_image_gen_inline_keyboard
 from utils.keyboard_utils import get_main_reply_keyboard
 from utils.memory import ConversationMemory
 from utils.user_count import format_user_count
@@ -387,5 +387,84 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
                 pass
             logging.error(f"Error executing code: {e}")
             await message.answer(f"⚠️ មានបញ្ហាក្នុងការរត់ Code: {escape(str(e))}", parse_mode="HTML")
+
+    @router.message(Command("image"))
+    @router.message(Command("imagine"))
+    @router.message(Command("draw"))
+    @router.message(F.text.contains("បង្កើតរូបភាព"))
+    async def cmd_image(message: types.Message):
+        """
+        Handle HD AI Image Generation command (/image, /imagine, /draw).
+        Generates unlimited high definition images using Pollinations AI (Flux HD).
+        """
+        if message.from_user:
+            await _register_user(message.from_user)
+
+        command_text = message.text.strip() if message.text else ""
+        prompt = ""
+
+        if command_text.startswith(("/image", "/imagine", "/draw")):
+            parts = command_text.split(maxsplit=1)
+            if len(parts) > 1:
+                prompt = parts[1].strip()
+        elif "បង្កើតរូបភាព" in command_text:
+            parts = command_text.split("បង្កើតរូបភាព", maxsplit=1)
+            if len(parts) > 1:
+                prompt = parts[1].strip()
+
+        if not prompt:
+            usage_msg = (
+                "🎨 <b>បង្កើតរូបភាព AI ឥតដែនកំណត់ (Unlimited HD AI Image Generator):</b>\n\n"
+                "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
+                "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
+                "<b>ឧទាហរណ៍៖</b>\n"
+                "• <code>/image នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
+                "• <code>/image futuristic Phnom Penh city in 2050, 8k resolution, cinematic lighting</code>\n"
+                "• <code>/draw a cute baby cat wearing a space suit on Mars</code>"
+            )
+            await message.answer(usage_msg, parse_mode="HTML")
+            return
+
+        try:
+            await message.bot.send_chat_action(chat_id=message.chat.id, action="upload_photo")
+        except Exception:
+            pass
+
+        loading_msg = await message.answer("🎨 <b>កំពុងបង្កើតរូបភាព AI កម្រិត HD បំផុត (Generating HD AI Image)...</b>\n<i>សូមរង់ចាំមួយភ្លែត...</i>", parse_mode="HTML")
+
+        try:
+            from services.image_gen_service import ImageGenService
+            img_service = ImageGenService(gemini_service=gemini_service)
+
+            image_bytes, optimized_prompt, seed = await img_service.generate_image(prompt=prompt)
+
+            try:
+                await loading_msg.delete()
+            except Exception:
+                pass
+
+            if image_bytes:
+                photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
+                caption_text = (
+                    f"🎨 <b>រូបភាព AI បង្កើតជោគជ័យ (HD AI Image):</b>\n\n"
+                    f"📝 <b>Prompt:</b> <i>{escape(prompt)}</i>\n"
+                    f"⚡ <b>Optimized Prompt:</b> <code>{escape(optimized_prompt[:250])}</code>\n"
+                    f"✨ <b>Resolution:</b> 1024x1024 (Flux HD Ultra)"
+                )
+                await message.answer_photo(
+                    photo=photo_file,
+                    caption=caption_text,
+                    parse_mode="HTML",
+                    reply_markup=get_image_gen_inline_keyboard()
+                )
+            else:
+                await message.answer("❌ <b>មិនអាចបង្កើតរូបភាពបានទេនៅពេលនេះ!</b> សូមព្យាយាមម្តងទៀតជាមួយការពិពណ៌នាផ្សេង។", parse_mode="HTML")
+        except Exception as e:
+            try:
+                await loading_msg.delete()
+            except Exception:
+                pass
+            logging.error(f"Error in image generation command: {e}")
+            await message.answer(f"⚠️ មានបញ្ហាក្នុងការបង្កើតរូបភាព: {escape(str(e))}", parse_mode="HTML")
 
     return router
