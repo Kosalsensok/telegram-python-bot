@@ -78,8 +78,8 @@ async def update_bot_profile(bot: Bot, db_service: DatabaseService = None) -> No
         user_line = f"👥 Trusted by {formatted_count} users" if total_count > 0 else "👥 24/7 Smart AI Assistant"
         full_desc = (
             f"🤖 {BOT_DISPLAY_NAME}\n\n"
-            "សួរជាភាសាខ្មែរ ឬ English。\n"
-            "ផ្ញើរូបភាព ដើម្បីឱ្យ AI មើល វិភាគ និងពន្យល់。\n\n"
+            "សួរជាភាសាខ្មែរ ឬ English.\n"
+            "ផ្ញើរូបភាព ដើម្បីឱ្យ AI មើល វិភាគ និងពន្យល់.\n\n"
             "✨ AI Chat\n"
             "🖼 Image Analysis\n"
             "🎙️ Voice Notes AI\n"
