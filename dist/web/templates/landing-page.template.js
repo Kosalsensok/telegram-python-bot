@@ -9,6 +9,9 @@ function renderLandingPageHtml(appUrl, botUsername) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart AI Math Solver | វេទិកាដោះស្រាយលំហាត់គណិតវិទ្យា AI ឆ្លាតវៃ</title>
+
+  <!-- Favicon Icon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='16' height='20' x='4' y='2' rx='2'/%3E%3Cline x1='8' x2='16' y1='6' y2='6'/%3E%3Cline x1='16' x2='16' y1='14' y2='18'/%3E%3Cpath d='M16 10h.01'/%3E%3Cpath d='M12 10h.01'/%3E%3Cpath d='M8 10h.01'/%3E%3Cpath d='M12 14h.01'/%3E%3Cpath d='M8 14h.01'/%3E%3Cpath d='M12 18h.01'/%3E%3Cpath d='M8 18h.01'/%3E%3C/svg%3E">
   
   <meta name="title" content="Smart AI Math Solver | Official Platform">
   <meta name="description" content="Official Smart AI Math Solver platform for students, teachers, and universities. Instant step-by-step solutions powered by Gemini AI.">
@@ -50,7 +53,6 @@ function renderLandingPageHtml(appUrl, botUsername) {
       line-height: 1.6;
     }
 
-    /* Navbar */
     .navbar {
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(8px);
@@ -103,7 +105,6 @@ function renderLandingPageHtml(appUrl, botUsername) {
     .btn-outline { background: white; border: 1px solid var(--border-color); color: var(--text-secondary); }
     .btn-outline:hover { background: var(--bg-soft-blue); color: var(--primary-blue); border-color: var(--primary-bright); }
 
-    /* Hero Section */
     .hero {
       padding: 80px 24px 60px;
       max-width: 1200px;
@@ -143,7 +144,6 @@ function renderLandingPageHtml(appUrl, botUsername) {
       flex-wrap: wrap;
     }
 
-    /* Features Section */
     .section {
       max-width: 1200px;
       margin: 0 auto;
@@ -155,6 +155,10 @@ function renderLandingPageHtml(appUrl, botUsername) {
       font-weight: 700;
       color: var(--primary-dark);
       margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
     .features-grid {
       display: grid;
@@ -183,7 +187,6 @@ function renderLandingPageHtml(appUrl, botUsername) {
     .feature-card h3 { font-size: 18px; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; }
     .feature-card p { font-size: 14px; color: var(--text-secondary); }
 
-    /* Subjects Pills */
     .subjects-grid {
       display: flex;
       flex-wrap: wrap;
@@ -204,7 +207,6 @@ function renderLandingPageHtml(appUrl, botUsername) {
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
 
-    /* Footer */
     .footer {
       background: white;
       border-top: 1px solid var(--border-color);
@@ -251,7 +253,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
   <main>
     <section class="hero">
       <div class="hero-badge"><i data-lucide="sparkles"></i> Powered by Gemini 2.0 Flash AI</div>
-      <h1>ប្រព័ន្ធដោះស្រាយលំហាត់គណិតវិទ្យា AI ឆ្លាតវៃ<br><span style="color: var(--primary-blue);">Smart AI Math Solver Platform</span></h1>
+      <h1><i data-lucide="award" style="color: var(--primary-blue);"></i> ប្រព័ន្ធដោះស្រាយលំហាត់គណិតវិទ្យា AI ឆ្លាតវៃ<br><span style="color: var(--primary-blue);">Smart AI Math Solver Platform</span></h1>
       <p>
         វេទិកាផ្លូវការសម្រាប់សិស្ស គ្រូបង្រៀន និងសាកលវិទ្យាល័យ ក្នុងការដោះស្រាយលំហាត់គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា ដោយបង្ហាញដំណោះស្រាយលម្អិតជាជំហានៗ (Step-by-step) ប្រកបដោយទំនុកចិត្ត និងភាពច្បាស់លាស់។
       </p>
@@ -266,7 +268,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
     </section>
 
     <section class="section">
-      <h2 class="section-title">លក្ខណៈពិសេសចម្បង (Key Features)</h2>
+      <h2 class="section-title"><i data-lucide="sparkles" style="color: var(--primary-blue);"></i> លក្ខណៈពិសេសចម្បង (Key Features)</h2>
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon"><i data-lucide="layers"></i></div>
@@ -292,7 +294,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
     </section>
 
     <section class="section" style="background: white; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-card);">
-      <h2 class="section-title" style="margin-bottom: 24px;">មុខវិជ្ជាដែលគាំទ្រ (Supported Subjects)</h2>
+      <h2 class="section-title" style="margin-bottom: 24px;"><i data-lucide="book-open" style="color: var(--primary-blue);"></i> មុខវិជ្ជាដែលគាំទ្រ (Supported Subjects)</h2>
       <div class="subjects-grid">
         <div class="subject-pill"><i data-lucide="plus-slash-minus" style="color: var(--primary-blue);"></i> Mathematics (គណិតវិទ្យា)</div>
         <div class="subject-pill"><i data-lucide="atom" style="color: var(--primary-blue);"></i> Physics (រូបវិទ្យា)</div>
@@ -305,8 +307,8 @@ function renderLandingPageHtml(appUrl, botUsername) {
 
   <footer class="footer">
     <div class="footer-content">
-      <div>
-        <strong style="color: var(--primary-dark);">Smart AI Math Solver Platform</strong> — © 2026. All rights reserved.
+      <div style="display:flex; align-items:center; gap:8px;">
+        <i data-lucide="calculator" style="color: var(--primary-blue);"></i> <strong style="color: var(--primary-dark);">Smart AI Math Solver Platform</strong> — © 2026. All rights reserved.
       </div>
       <div>
         <a href="${telegramBotUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-blue); text-decoration: none; font-weight: 600;">
