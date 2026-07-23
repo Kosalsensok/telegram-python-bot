@@ -14,13 +14,13 @@ class GeminiService:
     def __init__(self, api_key: str, primary_model: str = "gemini-3.6-flash"):
         self.api_key = api_key
         self.primary_model = primary_model
-        # Priority model list including reliable lite models for quota fallback
-        self.models = list(dict.fromkeys([primary_model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview", "gemini-omni-flash-preview", "gemini-flash-lite-latest", "gemini-2.0-flash-lite"]))
+        # Priority model list including verified working models
+        self.models = list(dict.fromkeys([primary_model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"]))
         self.client = genai.Client(api_key=api_key)
 
     def update_primary_model(self, new_model: str):
         self.primary_model = new_model
-        self.models = list(dict.fromkeys([new_model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview", "gemini-omni-flash-preview", "gemini-flash-lite-latest", "gemini-2.0-flash-lite"]))
+        self.models = list(dict.fromkeys([new_model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"]))
 
     def _sync_generate_content(self, model: str, contents: list, mode: str = "general") -> str:
         """
@@ -31,27 +31,16 @@ class GeminiService:
             system_instruction=prompt_instruction
         )
         
-        # Internal mapping to valid Google Gemini models
-        actual_model = model
-        if "3.6" in model or "omni" in model:
-            actual_model = "gemini-2.0-flash"
-        elif "3.5" in model:
-            actual_model = "gemini-flash-lite-latest"
-        elif "3.1" in model:
-            actual_model = "gemini-2.0-flash-lite"
-        elif "1.5" in model:
-            actual_model = "gemini-flash-lite-latest"
-            
         try:
             response = self.client.models.generate_content(
-                model=actual_model,
+                model=model,
                 contents=contents,
                 config=config
             )
         except Exception as err:
-            # If primary model hits 429 quota, fallback directly to gemini-flash-lite-latest which has free quota
-            if ("429" in str(err) or "RESOURCE_EXHAUSTED" in str(err)) and actual_model != "gemini-flash-lite-latest":
-                logging.warning(f"GeminiService: {actual_model} rate limited, falling back to gemini-flash-lite-latest")
+            err_str = str(err)
+            if ("429" in err_str or "503" in err_str or "404" in err_str or "RESOURCE_EXHAUSTED" in err_str or "UNAVAILABLE" in err_str or "NOT_FOUND" in err_str) and model != "gemini-flash-lite-latest":
+                logging.warning(f"GeminiService: {model} issue ({err_str[:80]}), falling back to gemini-flash-lite-latest")
                 response = self.client.models.generate_content(
                     model="gemini-flash-lite-latest",
                     contents=contents,

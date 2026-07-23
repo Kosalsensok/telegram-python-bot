@@ -41,6 +41,7 @@ MYSQL_USER: str = os.getenv("MYSQL_USER", "root").strip()
 MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "").strip()
 MYSQL_DATABASE: str = os.getenv("MYSQL_DATABASE", "smart_ai_assistant").strip()
 USE_DATABASE: bool = os.getenv("USE_DATABASE", "true").lower() in ("true", "1", "t", "yes")
+DATABASE_PATH: str = os.getenv("DATABASE_PATH", "./data/database.sqlite")
 
 # Parse admin user IDs
 admin_ids_raw = os.getenv("ADMIN_USER_IDS", "").strip()

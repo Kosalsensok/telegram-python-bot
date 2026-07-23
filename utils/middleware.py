@@ -41,11 +41,6 @@ class UserTrackerMiddleware(BaseMiddleware):
                     language_code=from_user.language_code or "en"
                 )
 
-                # Trigger real-time profile check if bot instance is available in context
-                bot = data.get("bot")
-                if bot:
-                    from services.bot_profile_service import update_bot_profile
-                    asyncio.create_task(update_bot_profile(bot, self.db_service))
             except Exception as e:
                 logging.error(f"UserTrackerMiddleware error for user {from_user.id}: {e}")
 

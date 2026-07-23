@@ -35,9 +35,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
                 last_name=from_user.last_name,
                 language_code=from_user.language_code or "en"
             )
-            # ធ្វើបច្ចុប្បន្នភាពចំនួនអ្នកប្រើប្រាស់ (Bot Profile) ភ្លាមៗ
-            if bot:
-                asyncio.create_task(update_bot_profile(bot, db_service))
 
     @router.message(CommandStart())
     async def cmd_start(message: types.Message):
@@ -315,5 +312,71 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "4. ចុច <b>Send</b> ជាការស្រេច!"
         )
         await message.answer(msg, parse_mode="HTML")
+
+    @router.message(Command("run"))
+    @router.message(Command("code"))
+    async def cmd_run(message: types.Message):
+        if message.from_user:
+            await _register_user(message.from_user)
+
+        raw_text = message.text.strip()
+        parts = raw_text.split(maxsplit=2)
+
+        if len(parts) < 2:
+            usage_msg = (
+                "⚡ <b>របៀបប្រើប្រាស់ /run ឬ /code (Execute Code):</b>\n\n"
+                "• <b>Python:</b> <code>/run python print('Hello World!')</code>\n"
+                "• <b>JavaScript:</b> <code>/run js console.log('Hello!')</code>\n"
+                "• <b>Auto-detect (Python):</b> <code>/run print('Hello!')</code>\n\n"
+                "👉 គាំទ្រភាសា៖ Python, JavaScript, Java"
+            )
+            await message.answer(usage_msg, parse_mode="HTML")
+            return
+
+        first_arg = parts[1].lower().strip()
+        if len(parts) == 2:
+            if first_arg in ["py", "python", "js", "javascript", "java"]:
+                await message.answer("⚠️ សូមបញ្ចូល Code ដែលត្រូវ Run! ឧទាហរណ៍៖ <code>/run python print('Hello')</code>", parse_mode="HTML")
+                return
+            lang = "python"
+            code_to_run = parts[1]
+        else:
+            if first_arg in ["py", "python", "js", "javascript", "java"]:
+                lang = first_arg
+                code_to_run = parts[2]
+            else:
+                lang = "python"
+                code_to_run = parts[1] + " " + parts[2]
+
+        try:
+            await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+        except Exception:
+            pass
+
+        loading_msg = await message.answer("⚡ កំពុងដំណើរការកូដ (Running code)...", parse_mode="HTML")
+
+        try:
+            from services.piston_service import execute_code
+            result = await execute_code(lang, code_to_run)
+            output = result.get("run", {}).get("output", "") or result.get("compile", {}).get("output", "No output.")
+
+            try:
+                await loading_msg.delete()
+            except Exception:
+                pass
+
+            escaped_out = escape(output)
+            res_msg = (
+                f"⚡ <b>លទ្ធផលនៃការរត់ Code ({escape(lang)})៖</b>\n\n"
+                f"<pre><code>{escaped_out}</code></pre>"
+            )
+            await message.answer(res_msg, parse_mode="HTML")
+        except Exception as e:
+            try:
+                await loading_msg.delete()
+            except Exception:
+                pass
+            logging.error(f"Error executing code: {e}")
+            await message.answer(f"⚠️ មានបញ្ហាក្នុងការរត់ Code: {escape(str(e))}", parse_mode="HTML")
 
     return router

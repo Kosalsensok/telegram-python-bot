@@ -145,6 +145,7 @@ async def main():
     commands = [
         BotCommand(command="start", description="🚀 ចាប់ផ្តើមប្រើប្រាស់ (Start)"),
         BotCommand(command="mode", description="🎯 ជ្រើសរើស AI Mode (Change Mode)"),
+        BotCommand(command="run", description="⚡ ដំណើរការកូដ (Execute Code)"),
         BotCommand(command="new", description="🧹 បង្កើតការសន្ទនាថ្មី (New Chat)"),
         BotCommand(command="clear", description="🗑 លុបប្រវត្តិសន្ទនា (Clear History)"),
         BotCommand(command="help", description="ℹ️ ជំនួយ និងការណែនាំ (Help)"),
