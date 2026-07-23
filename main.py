@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 import sys
+import time
+import aiohttp
 from typing import Optional
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -16,6 +18,7 @@ from config import (
     LOG_LEVEL,
     MAX_HISTORY_MESSAGES,
     BOT_DISPLAY_NAME,
+    RENDER_EXTERNAL_URL,
     MYSQL_HOST,
     MYSQL_PORT,
     MYSQL_USER,
@@ -47,10 +50,19 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.ERROR)
 logging.getLogger("google_genai.models").setLevel(logging.WARNING)
 
+_start_time = time.time()
+
 
 async def handle_health_check(request):
-    """Simple HTTP 200 OK handler for Render Web Service health checks."""
-    return web.Response(text="Smart AI Assistant Telegram Bot is online!", status=200)
+    """HTTP 200 OK handler for Render Web Service health checks and keep-alive pings."""
+    uptime_seconds = int(time.time() - _start_time)
+    return web.json_response({
+        "status": "online",
+        "bot": BOT_DISPLAY_NAME,
+        "uptime_seconds": uptime_seconds,
+        "message": "Smart AI Assistant Telegram Bot is active and running 24/7!",
+        "timestamp": time.time()
+    }, status=200)
 
 
 async def start_health_server():
@@ -64,6 +76,7 @@ async def start_health_server():
     app = web.Application()
     app.router.add_get("/", handle_health_check)
     app.router.add_get("/health", handle_health_check)
+    app.router.add_get("/ping", handle_health_check)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -71,6 +84,50 @@ async def start_health_server():
     await site.start()
     logging.info(f"Health check HTTP web server started on 0.0.0.0:{port}")
     return runner
+
+
+async def keep_alive_worker():
+    """
+    Background worker that self-pings the HTTP server every 3 minutes (180s)
+    to prevent Render Free Tier Web Services from spinning down due to inactivity.
+    """
+    logging.info("Starting Self-Keep-Alive background worker for 24/7 uptime...")
+    port_str = os.getenv("PORT", "8080").strip()
+    try:
+        port = int(port_str)
+    except ValueError:
+        port = 8080
+
+    urls_to_ping = [
+        f"http://127.0.0.1:{port}/health",
+    ]
+
+    if RENDER_EXTERNAL_URL:
+        clean_url = RENDER_EXTERNAL_URL.rstrip('/')
+        if not clean_url.endswith('/health'):
+            clean_url = f"{clean_url}/health"
+        urls_to_ping.append(clean_url)
+
+    # Allow health web server to start before pinging
+    await asyncio.sleep(10)
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            while True:
+                for target_url in urls_to_ping:
+                    try:
+                        async with session.get(target_url, timeout=15) as resp:
+                            if resp.status == 200:
+                                logging.debug(f"Keep-Alive self-ping to {target_url} successful (200 OK).")
+                            else:
+                                logging.warning(f"Keep-Alive ping to {target_url} returned status {resp.status}")
+                    except Exception as ping_err:
+                        logging.warning(f"Keep-Alive ping to {target_url} error: {ping_err}")
+                await asyncio.sleep(180)  # Self-ping every 3 minutes
+    except asyncio.CancelledError:
+        logging.info("Self-Keep-Alive background worker cancelled.")
+    except Exception as e:
+        logging.error(f"Unexpected error in Keep-Alive worker: {e}")
 
 
 async def main():
@@ -117,8 +174,9 @@ async def main():
     dp.chat_member.outer_middleware(tracker_mw)
     dp.my_chat_member.outer_middleware(tracker_mw)
 
-    # 4. Start Bot Profile Auto-Update Background Worker Task
+    # 4. Start Background Worker Tasks (Profile Updater + Keep Alive Pinger)
     profile_task: Optional[asyncio.Task] = asyncio.create_task(bot_profile_worker(bot, db_service))
+    keep_alive_task: Optional[asyncio.Task] = asyncio.create_task(keep_alive_worker())
 
     # 5. Create & Register Routers in proper priority order
     commands_router = get_command_router(memory, db_service, gemini_service)
@@ -164,26 +222,46 @@ async def main():
     except Exception as e:
         logging.error(f"Failed to set bot commands: {e}")
 
-    logging.info(f"🚀 {BOT_DISPLAY_NAME} (Gemini AI + MySQL) កំពុងដំណើរការ...")
+    logging.info(f"🚀 {BOT_DISPLAY_NAME} (Gemini AI + MySQL) កំពុងដំណើរការ 24/7...")
 
-    try:
-        await dp.start_polling(bot)
-    except Exception as e:
-        logging.error(f"Error during bot execution: {e}", exc_info=True)
-    finally:
-        logging.info("Shutting down bot session and background tasks...")
-        if profile_task and not profile_task.done():
-            profile_task.cancel()
-            try:
-                await profile_task
-            except asyncio.CancelledError:
-                pass
-        if runner:
-            await runner.cleanup()
-        await bot.session.close()
-        if db_service:
-            await db_service.close()
-        logging.info("Bot session and background tasks closed successfully.")
+    # 8. Run Bot Polling with Auto-Reconnect resilience
+    retry_count = 0
+    while True:
+        if sys.is_finalizing():
+            break
+        try:
+            await dp.start_polling(bot, handle_signals=False)
+            break
+        except asyncio.CancelledError:
+            logging.info("Bot polling loop cancelled.")
+            break
+        except Exception as e:
+            retry_count += 1
+            logging.error(f"Error during bot execution (Attempt #{retry_count}): {e}. Retrying in 5 seconds...", exc_info=True)
+            await asyncio.sleep(5)
+
+    # Clean shutdown of tasks and connections
+    logging.info("Shutting down bot session and background tasks...")
+    if profile_task and not profile_task.done():
+        profile_task.cancel()
+        try:
+            await profile_task
+        except asyncio.CancelledError:
+            pass
+
+    if keep_alive_task and not keep_alive_task.done():
+        keep_alive_task.cancel()
+        try:
+            await keep_alive_task
+        except asyncio.CancelledError:
+            pass
+
+    if runner:
+        await runner.cleanup()
+    await bot.session.close()
+    if db_service:
+        await db_service.close()
+    logging.info("Bot session and background tasks closed successfully.")
 
 
 if __name__ == "__main__":
