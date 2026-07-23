@@ -82,17 +82,9 @@ def escape_tg_html(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def sanitize_telegram_html(text: str) -> str:
-    """
-    Sanitizes HTML for Telegram parse_mode='HTML':
-    - Keeps valid Telegram HTML tags (<b>, <i>, <code>, <pre>, <s>, <u>, <blockquote>, <a href="...">)
-    - Escapes invalid or unclosed '<', '>', and '&' characters in plain text as &lt;, &gt;, and &amp;
-    """
-    if not text:
-        return ""
-
+def _sanitize_outside_pre(text: str) -> str:
     valid_tag_pattern = re.compile(
-        r'</?(?:b|i|s|u|code|pre|blockquote|span)(?:\s+(?:class="[^"]*"|expandable))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
+        r'</?(?:b|i|s|u|code|blockquote|span)(?:\s+(?:class="[^"]*"|expandable))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
         re.IGNORECASE
     )
 
@@ -109,6 +101,39 @@ def sanitize_telegram_html(text: str) -> str:
     remaining = text[last_idx:]
     if remaining:
         parts.append(escape_tg_html(remaining))
+
+    return "".join(parts)
+
+
+def sanitize_telegram_html(text: str) -> str:
+    """
+    Sanitizes HTML for Telegram parse_mode='HTML':
+    - Preserves <pre>...</pre> code blocks intact without double-escaping existing &lt;, &gt;, &amp;.
+    - Keeps valid Telegram HTML tags (<b>, <i>, <code>, <s>, <u>, <blockquote>, <a href="...">) in plain text.
+    - Escapes unclosed '<', '>', and '&' in plain text as &lt;, &gt;, and &amp;.
+    """
+    if not text:
+        return ""
+
+    pre_pattern = re.compile(r'(<pre(?: [^>]*)?>.*?</pre>)', re.DOTALL | re.IGNORECASE)
+    parts = []
+    last_idx = 0
+
+    for match in pre_pattern.finditer(text):
+        start, end = match.span()
+        text_outside = text[last_idx:start]
+        if text_outside:
+            parts.append(_sanitize_outside_pre(text_outside))
+
+        pre_content = match.group(1)
+        # Ensure any raw unescaped & (not part of an entity like &lt;) is sanitized inside pre
+        pre_clean = re.sub(r'&(?!amp;|lt;|gt;|quot;|#\d+;)', '&amp;', pre_content)
+        parts.append(pre_clean)
+        last_idx = end
+
+    remaining_outside = text[last_idx:]
+    if remaining_outside:
+        parts.append(_sanitize_outside_pre(remaining_outside))
 
     return "".join(parts)
 
