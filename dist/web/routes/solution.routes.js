@@ -6,6 +6,7 @@ const solution_controller_1 = require("../controllers/solution.controller");
 function createSolutionRoutes(solutionService) {
     const router = (0, express_1.Router)();
     const controller = new solution_controller_1.SolutionWebController(solutionService);
+    router.get('/', (req, res) => controller.getHomePage(req, res));
     router.get('/solution/:publicId', (req, res) => controller.getSolutionPage(req, res));
     return router;
 }

@@ -16,20 +16,16 @@ function createExpressServer(bot, solutionService) {
     // Static directory for temp public file downloads
     const publicDir = path_1.default.resolve(env_1.env.TEMP_DIRECTORY || './temp');
     app.use('/public', express_1.default.static(publicDir));
-    // Home route redirecting to Demo Solution Page
-    app.get('/', (req, res) => {
-        res.redirect('/solution/demo123');
-    });
     // Health Check Endpoint
     app.get('/health', (req, res) => {
         res.json({
             status: 'ok',
-            service: 'Telegram AI Math Solver Bot',
+            service: 'Smart AI Math Solver Platform',
             timestamp: new Date().toISOString(),
             env: process.env.NODE_ENV || 'development',
         });
     });
-    // Web solution pages
+    // Web solution & landing routes
     app.use('/', (0, solution_routes_1.createSolutionRoutes)(solutionService));
     // Production Telegram Webhook endpoint support
     if (env_1.env.WEBHOOK_DOMAIN && env_1.env.WEBHOOK_SECRET) {

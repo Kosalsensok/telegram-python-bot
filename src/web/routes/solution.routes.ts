@@ -6,6 +6,7 @@ export function createSolutionRoutes(solutionService: SolutionService): Router {
   const router = Router();
   const controller = new SolutionWebController(solutionService);
 
+  router.get('/', (req, res) => controller.getHomePage(req, res));
   router.get('/solution/:publicId', (req, res) => controller.getSolutionPage(req, res));
 
   return router;

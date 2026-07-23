@@ -16,22 +16,17 @@ export function createExpressServer(bot: Telegraf, solutionService: SolutionServ
   const publicDir = path.resolve(env.TEMP_DIRECTORY || './temp');
   app.use('/public', express.static(publicDir));
 
-  // Home route redirecting to Demo Solution Page
-  app.get('/', (req, res) => {
-    res.redirect('/solution/demo123');
-  });
-
   // Health Check Endpoint
   app.get('/health', (req, res) => {
     res.json({
       status: 'ok',
-      service: 'Telegram AI Math Solver Bot',
+      service: 'Smart AI Math Solver Platform',
       timestamp: new Date().toISOString(),
       env: process.env.NODE_ENV || 'development',
     });
   });
 
-  // Web solution pages
+  // Web solution & landing routes
   app.use('/', createSolutionRoutes(solutionService));
 
   // Production Telegram Webhook endpoint support
