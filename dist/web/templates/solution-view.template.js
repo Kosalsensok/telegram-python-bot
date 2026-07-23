@@ -102,24 +102,78 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
 
     /* Sticky Navigation */
     .navbar { position: sticky; top: 0; z-index: 100; background: var(--navbar-bg); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
-    .nav-container { max-width: 1440px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
-    .brand-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .brand-icon { width: 42px; height: 42px; background: linear-gradient(135deg, #123B8F 0%, #2563EB 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25); }
-    .brand-title { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
+    .nav-container { max-width: 1440px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; flex-shrink: 0; }
+    .brand-icon { width: 42px; height: 42px; background: linear-gradient(135deg, #123B8F 0%, #2563EB 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25); flex-shrink: 0; }
+    .brand-title { font-size: 18px; font-weight: 700; color: var(--primary-dark); line-height: 1.2; }
     .brand-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-    .nav-links a { text-decoration: none; color: var(--text-secondary); font-weight: 600; font-size: 14px; }
-    .nav-links a:hover, .nav-links a.active { color: var(--primary-blue); }
-    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    
+    .nav-links { display: flex; align-items: center; gap: 8px; list-style: none; }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s ease;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--primary-blue); background: var(--bg-soft-blue); }
+    .nav-links a svg { width: 16px; height: 16px; flex-shrink: 0; }
 
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
+    .nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
     .btn-primary { background: var(--primary-blue); color: white; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2); }
     .btn-primary:hover { background: #1D4ED8; }
     .btn-outline { background: var(--bg-card); border-color: var(--border-color); color: var(--text-secondary); }
     .btn-outline:hover { background: var(--bg-soft-blue); border-color: var(--primary-bright); color: var(--primary-blue); }
 
-    .lang-switcher { display: flex; background: var(--bg-main); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
-    .lang-btn { padding: 4px 10px; font-size: 12px; font-weight: 700; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
+    .lang-switcher {
+      display: inline-flex;
+      align-items: center;
+      height: 38px;
+      background: var(--bg-main);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .lang-btn {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
     .lang-btn.active { background: var(--bg-card); color: var(--primary-blue); box-shadow: var(--shadow-sm); }
 
     .theme-toggle-btn {
@@ -129,12 +183,15 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
       border: 1px solid var(--border-color);
       background: var(--bg-card);
       color: var(--text-secondary);
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
     }
     .theme-toggle-btn:hover { background: var(--bg-soft-blue); color: var(--primary-blue); }
+    .theme-toggle-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
     /* Page Container */
     .main-wrapper { max-width: 1440px; margin: 0 auto; padding: 32px 24px; }
@@ -158,7 +215,7 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
     .step-nav-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
     .step-nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; color: var(--text-secondary); font-weight: 500; }
     .step-nav-link:hover, .step-nav-link.active { background: var(--bg-soft-blue); color: var(--primary-blue); font-weight: 600; }
-    .step-number-pill { width: 22px; height: 22px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .step-number-pill { width: 22px; height: 22px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
     .step-nav-link.active .step-number-pill { background: var(--primary-blue); color: white; }
 
     .content-area { display: flex; flex-direction: column; gap: 24px; }
@@ -174,17 +231,17 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
     .step-card:hover { box-shadow: var(--shadow-hover); }
     .step-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
     .step-badge-title { display: flex; align-items: center; gap: 12px; }
-    .step-badge { width: 32px; height: 32px; background: var(--primary-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .step-badge { width: 32px; height: 32px; background: var(--primary-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
     .step-title { font-size: 16px; font-weight: 700; color: var(--primary-dark); }
     .step-explanation { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
-    .step-note { font-size: 13px; background: var(--bg-soft-purple); color: var(--text-main); border-left: 3px solid #9333EA; padding: 8px 14px; border-radius: 6px; margin-top: 12px; }
+    .step-note { font-size: 13px; background: var(--bg-soft-purple); color: var(--text-main); border-left: 3px solid #9333EA; padding: 8px 14px; border-radius: 6px; margin-top: 12px; display: flex; align-items: center; gap: 8px; }
 
     .final-answer-card { background: var(--bg-card); border-radius: var(--radius-card); border: 2px solid var(--primary-blue); box-shadow: var(--shadow-hover); overflow: hidden; }
     .final-answer-header { background: linear-gradient(135deg, #123B8F 0%, #2563EB 100%); color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
     .final-answer-header h3 { font-size: 16px; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px; }
     .final-answer-body { padding: 32px; text-align: center; }
     .final-answer-latex { font-size: 32px; margin: 16px 0; color: var(--primary-dark); }
-    .final-answer-actions { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+    .final-answer-actions { display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
 
     .footer { background: var(--bg-card); border-top: 1px solid var(--border-color); margin-top: 60px; padding: 40px 24px; }
     .footer-container { max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 30px; font-size: 13px; color: var(--text-muted); }
@@ -200,10 +257,13 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
       .card-box, .step-card, .final-answer-card { box-shadow: none !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
     }
 
+    @media (max-width: 1100px) {
+      .nav-links { display: none; }
+    }
+
     @media (max-width: 1024px) {
       .layout-grid { grid-template-columns: 1fr; }
       .sidebar { position: static; }
-      .nav-links { display: none; }
     }
   </style>
 </head>
@@ -221,11 +281,11 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
       </a>
 
       <ul class="nav-links">
-        <li><a href="/"><i data-lucide="home" style="display:inline; width:14px; margin-right:4px;"></i> <span data-i18n="navHome">Home</span></a></li>
-        <li><a href="/solution/${publicId}" class="active"><i data-lucide="file-check-2" style="display:inline; width:14px; margin-right:4px;"></i> <span data-i18n="navSolutions">Solutions</span></a></li>
-        <li><a href="/solution/demo123"><i data-lucide="sparkles" style="display:inline; width:14px; margin-right:4px;"></i> <span data-i18n="navExamples">Examples</span></a></li>
-        <li><a href="/#about"><i data-lucide="info" style="display:inline; width:14px; margin-right:4px;"></i> <span data-i18n="navAbout">About</span></a></li>
-        <li><a href="/#contact"><i data-lucide="mail" style="display:inline; width:14px; margin-right:4px;"></i> <span data-i18n="navContact">Contact</span></a></li>
+        <li><a href="/"><i data-lucide="home"></i> <span data-i18n="navHome">Home</span></a></li>
+        <li><a href="/solution/${publicId}" class="active"><i data-lucide="file-check-2"></i> <span data-i18n="navSolutions">Solutions</span></a></li>
+        <li><a href="/solution/demo123"><i data-lucide="sparkles"></i> <span data-i18n="navExamples">Examples</span></a></li>
+        <li><a href="/#about"><i data-lucide="info"></i> <span data-i18n="navAbout">About</span></a></li>
+        <li><a href="/#contact"><i data-lucide="mail"></i> <span data-i18n="navContact">Contact</span></a></li>
       </ul>
 
       <div class="nav-actions">
@@ -359,7 +419,7 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
                 <div class="step-badge">${idx + 1}</div>
                 <div class="step-title">${(0, sanitize_1.sanitizeHtmlText)(st.titleKh || st.title || 'Step ' + (idx + 1))}</div>
               </div>
-              <button class="btn btn-outline" style="padding: 4px 10px; font-size: 12px;" onclick="copyText('${(0, sanitize_1.sanitizeHtmlText)(st.latex || st.explanation)}')">
+              <button class="btn btn-outline" style="padding: 4px 10px; font-size: 12px; height: 32px;" onclick="copyText('${(0, sanitize_1.sanitizeHtmlText)(st.latex || st.explanation)}')">
                 <i data-lucide="copy"></i> <span data-i18n="copy">Copy</span>
               </button>
             </div>
@@ -368,7 +428,7 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
             
             ${st.latex ? `<div class="math-display-container">$$\\displaystyle ${st.latex}$$</div>` : ''}
             
-            ${st.note ? `<div class="step-note"><i data-lucide="info" style="display:inline; width:14px;"></i> ${(0, sanitize_1.sanitizeHtmlText)(st.note)}</div>` : ''}
+            ${st.note ? `<div class="step-note"><i data-lucide="info" style="display:inline-block; width:14px; height:14px; flex-shrink:0;"></i> ${(0, sanitize_1.sanitizeHtmlText)(st.note)}</div>` : ''}
           </article>
         `).join('')}
 
@@ -417,9 +477,9 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
       <div>
         <div style="font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Quick Links</div>
         <ul style="list-style: none; display: flex; flex-direction: column; gap: 6px;">
-          <li><a href="/" style="color: var(--text-muted); text-decoration: none;"><i data-lucide="home" style="display:inline; width:12px;"></i> Home</a></li>
-          <li><a href="/solution/demo123" style="color: var(--text-muted); text-decoration: none;"><i data-lucide="sparkles" style="display:inline; width:12px;"></i> Demo Solution</a></li>
-          <li><a href="${telegramBotUrl}" target="_blank" style="color: var(--text-muted); text-decoration: none;"><i data-lucide="send" style="display:inline; width:12px;"></i> Telegram Bot</a></li>
+          <li><a href="/" style="color: var(--text-muted); text-decoration: none;"><i data-lucide="home" style="display:inline-block; width:12px;"></i> Home</a></li>
+          <li><a href="/solution/demo123" style="color: var(--text-muted); text-decoration: none;"><i data-lucide="sparkles" style="display:inline-block; width:12px;"></i> Demo Solution</a></li>
+          <li><a href="${telegramBotUrl}" target="_blank" style="color: var(--text-muted); text-decoration: none;"><i data-lucide="send" style="display:inline-block; width:12px;"></i> Telegram Bot</a></li>
         </ul>
       </div>
       <div>
@@ -502,7 +562,7 @@ function renderSolutionViewHtml(solutionData, publicId, appUrl, botUsername) {
         copyAnswer: "ចម្លងចម្លើយ",
         share: "ចែករំលែក",
         downloadPdf: "ទាញយក PDF",
-        successMsg: "✓ ដំណោះស្រាយត្រូវបានសម្រួល និងផ្ទៀងផ្ទាត់ត្រឹមត្រូវ។"
+        successMsg: "✓ ដំណោះស្រាយត្រូវបានសម្រួល និងផ្ទៀងផ្ទាត់ត្រឹមត្រូវ me"
       },
       en: {
         officialSolution: "Official Solution Platform",
