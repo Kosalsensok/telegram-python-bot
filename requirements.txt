@@ -5,3 +5,4 @@ Pillow
 aiomysql
 pymysql
 aiosqlite
+aiohttp

@@ -1,11 +1,13 @@
 import asyncio
 import logging
+import os
 import sys
 from typing import Optional
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.types import BotCommand
+from aiohttp import web
 
 from config import (
     BOT_TOKEN,
@@ -45,11 +47,43 @@ logging.getLogger("httpx").setLevel(logging.ERROR)
 logging.getLogger("google_genai.models").setLevel(logging.WARNING)
 
 
+async def handle_health_check(request):
+    """Simple HTTP 200 OK handler for Render Web Service health checks."""
+    return web.Response(text="Smart AI Assistant Telegram Bot is online!", status=200)
+
+
+async def start_health_server():
+    """Starts a lightweight web server for Render Free Web Service deployment."""
+    port_str = os.getenv("PORT", "8080").strip()
+    try:
+        port = int(port_str)
+    except ValueError:
+        port = 8080
+
+    app = web.Application()
+    app.router.add_get("/", handle_health_check)
+    app.router.add_get("/health", handle_health_check)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logging.info(f"Health check HTTP web server started on 0.0.0.0:{port}")
+    return runner
+
+
 async def main():
     """
     Main entry point for starting Smart AI Assistant Telegram Bot.
     """
     logging.info("Initializing Smart AI Assistant services...")
+
+    # Start HTTP Health Server for Render Web Service (Free Tier)
+    runner = None
+    try:
+        runner = await start_health_server()
+    except Exception as e:
+        logging.warning(f"Could not start HTTP health server: {e}")
 
     # 1. Initialize MySQL Database Service
     db_service = DatabaseService(
@@ -104,8 +138,6 @@ async def main():
 
     logging.info("Routers and Middleware registered successfully: [UserTrackerMiddleware, Commands, Callbacks, Admin, Image, Document, Text, Fallback]")
 
-
-
     # 6. Delete any pending webhook updates to ensure smooth Long Polling
     await bot.delete_webhook(drop_pending_updates=True)
 
@@ -142,6 +174,8 @@ async def main():
                 await profile_task
             except asyncio.CancelledError:
                 pass
+        if runner:
+            await runner.cleanup()
         await bot.session.close()
         if db_service:
             await db_service.close()
