@@ -3,8 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.renderSolutionToPNG = renderSolutionToPNG;
 exports.closeBrowserInstance = closeBrowserInstance;
+exports.renderSolutionToPNG = renderSolutionToPNG;
 const playwright_1 = __importDefault(require("playwright"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -20,6 +20,21 @@ async function getBrowser() {
         });
     }
     return browserInstance;
+}
+async function closeBrowserInstance() {
+    if (browserInstance && browserInstance.isConnected()) {
+        logger_1.logger.info('Closing Playwright Chromium instance...');
+        await browserInstance.close();
+        browserInstance = null;
+    }
+}
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 async function renderSolutionToPNG(result, outputPath, botName = 'Smart AI Assistant', botUsername = '@mysmart_v2_2026_bot') {
     const templatePath = path_1.default.join(__dirname, 'templates', 'solution.template.html');
@@ -70,9 +85,19 @@ async function renderSolutionToPNG(result, outputPath, botName = 'Smart AI Assis
     });
     const page = await context.newPage();
     try {
-        await page.setContent(templateHtml, { waitUntil: 'domcontentloaded' });
+        try {
+            await page.setContent(templateHtml, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        }
+        catch (e) {
+            logger_1.logger.warn('setContent domcontentloaded timeout, proceeding to screenshot');
+        }
         // Wait for KaTeX and font rendering ready flag
-        await page.waitForFunction(() => window.__RENDER_READY__ === true, { timeout: 10000 });
+        try {
+            await page.waitForFunction(() => window.__RENDER_READY__ === true, { timeout: 10000 });
+        }
+        catch (e) {
+            logger_1.logger.warn('KaTeX render ready flag timeout, proceeding to screenshot');
+        }
         const cardElement = await page.$('#solution-card');
         if (cardElement) {
             await cardElement.screenshot({ path: outputPath, type: 'png' });
@@ -86,19 +111,5 @@ async function renderSolutionToPNG(result, outputPath, botName = 'Smart AI Assis
     finally {
         await context.close();
     }
-}
-async function closeBrowserInstance() {
-    if (browserInstance) {
-        await browserInstance.close();
-        browserInstance = null;
-    }
-}
-function escapeHtml(str) {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
 }
 //# sourceMappingURL=image.renderer.js.map

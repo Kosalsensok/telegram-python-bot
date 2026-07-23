@@ -18,6 +18,23 @@ async function getBrowser(): Promise<Browser> {
   return browserInstance;
 }
 
+export async function closeBrowserInstance(): Promise<void> {
+  if (browserInstance && browserInstance.isConnected()) {
+    logger.info('Closing Playwright Chromium instance...');
+    await browserInstance.close();
+    browserInstance = null;
+  }
+}
+
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export async function renderSolutionToPNG(
   result: MathSolutionResult,
   outputPath: string,
@@ -80,10 +97,18 @@ export async function renderSolutionToPNG(
 
   const page = await context.newPage();
   try {
-    await page.setContent(templateHtml, { waitUntil: 'domcontentloaded' });
+    try {
+      await page.setContent(templateHtml, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    } catch (e) {
+      logger.warn('setContent domcontentloaded timeout, proceeding to screenshot');
+    }
     
     // Wait for KaTeX and font rendering ready flag
-    await page.waitForFunction(() => (window as any).__RENDER_READY__ === true, { timeout: 10000 });
+    try {
+      await page.waitForFunction(() => (window as any).__RENDER_READY__ === true, { timeout: 10000 });
+    } catch (e) {
+      logger.warn('KaTeX render ready flag timeout, proceeding to screenshot');
+    }
 
     const cardElement = await page.$('#solution-card');
     if (cardElement) {
@@ -97,20 +122,4 @@ export async function renderSolutionToPNG(
   } finally {
     await context.close();
   }
-}
-
-export async function closeBrowserInstance(): Promise<void> {
-  if (browserInstance) {
-    await browserInstance.close();
-    browserInstance = null;
-  }
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
