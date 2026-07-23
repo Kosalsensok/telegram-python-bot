@@ -5,14 +5,14 @@ import { z } from 'zod';
 dotenv.config();
 
 const envSchema = z.object({
-  BOT_TOKEN: z.string().min(1, 'BOT_TOKEN is required'),
-  BOT_USERNAME: z.string().default('mysmart_v2_2026_bot'),
+  BOT_TOKEN: z.string().default(process.env.BOT_TOKEN || 'dummy_bot_token'),
+  BOT_USERNAME: z.string().default(process.env.BOT_USERNAME || 'mysmart_v2_2026_bot'),
 
   AI_PROVIDER: z.enum(['openai', 'gemini']).default('gemini'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o'),
 
-  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().default(process.env.GEMINI_API_KEY || 'dummy_gemini_key'),
   GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
 
   DATABASE_URL: z.string().default('mysql://root:@127.0.0.1:3306/smart_ai_assistant'),

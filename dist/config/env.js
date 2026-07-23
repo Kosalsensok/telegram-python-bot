@@ -8,12 +8,12 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const zod_1 = require("zod");
 dotenv_1.default.config();
 const envSchema = zod_1.z.object({
-    BOT_TOKEN: zod_1.z.string().min(1, 'BOT_TOKEN is required'),
-    BOT_USERNAME: zod_1.z.string().default('mysmart_v2_2026_bot'),
+    BOT_TOKEN: zod_1.z.string().default(process.env.BOT_TOKEN || 'dummy_bot_token'),
+    BOT_USERNAME: zod_1.z.string().default(process.env.BOT_USERNAME || 'mysmart_v2_2026_bot'),
     AI_PROVIDER: zod_1.z.enum(['openai', 'gemini']).default('gemini'),
     OPENAI_API_KEY: zod_1.z.string().optional(),
     OPENAI_MODEL: zod_1.z.string().default('gpt-4o'),
-    GEMINI_API_KEY: zod_1.z.string().optional(),
+    GEMINI_API_KEY: zod_1.z.string().default(process.env.GEMINI_API_KEY || 'dummy_gemini_key'),
     GEMINI_MODEL: zod_1.z.string().default('gemini-2.0-flash'),
     DATABASE_URL: zod_1.z.string().default('mysql://root:@127.0.0.1:3306/smart_ai_assistant'),
     APP_URL: zod_1.z.string().default('http://localhost:3000'),
