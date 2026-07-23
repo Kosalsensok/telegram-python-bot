@@ -4,7 +4,7 @@ exports.renderLandingPageHtml = renderLandingPageHtml;
 function renderLandingPageHtml(appUrl, botUsername) {
     const telegramBotUrl = `https://t.me/${botUsername || 'mysmart_v2_2026_bot'}`;
     return `<!DOCTYPE html>
-<html lang="km">
+<html lang="km" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,9 +42,25 @@ function renderLandingPageHtml(appUrl, botUsername) {
       --border-color: #E2E8F0;
       --radius-card: 16px;
       --shadow-card: 0 10px 30px -4px rgba(18, 59, 143, 0.08);
+      --navbar-bg: rgba(255,255,255,0.95);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [data-theme="dark"] {
+      --primary-dark: #60A5FA;
+      --primary-blue: #3B82F6;
+      --primary-bright: #93C5FD;
+      --bg-main: #0F172A;
+      --bg-card: #1E293B;
+      --bg-soft-blue: #1E3A8A;
+      --text-main: #F8FAFC;
+      --text-secondary: #CBD5E1;
+      --text-muted: #94A3B8;
+      --border-color: #334155;
+      --shadow-card: 0 10px 30px -4px rgba(0, 0, 0, 0.3);
+      --navbar-bg: rgba(30, 41, 59, 0.95);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
 
     body {
       font-family: 'Noto Sans Khmer', 'Inter', -apple-system, sans-serif;
@@ -54,7 +70,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
     }
 
     .navbar {
-      background: rgba(255,255,255,0.95);
+      background: var(--navbar-bg);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border-color);
       position: sticky;
@@ -78,7 +94,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
     .brand-icon {
       width: 44px;
       height: 44px;
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue));
+      background: linear-gradient(135deg, #123B8F, #2563EB);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -87,6 +103,26 @@ function renderLandingPageHtml(appUrl, botUsername) {
     }
     .brand-text h1 { font-size: 18px; color: var(--primary-dark); font-weight: 700; }
     .brand-text p { font-size: 12px; color: var(--text-muted); }
+
+    .nav-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .theme-toggle-btn:hover { background: var(--bg-soft-blue); color: var(--primary-blue); }
 
     .btn {
       display: inline-flex;
@@ -101,8 +137,8 @@ function renderLandingPageHtml(appUrl, botUsername) {
       cursor: pointer;
     }
     .btn-primary { background: var(--primary-blue); color: white; border: none; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-outline { background: white; border: 1px solid var(--border-color); color: var(--text-secondary); }
+    .btn-primary:hover { background: #1D4ED8; }
+    .btn-outline { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-secondary); }
     .btn-outline:hover { background: var(--bg-soft-blue); color: var(--primary-blue); border-color: var(--primary-bright); }
 
     .hero {
@@ -166,7 +202,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
       gap: 24px;
     }
     .feature-card {
-      background: white;
+      background: var(--bg-card);
       border-radius: var(--radius-card);
       padding: 28px;
       border: 1px solid var(--border-color);
@@ -194,7 +230,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
       gap: 14px;
     }
     .subject-pill {
-      background: white;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       padding: 12px 24px;
       border-radius: 12px;
@@ -208,7 +244,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
     }
 
     .footer {
-      background: white;
+      background: var(--bg-card);
       border-top: 1px solid var(--border-color);
       padding: 40px 24px;
       margin-top: 60px;
@@ -242,7 +278,13 @@ function renderLandingPageHtml(appUrl, botUsername) {
           <p>Official Solution Platform</p>
         </div>
       </a>
-      <div>
+
+      <div class="nav-right-actions">
+        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+          <i data-lucide="moon" id="theme-icon-moon"></i>
+          <i data-lucide="sun" id="theme-icon-sun" style="display:none;"></i>
+        </button>
+
         <a href="${telegramBotUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
           <i data-lucide="send"></i> Open Telegram Bot
         </a>
@@ -293,7 +335,7 @@ function renderLandingPageHtml(appUrl, botUsername) {
       </div>
     </section>
 
-    <section class="section" style="background: white; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-card);">
+    <section class="section" style="background: var(--bg-card); border-radius: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-card);">
       <h2 class="section-title" style="margin-bottom: 24px;"><i data-lucide="book-open" style="color: var(--primary-blue);"></i> មុខវិជ្ជាដែលគាំទ្រ (Supported Subjects)</h2>
       <div class="subjects-grid">
         <div class="subject-pill"><i data-lucide="plus-slash-minus" style="color: var(--primary-blue);"></i> Mathematics (គណិតវិទ្យា)</div>
@@ -320,6 +362,34 @@ function renderLandingPageHtml(appUrl, botUsername) {
 
   <script>
     lucide.createIcons();
+
+    let currentTheme = localStorage.getItem('app_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('app_theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      const moonIcon = document.getElementById('theme-icon-moon');
+      const sunIcon = document.getElementById('theme-icon-sun');
+      if (moonIcon && sunIcon) {
+        if (theme === 'dark') {
+          moonIcon.style.display = 'none';
+          sunIcon.style.display = 'inline-block';
+        } else {
+          moonIcon.style.display = 'inline-block';
+          sunIcon.style.display = 'none';
+        }
+      }
+    }
+
+    function toggleTheme() {
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      applyTheme(currentTheme);
+    });
   </script>
 </body>
 </html>`;
