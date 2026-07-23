@@ -422,7 +422,7 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
                 "• <code>/image futuristic Phnom Penh city in 2050, 8k resolution, cinematic lighting</code>\n"
                 "• <code>/draw a cute baby cat wearing a space suit on Mars</code>"
             )
-            await message.answer(usage_msg, parse_mode="HTML")
+            await message.reply(usage_msg, parse_mode="HTML")
             return
 
         try:
@@ -430,7 +430,7 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         except Exception:
             pass
 
-        loading_msg = await message.answer("🎨 <b>កំពុងបង្កើតរូបភាព AI កម្រិត HD បំផុត (Generating HD AI Image)...</b>\n<i>សូមរង់ចាំមួយភ្លែត...</i>", parse_mode="HTML")
+        loading_msg = await message.reply("🎨 <b>កំពុងបង្កើតរូបភាព AI កម្រិត HD បំផុត (Generating HD AI Image)...</b>\n<i>សូមរង់ចាំមួយភ្លែត...</i>", parse_mode="HTML")
 
         try:
             from services.image_gen_service import ImageGenService
@@ -451,20 +451,20 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
                     f"⚡ <b>Optimized Prompt:</b> <code>{escape(optimized_prompt[:250])}</code>\n"
                     f"✨ <b>Resolution:</b> 1024x1024 (Flux HD Ultra)"
                 )
-                await message.answer_photo(
+                await message.reply_photo(
                     photo=photo_file,
                     caption=caption_text,
                     parse_mode="HTML",
                     reply_markup=get_image_gen_inline_keyboard()
                 )
             else:
-                await message.answer("❌ <b>មិនអាចបង្កើតរូបភាពបានទេនៅពេលនេះ!</b> សូមព្យាយាមម្តងទៀតជាមួយការពិពណ៌នាផ្សេង។", parse_mode="HTML")
+                await message.reply("❌ <b>មិនអាចបង្កើតរូបភាពបានទេនៅពេលនេះ!</b> សូមព្យាយាមម្តងទៀតជាមួយការពិពណ៌នាផ្សេង។", parse_mode="HTML")
         except Exception as e:
             try:
                 await loading_msg.delete()
             except Exception:
                 pass
             logging.error(f"Error in image generation command: {e}")
-            await message.answer(f"⚠️ មានបញ្ហាក្នុងការបង្កើតរូបភាព: {escape(str(e))}", parse_mode="HTML")
+            await message.reply(f"⚠️ មានបញ្ហាក្នុងការបង្កើតរូបភាព: {escape(str(e))}", parse_mode="HTML")
 
     return router

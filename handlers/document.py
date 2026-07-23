@@ -44,7 +44,7 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
 
         # Limit file size to 10MB
         if document.file_size and document.file_size > 10 * 1024 * 1024:
-            await message.answer("⚠️ File នេះមានទំហំធំពេក (លើសពី 10MB)។ សូមផ្ញើ File ដែលមានទំហំតូចជាងនេះ! / File size exceeds limit (10MB).")
+            await message.reply("⚠️ File នេះមានទំហំធំពេក (លើសពី 10MB)។ សូមផ្ញើ File ដែលមានទំហំតូចជាងនេះ! / File size exceeds limit (10MB).")
             return
 
         loading_msg = None
@@ -55,7 +55,7 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
             except Exception as e:
                 logging.warning(f"Could not send typing action: {e}")
 
-            loading_msg = await message.answer(f"📄 កំពុងអាន និងវិភាគ <b>{escape(file_name)}</b>...", parse_mode="HTML")
+            loading_msg = await message.reply(f"📄 កំពុងអាន និងវិភាគ <b>{escape(file_name)}</b>...", parse_mode="HTML")
 
             # Download document
             file_info = await message.bot.get_file(document.file_id)
@@ -120,6 +120,6 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
                     await loading_msg.delete()
                 except Exception:
                     pass
-            await message.answer(f"⚠️ មិនអាចវិភាគ File <b>{escape(file_name)}</b> បានទេ។ សូមពិនិត្យ File ហើយព្យាយាមម្តងទៀត!", parse_mode="HTML")
+            await message.reply(f"⚠️ មិនអាចវិភាគ File <b>{escape(file_name)}</b> បានទេ។ សូមពិនិត្យ File ហើយព្យាយាមម្តងទៀត!", parse_mode="HTML")
 
     return router

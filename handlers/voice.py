@@ -38,7 +38,7 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
             except Exception:
                 pass
 
-            loading_msg = await message.answer("🎙️ កំពុងស្តាប់ និងវិភាគសំឡេង (Processing voice note)...", parse_mode="HTML")
+            loading_msg = await message.reply("🎙️ កំពុងស្តាប់ និងវិភាគសំឡេង (Processing voice note)...", parse_mode="HTML")
 
             voice = message.voice or message.audio
             mime_type = "audio/ogg"
@@ -51,7 +51,7 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
             if voice.file_size and voice.file_size > 15 * 1024 * 1024:
                 if loading_msg:
                     await loading_msg.delete()
-                await message.answer("⚠️ File សំឡេងនេះមានទំហំធំពេក (លើសពី 15MB)។ / Voice file size exceeds limit (15MB).")
+                await message.reply("⚠️ File សំឡេងនេះមានទំហំធំពេក (លើសពី 15MB)។ / Voice file size exceeds limit (15MB).")
                 return
 
             file_info = await message.bot.get_file(voice.file_id)
@@ -90,6 +90,6 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
                     await loading_msg.delete()
                 except Exception:
                     pass
-            await message.answer("⚠️ មិនអាចស្ដាប់ ឬដំណើរការសារសំឡេងនេះបានទេ។ សូមព្យាយាមម្តងទៀត! / Could not process voice note.", parse_mode="HTML")
+            await message.reply("⚠️ មិនអាចស្ដាប់ ឬដំណើរការសារសំឡេងនេះបានទេ។ សូមព្យាយាមម្តងទៀត! / Could not process voice note.", parse_mode="HTML")
 
     return router

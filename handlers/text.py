@@ -44,7 +44,7 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 logging.warning(f"Could not send typing action: {e}")
 
             # Send Loading Message
-            loading_msg = await message.answer("🤖 កំពុងគិត...")
+            loading_msg = await message.reply("🤖 កំពុងគិត...")
 
             # Fetch user active mode
             active_mode = "general"
@@ -79,6 +79,6 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                     await loading_msg.delete()
                 except Exception:
                     pass
-            await message.answer("⚠️ មានបញ្ហាក្នុងការភ្ជាប់ទៅ AI Server។ សូមព្យាយាមម្តងទៀតបន្តិចក្រោយនេះ / ⚠️ The AI service is temporarily unavailable. Please try again.")
+            await message.reply("⚠️ មានបញ្ហាក្នុងការភ្ជាប់ទៅ AI Server។ សូមព្យាយាមម្តងទៀតបន្តិចក្រោយនេះ / ⚠️ The AI service is temporarily unavailable. Please try again.")
 
     return router

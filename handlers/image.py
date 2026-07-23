@@ -45,7 +45,7 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                 logging.warning(f"Could not send typing action: {e}")
 
             # Send Loading Message
-            loading_msg = await message.answer("🔍 កំពុងមើល និងវិភាគរូបភាព...")
+            loading_msg = await message.reply("🔍 កំពុងមើល និងវិភាគរូបភាព...")
 
             # Select highest resolution photo
             photo = message.photo[-1]
@@ -92,7 +92,7 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                     await loading_msg.delete()
                 except Exception:
                     pass
-            await message.answer("⚠️ រូបភាពមិនត្រឹមត្រូវ ឬមានទំហំធំពេក។ សូមពិនិត្យរូបភាព ហើយព្យាយាមម្តងទៀត! / ⚠️ Invalid image or size limit exceeded.")
+            await message.reply("⚠️ រូបភាពមិនត្រឹមត្រូវ ឬមានទំហំធំពេក។ សូមពិនិត្យរូបភាព ហើយព្យាយាមម្តងទៀត! / ⚠️ Invalid image or size limit exceeded.")
 
         except Exception as e:
             logging.error(f"Error processing image for user {user_id}: {e}", exc_info=True)
@@ -101,6 +101,6 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                     await loading_msg.delete()
                 except Exception:
                     pass
-            await message.answer("⚠️ មិនអាចដំណើរការរូបភាពនេះបានទេ។ សូមពិនិត្យរូបភាព ហើយព្យាយាមម្តងទៀត! / ⚠️ Failed to process image.")
+            await message.reply("⚠️ មិនអាចដំណើរការរូបភាពនេះបានទេ។ សូមពិនិត្យរូបភាព ហើយព្យាយាមម្តងទៀត! / ⚠️ Failed to process image.")
 
     return router
