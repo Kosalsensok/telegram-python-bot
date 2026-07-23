@@ -49,19 +49,28 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
 
         escaped_user_name = escape(user_name)
 
+        total_users = 0
+        if db_service:
+            stats = await db_service.get_global_stats()
+            total_users = stats.get("total_users", 0)
+        formatted_users = format_user_count(total_users)
+
         welcome_text = (
             f"<b>🤖 {BOT_DISPLAY_NAME.upper()}</b>\n\n"
             f"<blockquote>សួស្តី {escaped_user_name}! 👋\n"
             "ខ្ញុំជាជំនួយការ AI ដែលអាចនិយាយភាសាខ្មែរ និង English។</blockquote>\n\n"
+            f"👥 <b>អ្នកប្រើប្រាស់សរុប (Total Registered Users):</b> {total_users} ({formatted_users} users)\n\n"
             "<b>✨ ខ្ញុំអាចជួយអ្នកបាន៖</b>\n\n"
-            "💬 សួរសំណួរទូទៅ\n"
-            "🖼 វិភាគរូបភាព\n"
+            "💬 សួរសំណួរទូទៅ (Text Chat)\n"
+            "🖼 វិភាគរូបភាព (Vision AI)\n"
+            "🎙️ វិភាគ និងបកប្រែសារសំឡេង (Voice Notes AI)\n"
+            "📄 វិភាគ និងទាញយកអត្ថបទពី PDF & Code Files\n"
             "🎯 7 Specialized AI Operating Modes (/mode)\n"
-            "💻 ពន្យល់ និងជួសជុល Code\n"
+            "💻 ពន្យល់ និងដំណើរការកូដ (/run /code)\n"
             "📚 ជួយការសិក្សា និងស្រាវជ្រាវ\n"
             "🌐 បកប្រែ Khmer ↔ English\n\n"
             "<b>🚀 ចាប់ផ្ដើមប្រើប្រាស់</b>\n\n"
-            "ផ្ញើសំណួរមកខ្ញុំ, ផ្ញើរូបភាព ឬប្រើប្រាស់ពាក្យបញ្ជា /mode!"
+            "ផ្ញើសំណួរ, ផ្ញើរូបភាព, ផ្ញើសារសំឡេង ឬប្រើ /mode!"
         )
 
         await message.answer("👇 <b>Menu ត្រូវបានបើកអូតូ៖</b>", parse_mode="HTML", reply_markup=get_main_reply_keyboard())

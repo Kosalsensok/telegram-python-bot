@@ -173,3 +173,38 @@ class GeminiService:
             raise last_exception
         raise RuntimeError("Failed to generate document response from Gemini API.")
 
+    async def generate_audio_chat(
+        self,
+        file_bytes: bytes,
+        mime_type: str = "audio/ogg",
+        prompt: str = "សូមស្តាប់សំឡេងនេះ ឆ្លើយតប និងពន្យល់ខ្លឹមសារជាភាសាខ្មែរ/អង់គ្លេសឱ្យបានច្បាស់លាស់។",
+        mode: str = "general"
+    ) -> str:
+        """
+        Asynchronously processes audio voice notes using GenAI Part.
+        """
+        audio_part = genai_types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+        contents = [audio_part, prompt]
+
+        last_exception = None
+        for model in self.models:
+            for attempt in range(3):
+                try:
+                    text = await asyncio.to_thread(self._sync_generate_content, model, contents, mode)
+                    return text
+                except Exception as e:
+                    last_exception = e
+                    err_str = str(e)
+                    if "429" in err_str or "503" in err_str or "404" in err_str or "RESOURCE_EXHAUSTED" in err_str or "UNAVAILABLE" in err_str:
+                        logging.warning(f"GeminiService: Audio model {model} issue (attempt {attempt+1}/3). Waiting...")
+                        await asyncio.sleep(2 * (attempt + 1))
+                        continue
+                    else:
+                        logging.warning(f"GeminiService: Audio model {model} failed: {e}. Trying fallback...")
+                        break
+
+        if last_exception:
+            logging.error(f"GeminiService: All audio models failed. Last error: {last_exception}")
+            raise last_exception
+        raise RuntimeError("Failed to generate audio response from Gemini API.")
+
