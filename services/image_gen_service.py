@@ -14,6 +14,14 @@ from services.gemini_service import GeminiService
 IMAGE_CACHE: Dict[str, Dict[str, Any]] = {}
 MAX_IMAGE_CACHE_SIZE = 15
 
+ASPECT_RATIOS: Dict[str, Tuple[int, int, str]] = {
+    "1:1": (1024, 1024, "📐 1:1 (Square - 1024x1024)"),
+    "16:9": (1280, 720, "🖼 16:9 (Landscape - 1280x720)"),
+    "9:16": (720, 1280, "📱 9:16 (Portrait - 720x1280)"),
+    "4:3": (1024, 768, "🖥 4:3 (Desktop - 1024x768)"),
+    "3:4": (768, 1024, "📸 3:4 (Photo - 768x1024)")
+}
+
 
 def clean_expired_cache():
     """
