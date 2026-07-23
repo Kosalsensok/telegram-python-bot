@@ -72,6 +72,16 @@ def clean_latex_to_unicode(text: str) -> str:
 
 
 
+def escape_tg_html(text: str) -> str:
+    """
+    Escapes strictly '<', '>', and '&' for Telegram HTML parse mode.
+    Does NOT escape quotes (") to &quot; or (') to &#x27; because Telegram HTML does not support them as entities.
+    """
+    if not text:
+        return ""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def sanitize_telegram_html(text: str) -> str:
     """
     Sanitizes HTML for Telegram parse_mode='HTML':
@@ -80,9 +90,6 @@ def sanitize_telegram_html(text: str) -> str:
     """
     if not text:
         return ""
-
-    # First, unescape any double-escaped entities
-    text = html.unescape(text)
 
     valid_tag_pattern = re.compile(
         r'</?(?:b|i|s|u|code|pre|blockquote|span)(?:\s+(?:class="[^"]*"|expandable))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
@@ -95,13 +102,13 @@ def sanitize_telegram_html(text: str) -> str:
         start, end = m.span()
         raw_segment = text[last_idx:start]
         if raw_segment:
-            parts.append(html.escape(raw_segment))
+            parts.append(escape_tg_html(raw_segment))
         parts.append(m.group(0))
         last_idx = end
 
     remaining = text[last_idx:]
     if remaining:
-        parts.append(html.escape(remaining))
+        parts.append(escape_tg_html(remaining))
 
     return "".join(parts)
 
@@ -140,15 +147,16 @@ def markdown_to_telegram_html(text: str) -> str:
             # It's a markdown ``` block
             lang = match.group(2) or ""
             code_content = match.group(3)
-            escaped_code = html.escape(code_content.strip())
+            escaped_code = escape_tg_html(code_content.strip())
             if lang:
-                parts.append(f'<pre><code class="language-{html.escape(lang)}">{escaped_code}</code></pre>')
+                clean_lang = lang.lower().replace("+", "p").replace("#", "sharp")
+                parts.append(f'<pre><code class="language-{clean_lang}">{escaped_code}</code></pre>')
             else:
                 parts.append(f'<pre>{escaped_code}</pre>')
         else:
             # It's an HTML <pre> block
             html_pre_block = match.group(4)
-            parts.append(html_pre_block) # Already HTML, so leave it untouched
+            parts.append(html_pre_block)
 
         last_idx = end
 
@@ -173,16 +181,26 @@ def _format_text_block(text: str) -> str:
     # Convert any raw LaTeX math expressions outside code blocks to Unicode text
     text = clean_latex_to_unicode(text)
 
-    # Auto-detect naked code blocks when triple backticks are missing
+    # Auto-detect naked code blocks when triple backticks are missing (C++, C, Java, Python, JS, SQL)
     code_kw_pattern = re.compile(
-        r'(?:\n|^)((?:(?:def\s+\w+|class\s+\w+|import\s+\w+|from\s+\w+|print\(|return\s+|if\s+__name__).*\n?){2,})',
-        re.MULTILINE
+        r'(?:\n|^)((?:(?:#include\s*<|int\s+main\s*\(|std::|using\s+namespace|for\s*\(\s*int|while\s*\([^)]*\)|do\s*\{|def\s+\w+|class\s+\w+|import\s+\w+|from\s+\w+|print\(|return\s+|if\s+__name__|function\s+\w+|const\s+\w+|let\s+\w+|public\s+static\s+void|System\.out\.print|SELECT\s+.*FROM|CREATE\s+TABLE).*\n?){2,})',
+        re.MULTILINE | re.IGNORECASE
     )
 
     def _wrap_naked_code(m):
         raw_code = m.group(1).strip()
-        escaped_c = html.escape(raw_code)
-        return f'\n<pre><code class="language-python">{escaped_c}</code></pre>\n'
+        lang = "python"
+        if "#include" in raw_code or "std::" in raw_code or "int main" in raw_code or "cout" in raw_code:
+            lang = "cpp"
+        elif "public static void" in raw_code or "System.out" in raw_code:
+            lang = "java"
+        elif "function" in raw_code or "console.log" in raw_code or "const " in raw_code or "let " in raw_code:
+            lang = "javascript"
+        elif "SELECT" in raw_code.upper() or "CREATE TABLE" in raw_code.upper():
+            lang = "sql"
+
+        escaped_c = escape_tg_html(raw_code)
+        return f'\n<pre><code class="language-{lang}">{escaped_c}</code></pre>\n'
 
     if "```" not in text and code_kw_pattern.search(text):
         text = code_kw_pattern.sub(_wrap_naked_code, text)
