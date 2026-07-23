@@ -4,22 +4,26 @@
 
 <p align="center">
   <a href="https://github.com/Kosalsensok/telegram-python-bot">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=24&pause=1000&color=2CAE67&center=true&vCenter=true&width=600&lines=24%2F7+Omnimodal+Telegram+AI+Bot;Gemini+1.5+Multimodal+AI+Engine;Math+%26+LaTeX+PNG+Solution+Card+Renderer;AI+Image+Enhancer+%26+Super-Resolution;Piston+Multi-Language+Code+Compiler" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=2CAE67&center=true&vCenter=true&width=700&lines=24%2F7+Omnimodal+Telegram+AI+Bot;Gemini+1.5+Multimodal+AI+Engine;Math+%26+LaTeX+PNG+Solution+Card+Renderer;AI+Image+Enhancer+%26+Super-Resolution;Piston+Multi-Language+Code+Compiler" alt="Typing SVG" />
   </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-🟢%2024%2F7%20LIVE%20ONLINE-brightgreen?style=for-the-badge&logo=rss" alt="Live Status" />
 </p>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Aiogram](https://img.shields.io/badge/Framework-Aiogram%20v3-2CA5E0.svg?style=for-the-badge&logo=telegram&logoColor=white)](https://docs.aiogram.dev/)
 [![Gemini API](https://img.shields.io/badge/AI_Engine-Gemini_1.5_Flash-8E44AD.svg?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 [![Render](https://img.shields.io/badge/Deployment-Render_24%2F7-46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
-[![UptimeRobot](https://img.shields.io/badge/Status-100%25_Online-brightgreen.svg?style=for-the-badge&logo=uptimerobot&logoColor=white)](https://uptimerobot.com/)
+[![UptimeRobot](https://img.shields.io/badge/Uptime-100%25_Monitored-brightgreen.svg?style=for-the-badge&logo=uptimerobot&logoColor=white)](https://uptimerobot.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 ---
 
 ### 🌐 Multilingual Overview / សេចក្តីសង្ខេបភាសា
 
-**English:** A state-of-the-art, production-grade 24/7 Omnimodal Telegram AI Bot powered by Gemini 1.5 Multimodal Engine. Features real-time conversational memory, Khmer & Standard LaTeX Math Solver, PNG Solution Card Rendering, AI Image Unblur & Super-Resolution, Piston Sandboxed Code Execution Engine, Voice Note Transcription, PDF OCR Document Analysis, and Dynamic In-Place Animated Progress Indicators.
+**English:** An ultra-modern, production-grade 24/7 Omnimodal Telegram AI Bot powered by Gemini 1.5 Multimodal Engine. Features real-time conversational memory, Khmer & Standard LaTeX Math Solver, PNG Solution Card Rendering, AI Image Unblur & Super-Resolution, Piston Sandboxed Code Execution Engine, Voice Note Transcription, PDF OCR Document Analysis, and Dynamic In-Place Animated Progress Indicators.
 
 **ភាសាខ្មែរ (Khmer):** ជំនួយការ AI Bot ឆ្លាតវៃដំណើរការ 24/7 លើ Telegram ជាមួយបច្ចេកវិទ្យាចុងក្រោយ Gemini 1.5។ មានសមត្ថភាពខ្ពស់ក្នុងការឆ្លើយសំណួរទូទៅ, ដោះស្រាយលំហាត់គណិតវិទ្យា/វិទ្យាសាស្ត្រ (បង្កើតជារូបភាព PNG Card ចម្លើយច្បាស់ត្រជាក់ភ្នែក), កែរូបភាពមិនច្បាស់ឲ្យច្បាស់ (AI Unblur HD), បម្លែងសំឡេងជាអក្សរ, វិភាគឯកសារ PDF/រូបថត, ព្រមទាំងរត់ និង ពិនិត្យកូដ C++, Python, Java, JS ភ្លាមៗដោយគ្មានថ្ងៃ Down! 🚀
 
@@ -77,13 +81,59 @@ flowchart TD
 | Category | Feature | Description & Capabilities |
 | :--- | :--- | :--- |
 | **🧠 AI Engine** | **Omnimodal Chat** | Multi-turn conversational intelligence using Gemini 1.5 Flash & Pro with persistent memory. |
-| **🖼️ Solution Cards** | **PNG Solution Card Renderer** | Generates crisp, high-resolution PNG solution cards for math exercise photos with clear Khmer typography and highlighted answer containers. |
+| **🖼️ Solution Cards** | **PNG Solution Card Renderer** | Generates crisp, high-resolution PNG solution cards for math exercise photos with clear Khmer typography (`Battambang` fonts) and highlighted answer containers. |
 | **✨ Image Enhancer** | **AI Unblur & Super-Resolution** | `/enhance`, `/unblur`, `/hd` commands using Lanczos super-resolution, Unsharp Masking, and contrast tuning. |
 | **🎨 Image Gen** | **AI Image Generation & Ratios** | Instant image creation with interactive ratio switching (`1:1`, `16:9`, `9:16`, `4:3`, `3:4`) and JPG/PNG downloads. |
 | **💻 Execution** | **Piston Code Compiler** | Direct sandboxed execution of C++, Python, Java, JavaScript, and SQL code with clean Telegram HTML syntax highlighting. |
 | **🎙️ Audio & PDF** | **Voice & Document OCR** | Speech-to-text audio transcription and Khmer PDF document text analysis. |
 | **🎬 Animation** | **In-Place Animated Steps** | Dynamic progress animation context manager updating progress steps live in Telegram messages. |
 | **⚡ Memory & RAM** | **512MB RAM Optimization** | Automatic LRU cache cleanup, max 1920px image scaling, and explicit garbage collection (`gc.collect()`). |
+
+---
+
+## 📱 Telegram UI/UX Showcase & Response Examples
+
+<details>
+<summary><b>📸 Click to Expand Interactive Telegram Response Examples</b></summary>
+
+<br>
+
+### 1. 📐 Math Exercise PNG Solution Card Output
+```text
++-------------------------------------------------------------+
+| 🤖 AI : imsela.com                                          |
+|-------------------------------------------------------------|
+| 1.                                                          |
+| គេមាន:                                                       |
+| MA = MD (បានន័យថា M ស្ថិតនៅលើអ័ក្សសម្មេទ្រីនៃអង្កត់ AD)       |
+| AB = DB (បានន័យថា B ស្ថិតនៅលើអ័ក្សសម្មេទ្រីនៃអង្កត់ AD)       |
+| ដូចនេះ ខ្សែបន្ទាត់ MB គឺជាអ័ក្សសម្មេទ្រីនៃអង្កត់ AD ។            |
+| ----------------------------------------------------------- |
+| [ ដូចនេះ ΔABC ≅ ΔDBC (លក្ខខណ្ឌ ជ-ជ-ជ) ]                       |
+| ----------------------------------------------------------- |
+| 🎓 លំហាត់រួចរាល់ !                                          |
++-------------------------------------------------------------+
+Caption: 🎓 លំហាត់រួចរាល់ !
+```
+
+### 2. 💻 Clean C++ Code Execution Formatting
+```cpp
+#include <iostream>
+
+int main() {
+    for (int i = 1; i <= 5; ++i) {
+        std::cout << "For Loop Demonstration: " << i << std::endl;
+    }
+    return 0;
+}
+```
+*Outputs clean un-escaped `<iostream>`, `<<`, and `<=` symbols in Telegram code blocks.*
+
+### 3. ✨ AI Image Unblur & HD Enhancement Keyboard
+- `📥 Download HD JPG` | `🖼 Download HD PNG`
+- `✨ កែឲ្យច្បាស់បន្ថែម (Re-Enhance)`
+
+</details>
 
 ---
 
@@ -100,7 +150,6 @@ flowchart TD
 
 ### 2. 📐 Standard LaTeX Mode (`standard`)
 - **Purpose**: Converts math formulas, chemistry equations, physics problems, and data tables into clean LaTeX code.
-- **Output Formats**: Block LaTeX `\[ ... \]`, inline `$ ... $`, and copyable HTML code blocks.
 
 ### 3. 🇰🇭 Khmer Math Mode (`khmer_math`)
 - **Purpose**: Special mode for Khmer math problems. Converts math equations while preserving Khmer labels using `\text{...}`.
@@ -136,6 +185,19 @@ flowchart TD
 /info        - ℹ️ មើលព័ត៌មានអំពី Bot (Bot & Profile Information)
 /status      - 📊 ពិនិត្យស្ថានភាព Server និង Uptime (Check Health & Memory Status)
 ```
+
+---
+
+## 🔑 Environment Variables Reference (ការកំណត់បរិស្ថាន)
+
+| Variable | Required | Description | Default Value |
+| :--- | :---: | :--- | :--- |
+| `BOT_TOKEN` | Yes | Telegram Bot API Token from @BotFather | - |
+| `GEMINI_API_KEY` | Yes | Google Gemini AI Key from AI Studio | - |
+| `PORT` | No | HTTP Health Server Port for Render | `10000` |
+| `RENDER_EXTERNAL_URL` | No | External Render Service URL for Self-Ping | `https://telegram-python-bot-yt64.onrender.com` |
+| `POLLINATIONS_API_URL` | No | Base URL for Pollinations AI Image Gen | `https://image.pollinations.ai/prompt/` |
+| `PISTON_API_URL` | No | Base URL for Piston Sandboxed Code Execution | `https://emkc.org/api/v2/piston` |
 
 ---
 
@@ -187,11 +249,8 @@ python main.py
    - **Environment**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `python main.py`
-5. Add Environment Variables:
-   - `BOT_TOKEN`
-   - `GEMINI_API_KEY`
-   - `PORT` (e.g., `10000`)
-6. Copy your deployment health URL (`https://<your-app>.onrender.com/health`) and set up a **5-minute HTTP Monitor** on [UptimeRobot](https://uptimerobot.com/).
+5. Add Environment Variables (`BOT_TOKEN`, `GEMINI_API_KEY`, `PORT`).
+6. Set up a **5-minute HTTP Monitor** on [UptimeRobot](https://uptimerobot.com/) targeting `https://<your-app>.onrender.com/health`.
 
 ---
 
