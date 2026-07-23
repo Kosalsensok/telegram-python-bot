@@ -350,6 +350,13 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             pass
 
         if image_bytes:
+            from services.image_gen_service import ASPECT_RATIOS
+            current_ratio = "1:1"
+            for r_key, (w, h, desc) in ASPECT_RATIOS.items():
+                if w == width and h == height:
+                    current_ratio = r_key
+                    break
+
             photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
             caption_text = (
                 f"🎨 <b>រូបភាព AI ថ្មី (Regenerated HD Image):</b>\n\n"
@@ -362,7 +369,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
                 photo=photo_file,
                 caption=caption_text,
                 parse_mode="HTML",
-                reply_markup=get_image_download_keyboard(new_cache_id)
+                reply_markup=get_image_download_keyboard(new_cache_id, current_ratio)
             )
         else:
             await callback.message.reply("❌ មិនអាចបង្កើតរូបភាពថ្មីបានទេ។", parse_mode="HTML")
