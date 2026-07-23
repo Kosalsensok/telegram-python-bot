@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from html import escape
 from aiogram import Router, types, F
 from aiogram.filters import CommandStart, Command
@@ -440,15 +441,15 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
 
         command_text = message.text.strip() if message.text else ""
         prompt = ""
-
-        if command_text.startswith(("/image", "/imagine", "/draw")):
-            parts = command_text.split(maxsplit=1)
-            if len(parts) > 1:
-                prompt = parts[1].strip()
-        elif "បង្កើតរូបភាព" in command_text:
-            parts = command_text.split("បង្កើតរូបភាព", maxsplit=1)
-            if len(parts) > 1:
-                prompt = parts[1].strip()
+        if command_text:
+            clean = command_text
+            for prefix in ["🎨 បង្កើតរូបភាព (/image)", "🎨 បង្កើតរូបភាព", "បង្កើតរូបភាព", "/image", "/imagine", "/draw"]:
+                if clean.lower().startswith(prefix.lower()):
+                    clean = clean[len(prefix):].strip()
+            clean = re.sub(r'^\(?\s*/?(image|imagine|draw)\s*\)?', '', clean, flags=re.IGNORECASE).strip()
+            clean = re.sub(r'\(?\s*/?(image|imagine|draw)\s*\)?$', '', clean, flags=re.IGNORECASE).strip()
+            if clean.lower() not in ("image", "imagine", "draw", "/image", "/imagine", "/draw", "(/image)"):
+                prompt = clean
 
         if not prompt:
             usage_msg = (
@@ -456,9 +457,9 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
                 "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
                 "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
                 "<b>ឧទាហរណ៍៖</b>\n"
-                "• <code>/image នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
-                "• <code>/image futuristic Phnom Penh city in 2050, 8k resolution, cinematic lighting</code>\n"
-                "• <code>/draw a cute baby cat wearing a space suit on Mars</code>"
+                "• <code>/image 16:9 នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
+                "• <code>/image 9:16 futuristic Phnom Penh city in 2050, 8k resolution</code>\n"
+                "• <code>/draw 1:1 a cute baby cat wearing a space suit on Mars</code>"
             )
             await message.reply(usage_msg, parse_mode="HTML")
             return
