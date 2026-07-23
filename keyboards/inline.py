@@ -101,3 +101,26 @@ def get_image_gen_inline_keyboard() -> InlineKeyboardMarkup:
     builder.button(text="⬅️ Back to Main", callback_data="cb_back_main")
     builder.adjust(1, 1)
     return builder.as_markup()
+
+
+def get_image_download_keyboard(cache_id: str, current_ratio: str = "1:1") -> InlineKeyboardMarkup:
+    """
+    Build rich inline action keyboard for generated HD AI image:
+    Row 1: [ 📥 Download JPG ] [ 🖼 Download PNG ]
+    Row 2: [ 📐 1:1 ] [ 🖼 16:9 ] [ 📱 9:16 ] [ 🖥 4:3 ]
+    Row 3: [ 🔄 Regenerate ] [ 🎨 New Image ]
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📥 Download HD JPG", callback_data=f"dl_jpg:{cache_id}")
+    builder.button(text="🖼 Download HD PNG", callback_data=f"dl_png:{cache_id}")
+
+    ratios = [("1:1", "1:1"), ("16:9", "16:9"), ("9:16", "9:16"), ("4:3", "4:3")]
+    for ratio_key, ratio_label in ratios:
+        prefix = "✅ " if ratio_key == current_ratio else ""
+        builder.button(text=f"{prefix}{ratio_label}", callback_data=f"img_ratio:{ratio_key}:{cache_id}")
+
+    builder.button(text="🔄 បង្កើតឡើងវិញ (Regenerate)", callback_data=f"img_regen:{cache_id}")
+    builder.button(text="🎨 បង្កើតរូបភាពថ្មី (New Image)", callback_data="cb_prompt_draw")
+
+    builder.adjust(2, 4, 1, 1)
+    return builder.as_markup()

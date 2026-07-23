@@ -2,7 +2,12 @@ import html
 import logging
 import re
 from aiogram import Router, types, F
-from keyboards.inline import get_welcome_inline_keyboard, get_language_inline_keyboard, get_mode_inline_keyboard
+from keyboards.inline import (
+    get_welcome_inline_keyboard, 
+    get_language_inline_keyboard, 
+    get_mode_inline_keyboard,
+    get_image_download_keyboard
+)
 from services.db_service import DatabaseService
 from utils.user_count import format_user_count
 from config import BOT_DISPLAY_NAME, GEMINI_MODEL
@@ -218,10 +223,148 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
             "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
             "<b>ឧទាហរណ៍៖</b>\n"
-            "• <code>/image នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
-            "• <code>/image futuristic Phnom Penh city in 2050, 8k resolution, cinematic lighting</code>\n"
-            "• <code>/draw a cute baby cat wearing a space suit on Mars</code>"
+            "• <code>/image 16:9 នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
+            "• <code>/image 9:16 futuristic Phnom Penh city in 2050, 8k resolution</code>\n"
+            "• <code>/draw 1:1 a cute baby cat wearing a space suit on Mars</code>"
         )
         await callback.message.answer(msg, parse_mode="HTML")
+
+    @router.callback_query(F.data.startswith("dl_jpg:"))
+    async def callback_dl_jpg(callback: types.CallbackQuery):
+        cache_id = callback.data.split("dl_jpg:", 1)[1]
+        from services.image_gen_service import get_cached_image, convert_to_jpg
+        cached = get_cached_image(cache_id)
+
+        if not cached or not cached.get("bytes"):
+            await callback.answer("⚠️ រូបភាពនេះត្រូវបានលុបចេញពី Cache។ សូមសាកល្បងបង្កើតថ្មី! / Image cache expired.", show_alert=True)
+            return
+
+        await callback.answer("📥 កំពុងផ្ញើ File HD JPG...")
+        jpg_bytes = convert_to_jpg(cached["bytes"])
+        seed = cached.get("seed", 100)
+        doc_file = types.BufferedInputFile(jpg_bytes, filename=f"AI_Image_HD_{seed}.jpg")
+        await callback.message.reply_document(
+            document=doc_file,
+            caption="📥 <b>File រូបភាព HD JPG (Uncompressed Image Document)</b>",
+            parse_mode="HTML"
+        )
+
+    @router.callback_query(F.data.startswith("dl_png:"))
+    async def callback_dl_png(callback: types.CallbackQuery):
+        cache_id = callback.data.split("dl_png:", 1)[1]
+        from services.image_gen_service import get_cached_image, convert_to_png
+        cached = get_cached_image(cache_id)
+
+        if not cached or not cached.get("bytes"):
+            await callback.answer("⚠️ រូបភាពនេះត្រូវបានលុបចេញពី Cache។ សូមសាកល្បងបង្កើតថ្មី! / Image cache expired.", show_alert=True)
+            return
+
+        await callback.answer("🖼 កំពុងបម្លែង និងផ្ញើ File HD PNG...")
+        png_bytes = convert_to_png(cached["bytes"])
+        seed = cached.get("seed", 100)
+        doc_file = types.BufferedInputFile(png_bytes, filename=f"AI_Image_HD_{seed}.png")
+        await callback.message.reply_document(
+            document=doc_file,
+            caption="🖼 <b>File រូបភាព HD PNG (Lossless Format Document)</b>",
+            parse_mode="HTML"
+        )
+
+    @router.callback_query(F.data.startswith("img_ratio:"))
+    async def callback_img_ratio(callback: types.CallbackQuery):
+        parts = callback.data.split(":")
+        if len(parts) < 3:
+            await callback.answer()
+            return
+        selected_ratio = parts[1]
+        cache_id = parts[2]
+
+        from services.image_gen_service import get_cached_image, ImageGenService, ASPECT_RATIOS
+        cached = get_cached_image(cache_id)
+
+        if not cached:
+            await callback.answer("⚠️ Session ផុតកំណត់។ សូមវាយ /image ម្តងទៀត!", show_alert=True)
+            return
+
+        w, h, desc = ASPECT_RATIOS.get(selected_ratio, (1024, 1024, "1:1"))
+        await callback.answer(f"📐 កំពុងបង្កើតឡើងវិញជាទំហំ {selected_ratio} ({w}x{h})...")
+
+        prompt = cached.get("prompt", "")
+        img_service = ImageGenService()
+
+        loading_msg = await callback.message.reply(f"🎨 <b>កំពុងបង្កើតរូបភាពទំហំ {selected_ratio} ({w}x{h})...</b>", parse_mode="HTML")
+        image_bytes, optimized_prompt, seed, new_cache_id = await img_service.generate_image(
+            prompt=prompt,
+            width=w,
+            height=h
+        )
+
+        try:
+            await loading_msg.delete()
+        except Exception:
+            pass
+
+        if image_bytes:
+            photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
+            caption_text = (
+                f"🎨 <b>រូបភាព AI បង្កើតជោគជ័យ (Ultra HD AI Image):</b>\n\n"
+                f"📝 <b>Prompt:</b> <i>{html.escape(prompt)}</i>\n"
+                f"⚡ <b>Optimized Prompt:</b> <code>{html.escape(optimized_prompt[:250])}</code>\n"
+                f"📐 <b>Aspect Ratio:</b> {selected_ratio} ({w}x{h} Flux HD Ultra)\n\n"
+                f"👇 <b>ទាញយករូបភាព ឬ ផ្លាស់ប្តូរទំហំខាងក្រោម៖</b>"
+            )
+            await callback.message.reply_photo(
+                photo=photo_file,
+                caption=caption_text,
+                parse_mode="HTML",
+                reply_markup=get_image_download_keyboard(new_cache_id, selected_ratio)
+            )
+        else:
+            await callback.message.reply("❌ មិនអាចបង្កើតរូបភាពតាមទំហំថ្មីបានទេ។", parse_mode="HTML")
+
+    @router.callback_query(F.data.startswith("img_regen:"))
+    async def callback_img_regen(callback: types.CallbackQuery):
+        cache_id = callback.data.split("img_regen:", 1)[1]
+        from services.image_gen_service import get_cached_image, ImageGenService
+        cached = get_cached_image(cache_id)
+
+        if not cached:
+            await callback.answer("⚠️ Session ផុតកំណត់។ សូមវាយ /image ម្តងទៀត!", show_alert=True)
+            return
+
+        prompt = cached.get("prompt", "")
+        width = cached.get("width", 1024)
+        height = cached.get("height", 1024)
+        await callback.answer("🔄 កំពុងបង្កើតរូបភាពថ្មីម្តងទៀត...")
+
+        img_service = ImageGenService()
+        loading_msg = await callback.message.reply("🎨 <b>កំពុងបង្កើតរូបភាព AI ថ្មី...</b>", parse_mode="HTML")
+        image_bytes, optimized_prompt, seed, new_cache_id = await img_service.generate_image(
+            prompt=prompt,
+            width=width,
+            height=height
+        )
+
+        try:
+            await loading_msg.delete()
+        except Exception:
+            pass
+
+        if image_bytes:
+            photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
+            caption_text = (
+                f"🎨 <b>រូបភាព AI ថ្មី (Regenerated HD Image):</b>\n\n"
+                f"📝 <b>Prompt:</b> <i>{html.escape(prompt)}</i>\n"
+                f"⚡ <b>Optimized Prompt:</b> <code>{html.escape(optimized_prompt[:250])}</code>\n"
+                f"📐 <b>Resolution:</b> {width}x{height} (Flux HD Ultra)\n\n"
+                f"👇 <b>ទាញយករូបភាព ឬ ផ្លាស់ប្តូរទំហំខាងក្រោម៖</b>"
+            )
+            await callback.message.reply_photo(
+                photo=photo_file,
+                caption=caption_text,
+                parse_mode="HTML",
+                reply_markup=get_image_download_keyboard(new_cache_id)
+            )
+        else:
+            await callback.message.reply("❌ មិនអាចបង្កើតរូបភាពថ្មីបានទេ។", parse_mode="HTML")
 
     return router

@@ -6,7 +6,13 @@ from aiogram.filters import CommandStart, Command
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from services.bot_profile_service import update_bot_profile
-from keyboards.inline import get_welcome_inline_keyboard, get_language_inline_keyboard, get_mode_inline_keyboard, get_image_gen_inline_keyboard
+from keyboards.inline import (
+    get_welcome_inline_keyboard, 
+    get_language_inline_keyboard, 
+    get_mode_inline_keyboard, 
+    get_image_gen_inline_keyboard,
+    get_image_download_keyboard
+)
 from utils.keyboard_utils import get_main_reply_keyboard
 from utils.memory import ConversationMemory
 from utils.user_count import format_user_count
@@ -462,13 +468,19 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         except Exception:
             pass
 
-        loading_msg = await message.reply("🎨 <b>កំពុងបង្កើតរូបភាព AI កម្រិត HD បំផុត (Generating HD AI Image)...</b>\n<i>សូមរង់ចាំមួយភ្លែត...</i>", parse_mode="HTML")
+        loading_msg = await message.reply("🎨 <b>កំពុងបង្កើតរូបភាព AI កម្រិត HD បំផុត (Generating Ultra HD AI Image)...</b>\n<i>សូមរង់ចាំមួយភ្លែត...</i>", parse_mode="HTML")
 
         try:
-            from services.image_gen_service import ImageGenService
+            from services.image_gen_service import ImageGenService, parse_aspect_ratio
             img_service = ImageGenService(gemini_service=gemini_service)
 
-            image_bytes, optimized_prompt, seed = await img_service.generate_image(prompt=prompt)
+            ratio_key, width, height, clean_prompt = parse_aspect_ratio(prompt)
+
+            image_bytes, optimized_prompt, seed, cache_id = await img_service.generate_image(
+                prompt=clean_prompt,
+                width=width,
+                height=height
+            )
 
             try:
                 await loading_msg.delete()
@@ -478,16 +490,17 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             if image_bytes:
                 photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
                 caption_text = (
-                    f"🎨 <b>រូបភាព AI បង្កើតជោគជ័យ (HD AI Image):</b>\n\n"
+                    f"🎨 <b>រូបភាព AI បង្កើតជោគជ័យ (Ultra HD AI Image):</b>\n\n"
                     f"📝 <b>Prompt:</b> <i>{escape(prompt)}</i>\n"
                     f"⚡ <b>Optimized Prompt:</b> <code>{escape(optimized_prompt[:250])}</code>\n"
-                    f"✨ <b>Resolution:</b> 1024x1024 (Flux HD Ultra)"
+                    f"📐 <b>Aspect Ratio:</b> {ratio_key} ({width}x{height} Flux HD Ultra)\n\n"
+                    f"👇 <b>ទាញយករូបភាព ឬ ផ្លាស់ប្តូរទំហំខាងក្រោម៖</b>"
                 )
                 await message.reply_photo(
                     photo=photo_file,
                     caption=caption_text,
                     parse_mode="HTML",
-                    reply_markup=get_image_gen_inline_keyboard()
+                    reply_markup=get_image_download_keyboard(cache_id, ratio_key)
                 )
             else:
                 await message.reply("❌ <b>មិនអាចបង្កើតរូបភាពបានទេនៅពេលនេះ!</b> សូមព្យាយាមម្តងទៀតជាមួយការពិពណ៌នាផ្សេង។", parse_mode="HTML")
