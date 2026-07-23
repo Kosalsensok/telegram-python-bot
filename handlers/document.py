@@ -62,31 +62,42 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
             file_bytes_io = await message.bot.download_file(file_info.file_path)
             file_bytes = file_bytes_io.read()
 
-            # Decode text content
-            try:
-                content_text = file_bytes.decode("utf-8")
-            except UnicodeDecodeError:
-                content_text = file_bytes.decode("latin-1", errors="ignore")
-
-            # Limit text content length to 15,000 characters for optimal processing
-            if len(content_text) > 15000:
-                content_text = content_text[:15000] + "\n...[File Content Truncated for Analysis]"
-
             caption = message.caption.strip() if message.caption else DEFAULT_DOC_PROMPT
-
-            full_prompt = (
-                f"📁 <b>File Name:</b> <code>{escape(file_name)}</code>\n\n"
-                f"<b>Question/Task:</b> {caption}\n\n"
-                f"<b>File Content:</b>\n```\n{content_text}\n```"
-            )
 
             # Get user active mode
             active_mode = "general"
             if db_service:
                 active_mode = await db_service.get_user_mode(user_id)
 
-            # Get AI response with active mode
-            ai_response = await gemini_service.generate_text_chat(user_prompt=full_prompt, mode=active_mode)
+            is_pdf = file_ext == ".pdf" or (document.mime_type and "pdf" in document.mime_type.lower())
+            is_image_doc = document.mime_type and document.mime_type.startswith("image/")
+
+            if is_pdf or is_image_doc:
+                mime = document.mime_type or ("application/pdf" if is_pdf else "image/png")
+                doc_prompt = f"File Name: {file_name}\nTask: {caption}"
+                ai_response = await gemini_service.generate_document_chat(
+                    file_bytes=file_bytes,
+                    mime_type=mime,
+                    prompt=doc_prompt,
+                    mode=active_mode
+                )
+            else:
+                # Decode text content for code and plain text files
+                try:
+                    content_text = file_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    content_text = file_bytes.decode("latin-1", errors="ignore")
+
+                # Limit text content length to 15,000 characters for optimal processing
+                if len(content_text) > 15000:
+                    content_text = content_text[:15000] + "\n...[File Content Truncated for Analysis]"
+
+                full_prompt = (
+                    f"📁 <b>File Name:</b> <code>{escape(file_name)}</code>\n\n"
+                    f"<b>Question/Task:</b> {caption}\n\n"
+                    f"<b>File Content:</b>\n```\n{content_text}\n```"
+                )
+                ai_response = await gemini_service.generate_text_chat(user_prompt=full_prompt, mode=active_mode)
 
 
             # Add to memory if available
