@@ -124,3 +124,18 @@ def get_image_download_keyboard(cache_id: str, current_ratio: str = "1:1") -> In
 
     builder.adjust(2, 4, 1, 1)
     return builder.as_markup()
+
+
+def get_enhanced_image_download_keyboard(cache_id: str) -> InlineKeyboardMarkup:
+    """
+    Build inline action keyboard for enhanced Ultra HD image:
+    Row 1: [ 📥 Download Ultra HD JPG ] [ 🖼 Download Ultra HD PNG ]
+    Row 2: [ ✨ កែឲ្យច្បាស់បន្ថែមទៀត ] [ 🎨 បង្កើតរូបភាព AI ]
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📥 Download HD JPG", callback_data=f"dl_jpg:{cache_id}")
+    builder.button(text="🖼 Download HD PNG", callback_data=f"dl_png:{cache_id}")
+    builder.button(text="✨ កែឲ្យច្បាស់បន្ថែម (Re-Enhance)", callback_data=f"enhance_again:{cache_id}")
+    builder.button(text="🎨 បង្កើតរូបភាព AI (New Image)", callback_data="cb_prompt_draw")
+    builder.adjust(2, 1, 1)
+    return builder.as_markup()

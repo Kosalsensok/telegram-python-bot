@@ -504,4 +504,75 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             logging.error(f"Error in image generation command: {e}")
             await message.reply(f"⚠️ មានបញ្ហាក្នុងការបង្កើតរូបភាព: {escape(str(e))}", parse_mode="HTML")
 
+    @router.message(Command("enhance"))
+    @router.message(Command("unblur"))
+    @router.message(Command("hd"))
+    async def cmd_enhance(message: types.Message):
+        """
+        Handle Image Enhancement / Unblur command (/enhance, /unblur, /hd).
+        Turns blurry or low resolution photos into crystal clear Ultra HD quality.
+        """
+        if message.from_user:
+            await _register_user(message.from_user)
+
+        target_photo = None
+        if message.photo:
+            target_photo = message.photo[-1]
+        elif message.reply_to_message and message.reply_to_message.photo:
+            target_photo = message.reply_to_message.photo[-1]
+
+        if not target_photo:
+            guide_msg = (
+                "✨ <b>មុខងារកែរូបភាពពីស្រពិចស្រពិលទៅជា Ultra HD (AI Image Enhancer & Unblur):</b>\n\n"
+                "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
+                "1. <b>វិធីទី 1:</b> ផ្ញើរូបភាព (Photo) មកកាន់ Bot រួចវាយ Caption <code>/enhance</code> ឬ <code>កែឲ្យច្បាស់</code>\n"
+                "2. <b>វិធីទី 2:</b> ចុច Reply លើរូបភាពណាមួយដែលបានផ្ញើរួច រួចវាយ <code>/enhance</code> ឬ <code>/hd</code>!"
+            )
+            await message.reply(guide_msg, parse_mode="HTML")
+            return
+
+        try:
+            await message.bot.send_chat_action(chat_id=message.chat.id, action="upload_photo")
+        except Exception:
+            pass
+
+        from services.image_gen_service import enhance_image_hd, IMAGE_CACHE
+        from keyboards.inline import get_enhanced_image_download_keyboard
+        from utils.thinking_animation import DynamicThinkingAnimation, ENHANCE_THINKING_STEPS
+
+        try:
+            async with DynamicThinkingAnimation(message, ENHANCE_THINKING_STEPS) as anim:
+                file_info = await message.bot.get_file(target_photo.file_id)
+                photo_bytes_io = await message.bot.download_file(file_info.file_path)
+                photo_bytes = photo_bytes_io.read()
+
+                enhanced_bytes = enhance_image_hd(photo_bytes, sharpness_factor=2.4, contrast_factor=1.18)
+
+                seed = random.randint(100000, 999999)
+                cache_id = f"img_enh_{seed}_{int(time.time())}"
+                IMAGE_CACHE[cache_id] = {
+                    "image_bytes": enhanced_bytes,
+                    "prompt": "Enhanced Ultra HD Photo",
+                    "optimized_prompt": "Ultra HD 4K Crystal Clear Sharpened Photo",
+                    "width": 2048,
+                    "height": 2048,
+                    "created_at": time.time()
+                }
+
+            photo_file = types.BufferedInputFile(enhanced_bytes, filename=f"hd_enhanced_{seed}.jpg")
+            caption_text = (
+                "✨ <b>រូបភាពត្រូវបានកែប្រែទៅជា Ultra HD ច្បាស់ត្រជាក់ភ្នែក!</b>\n"
+                "<i>(Super-Resolution Unblur & HD Quality Enhancer)</i>\n\n"
+                "👇 <b>ទាញយករូបភាព HD JPG / PNG ខាងក្រោម៖</b>"
+            )
+            await message.reply_photo(
+                photo=photo_file,
+                caption=caption_text,
+                parse_mode="HTML",
+                reply_markup=get_enhanced_image_download_keyboard(cache_id)
+            )
+        except Exception as e:
+            logging.error(f"Error enhancing image: {e}")
+            await message.reply(f"⚠️ មានបញ្ហាក្នុងការកែរូបភាពឲ្យច្បាស់: {escape(str(e))}", parse_mode="HTML")
+
     return router

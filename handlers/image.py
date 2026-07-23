@@ -51,6 +51,40 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                 photo_bytes_io = await message.bot.download_file(file_info.file_path)
                 photo_bytes = photo_bytes_io.read()
 
+                caption_lower = message.caption.lower().strip() if message.caption else ""
+                enhance_keywords = ["/enhance", "/unblur", "/hd", "កែឲ្យច្បាស់", "ធ្វើឲ្យច្បាស់", "ច្បាស់"]
+
+                if any(kw in caption_lower for kw in enhance_keywords):
+                    from services.image_gen_service import enhance_image_hd, IMAGE_CACHE
+                    from keyboards.inline import get_enhanced_image_download_keyboard
+                    import random, time
+
+                    enhanced_bytes = enhance_image_hd(photo_bytes, sharpness_factor=2.4, contrast_factor=1.18)
+                    seed = random.randint(100000, 999999)
+                    cache_id = f"img_enh_{seed}_{int(time.time())}"
+                    IMAGE_CACHE[cache_id] = {
+                        "image_bytes": enhanced_bytes,
+                        "prompt": "Enhanced Ultra HD Photo",
+                        "optimized_prompt": "Ultra HD 4K Crystal Clear Sharpened Photo",
+                        "width": 2048,
+                        "height": 2048,
+                        "created_at": time.time()
+                    }
+
+                    photo_file = types.BufferedInputFile(enhanced_bytes, filename=f"hd_enhanced_{seed}.jpg")
+                    caption_text = (
+                        "✨ <b>រូបភាពត្រូវបានកែប្រែទៅជា Ultra HD ច្បាស់ត្រជាក់ភ្នែក!</b>\n"
+                        "<i>(Super-Resolution Unblur & HD Quality Enhancer)</i>\n\n"
+                        "👇 <b>ទាញយករូបភាព HD JPG / PNG ខាងក្រោម៖</b>"
+                    )
+                    await message.reply_photo(
+                        photo=photo_file,
+                        caption=caption_text,
+                        parse_mode="HTML",
+                        reply_markup=get_enhanced_image_download_keyboard(cache_id)
+                    )
+                    return
+
                 pil_image = process_image_bytes(photo_bytes, max_size_mb=MAX_IMAGE_SIZE_MB)
                 prompt = message.caption.strip() if message.caption else DEFAULT_IMAGE_PROMPT
 

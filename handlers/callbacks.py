@@ -374,4 +374,45 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         else:
             await callback.message.reply("❌ មិនអាចបង្កើតរូបភាពថ្មីបានទេ។", parse_mode="HTML")
 
+    @router.callback_query(F.data.startswith("enhance_again:"))
+    async def callback_enhance_again(callback: types.CallbackQuery):
+        cache_id = callback.data.split("enhance_again:", 1)[1]
+        from services.image_gen_service import get_cached_image, enhance_image_hd, IMAGE_CACHE
+        from keyboards.inline import get_enhanced_image_download_keyboard
+        import random, time
+
+        cached = get_cached_image(cache_id)
+        if not cached:
+            await callback.answer("⚠️ Session ផុតកំណត់។ សូមផ្ញើរូបភាពមកម្តងទៀត!", show_alert=True)
+            return
+
+        await callback.answer("✨ កំពុងកែប្រែរូបភាពឲ្យច្បាស់ Ultra HD...")
+        image_bytes = cached.get("image_bytes")
+        if image_bytes:
+            enhanced_bytes = enhance_image_hd(image_bytes, sharpness_factor=2.8, contrast_factor=1.2)
+            seed = random.randint(100000, 999999)
+            new_cache_id = f"img_enh_{seed}_{int(time.time())}"
+            IMAGE_CACHE[new_cache_id] = {
+                "image_bytes": enhanced_bytes,
+                "prompt": "Super-Enhanced Ultra HD Photo",
+                "optimized_prompt": "Ultra HD 4K Super Crystal Clear Sharpened Photo",
+                "width": 2048,
+                "height": 2048,
+                "created_at": time.time()
+            }
+            photo_file = types.BufferedInputFile(enhanced_bytes, filename=f"super_hd_{seed}.jpg")
+            caption_text = (
+                "✨ <b>រូបភាពត្រូវបានកែប្រែឲ្យច្បាស់ខ្លាំង Super HD!</b>\n"
+                "<i>(Maximum Sharpness & Super-Resolution Enhanced)</i>\n\n"
+                "👇 <b>ទាញយករូបភាព HD JPG / PNG ខាងក្រោម៖</b>"
+            )
+            await callback.message.reply_photo(
+                photo=photo_file,
+                caption=caption_text,
+                parse_mode="HTML",
+                reply_markup=get_enhanced_image_download_keyboard(new_cache_id)
+            )
+        else:
+            await callback.message.reply("❌ មិនអាចកែប្រែរូបភាពបានទេ។", parse_mode="HTML")
+
     return router

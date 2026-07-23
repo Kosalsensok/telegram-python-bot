@@ -26,6 +26,12 @@ VOICE_THINKING_STEPS = [
     "🎙️ <b>កំពុងស្តាប់សារសំឡេង...</b>\n<i>✨ 2/2 AI កំពុងបកប្រែ និងវិភាគខ្លឹមសារ...</i>"
 ]
 
+ENHANCE_THINKING_STEPS = [
+    "✨ <b>កំពុងធ្វើឲ្យរូបភាពច្បាស់ (Enhancing HD Quality)...</b>\n<i>🔍 1/3 កំពុងស្កែន និងស្វែងរកចំណុចស្រពិចស្រពិល...</i>",
+    "✨ <b>កំពុងធ្វើឲ្យរូបភាពច្បាស់ (Enhancing HD Quality)...</b>\n<i>⚡ 2/3 កំពុងទាញយក Super-Resolution Lanczos & Unsharp Mask...</i>",
+    "✨ <b>កំពុងធ្វើឲ្យរូបភាពច្បាស់ (Enhancing HD Quality)...</b>\n<i>💎 3/3 កំពុងកំណត់ Detail, Contrast & Ultra Sharpness...</i>"
+]
+
 
 def get_doc_thinking_steps(filename: str) -> List[str]:
     return [

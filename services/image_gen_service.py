@@ -51,6 +51,53 @@ def convert_to_jpg(image_bytes: bytes) -> bytes:
         return image_bytes
 
 
+def enhance_image_hd(image_bytes: bytes, sharpness_factor: float = 2.2, contrast_factor: float = 1.15) -> bytes:
+    """
+    Enhances blurry or low-res images using Lanczos 2x super-resolution,
+    Unsharp Masking, Detail Filter, and PIL ImageEnhance contrast & sharpness tuning.
+    Returns crystal clear high-definition JPEG bytes.
+    """
+    try:
+        from PIL import ImageEnhance, ImageFilter
+        img = Image.open(io.BytesIO(image_bytes))
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+
+        # 1. Lanczos 2x Super-Resolution Upscaling
+        width, height = img.size
+        new_width = max(width * 2, 1024)
+        new_height = max(height * 2, 1024)
+        
+        # Cap max resolution to 4096 to prevent memory overflow
+        if new_width > 4096 or new_height > 4096:
+            scale = min(4096 / new_width, 4096 / new_height)
+            new_width = int(new_width * scale)
+            new_height = int(new_height * scale)
+
+        upscaled = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # 2. Unsharp Mask & Detail Filter Enhancement
+        sharpened = upscaled.filter(ImageFilter.UnsharpMask(radius=2, percent=180, threshold=3))
+        detailed = sharpened.filter(ImageFilter.DETAIL)
+
+        # 3. Tune Sharpness, Contrast & Color Vibrance
+        enhancer_sharp = ImageEnhance.Sharpness(detailed)
+        img_sharp = enhancer_sharp.enhance(sharpness_factor)
+
+        enhancer_contrast = ImageEnhance.Contrast(img_sharp)
+        img_contrast = enhancer_contrast.enhance(contrast_factor)
+
+        enhancer_color = ImageEnhance.Color(img_contrast)
+        final_img = enhancer_color.enhance(1.08)
+
+        output = io.BytesIO()
+        final_img.save(output, format="JPEG", quality=95, optimize=True)
+        return output.getvalue()
+    except Exception as e:
+        logging.error(f"Error in enhance_image_hd: {e}")
+        return image_bytes
+
+
 def get_cached_image(cache_id: str) -> Optional[Dict[str, Any]]:
     """
     Retrieve cached image metadata by cache ID.

@@ -9,6 +9,7 @@ from .thinking_animation import (
     IMAGE_GEN_STEPS,
     VISION_THINKING_STEPS,
     VOICE_THINKING_STEPS,
+    ENHANCE_THINKING_STEPS,
     get_doc_thinking_steps,
     get_code_thinking_steps
 )
@@ -26,6 +27,7 @@ __all__ = [
     "IMAGE_GEN_STEPS",
     "VISION_THINKING_STEPS",
     "VOICE_THINKING_STEPS",
+    "ENHANCE_THINKING_STEPS",
     "get_doc_thinking_steps",
     "get_code_thinking_steps"
 ]
