@@ -5,6 +5,8 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 
 FONT_PATHS = [
+    os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFontBold.ttf"),
+    os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFont.ttf"),
     "C:/Windows/Fonts/LEELAWAD.TTF",
     "C:/Windows/Fonts/LEELAWDB.TTF",
     "C:/Windows/Fonts/arialbd.ttf",
