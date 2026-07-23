@@ -3,6 +3,16 @@ FROM mcr.microsoft.com/playwright/node:20-jammy
 
 WORKDIR /app
 
+# Install Khmer Unicode and Math Fonts
+RUN apt-get update && apt-get install -y \
+    fonts-noto-core \
+    fonts-noto-extra \
+    fonts-noto-ui-core \
+    fonts-khmeros \
+    fonts-lmodern \
+    chromium \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/

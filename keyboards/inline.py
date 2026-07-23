@@ -139,3 +139,20 @@ def get_enhanced_image_download_keyboard(cache_id: str) -> InlineKeyboardMarkup:
     builder.button(text="🎨 បង្កើតរូបភាព AI (New Image)", callback_data="cb_prompt_draw")
     builder.adjust(2, 1, 1)
     return builder.as_markup()
+
+
+def get_solution_inline_keyboard() -> InlineKeyboardMarkup:
+    """
+    Build inline action keyboard for rendered Math PNG Solution Cards:
+    Row 1: [ 📄 មើលជាអត្ថបទ ] [ 🔍 រូបភាព HD ]
+    Row 2: [ 📥 ទាញយក PDF ] [ 🔄 សាកល្បងម្តងទៀត ]
+    Row 3: [ 🏠 Menu ]
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📄 មើលជាអត្ថបទ", callback_data="cb_view_text")
+    builder.button(text="🔍 រូបភាព HD", callback_data="cb_view_hd")
+    builder.button(text="📥 ទាញយក PDF", callback_data="cb_download_pdf")
+    builder.button(text="🔄 សាកល្បងម្តងទៀត", callback_data="cb_retry")
+    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+    builder.adjust(2, 2, 1)
+    return builder.as_markup()

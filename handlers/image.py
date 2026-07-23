@@ -100,6 +100,8 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
 
                 # If the image is a math problem or active mode is math-related, render a PNG Solution Card
                 from utils.solution_card import render_solution_card
+                from keyboards.inline import get_solution_inline_keyboard
+
                 card_bytes = render_solution_card(vision_response)
                 if card_bytes and len(card_bytes) > 500:
                     photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
@@ -107,10 +109,12 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                         await message.reply_photo(
                             photo=photo_card,
                             caption="🎓 <b>លំហាត់រួចរាល់ !</b>",
+                            reply_markup=get_solution_inline_keyboard(),
                             parse_mode="HTML"
                         )
+                        return  # Sent single clean photo answer with inline actions; skip sending duplicate long text
                     except Exception as e:
-                        logging.warning(f"Could not reply with solution card photo: {e}")
+                        logging.warning(f"Could not reply with solution card photo, falling back to text: {e}")
 
             await send_safe_response(message, vision_response)
 
