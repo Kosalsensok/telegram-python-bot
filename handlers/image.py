@@ -98,6 +98,20 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                     await memory.add_user_message_async(user_id, prompt, message_type="image")
                     await memory.add_assistant_message_async(user_id, vision_response, message_type="text")
 
+                # If the image is a math problem or active mode is math-related, render a PNG Solution Card
+                from utils.solution_card import render_solution_card
+                card_bytes = render_solution_card(vision_response)
+                if card_bytes and len(card_bytes) > 500:
+                    photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
+                    try:
+                        await message.reply_photo(
+                            photo=photo_card,
+                            caption="🎓 <b>លំហាត់រួចរាល់ !</b>",
+                            parse_mode="HTML"
+                        )
+                    except Exception as e:
+                        logging.warning(f"Could not reply with solution card photo: {e}")
+
             await send_safe_response(message, vision_response)
 
         except ValueError as ve:

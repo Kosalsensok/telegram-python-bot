@@ -14,6 +14,8 @@ from .thinking_animation import (
     get_code_thinking_steps
 )
 
+from .solution_card import render_solution_card
+
 __all__ = [
     "process_image_bytes",
     "split_message",
@@ -29,6 +31,7 @@ __all__ = [
     "VOICE_THINKING_STEPS",
     "ENHANCE_THINKING_STEPS",
     "get_doc_thinking_steps",
-    "get_code_thinking_steps"
+    "get_code_thinking_steps",
+    "render_solution_card"
 ]
 
