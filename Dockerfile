@@ -1,36 +1,34 @@
-# Production Dockerfile for Telegram AI Math Solver Bot
-FROM mcr.microsoft.com/playwright/node:20-jammy
+# Production Dockerfile for Telegram AI Bot (Python 3.11)
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Install Khmer Unicode and Math Fonts
-RUN apt-get update && apt-get install -y \
+# Install system dependencies, Khmer Unicode, and Math Fonts
+RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-core \
     fonts-noto-extra \
     fonts-noto-ui-core \
     fonts-khmeros \
     fonts-lmodern \
-    chromium \
+    gcc \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install node dependencies
-RUN npm ci
+# Copy python requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source files
 COPY . .
 
-# Generate Prisma Client and Build TypeScript
-RUN npx prisma generate
-RUN npm run build
+# Expose Web Server Port (Health Check & Keep-Alive)
+EXPOSE 8080
 
-# Expose Web Server Port
-EXPOSE 3000
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8080
 
-ENV NODE_ENV=production
-
-# Start Application
-CMD ["npm", "start"]
+# Start Bot
+CMD ["python", "main.py"]

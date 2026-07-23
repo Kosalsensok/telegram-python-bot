@@ -54,6 +54,24 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 await memory.add_user_message_async(user_id, user_text)
                 await memory.add_assistant_message_async(user_id, ai_response)
 
+                if active_mode in ["khmer_math", "standard"] or any(kw in user_text for kw in ["លំហាត់", "គណនា", "សមីការ", "ស្រាយ"]):
+                    from utils.solution_card import render_solution_card, save_solution_cache
+                    from keyboards.inline import get_solution_inline_keyboard
+                    card_bytes = render_solution_card(ai_response)
+                    if card_bytes and len(card_bytes) > 500:
+                        save_solution_cache(user_id, ai_response, card_bytes)
+                        photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
+                        try:
+                            await message.reply_photo(
+                                photo=photo_card,
+                                caption="🎓 <b>លំហាត់រួចរាល់ !</b>",
+                                reply_markup=get_solution_inline_keyboard(),
+                                parse_mode="HTML"
+                            )
+                            return
+                        except Exception as e:
+                            logging.warning(f"Could not reply with solution card photo in text handler: {e}")
+
             await send_safe_response(message, ai_response)
 
         except Exception as e:

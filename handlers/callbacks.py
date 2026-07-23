@@ -415,4 +415,79 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         else:
             await callback.message.reply("❌ មិនអាចកែប្រែរូបភាពបានទេ។", parse_mode="HTML")
 
+    @router.callback_query(F.data == "cb_view_text")
+    async def callback_view_text(callback: types.CallbackQuery):
+        await callback.answer("📄 កំពុងបង្ហាញអត្ថបទចម្លើយ...")
+        user_id = callback.from_user.id if callback.from_user else 0
+        from utils.solution_card import get_solution_cache
+        from utils.message_utils import send_safe_response
+        sol = get_solution_cache(user_id)
+        if sol and sol.get("text"):
+            await send_safe_response(callback.message, sol["text"])
+        else:
+            if memory:
+                hist = await memory.get_history_async(user_id)
+                if hist:
+                    last_msg = hist[-1].get("content", "")
+                    if last_msg:
+                        await send_safe_response(callback.message, last_msg)
+                        return
+            await callback.message.reply("ℹ️ មិនមានប្រវត្តិអត្ថបទចម្លើយដែលត្រូវបង្ហាញទេ។ (Text solution expired)", parse_mode="HTML")
+
+    @router.callback_query(F.data == "cb_view_hd")
+    async def callback_view_hd(callback: types.CallbackQuery):
+        await callback.answer("🔍 កំពុងផ្ញើរូបភាព HD Solution Card Document...")
+        user_id = callback.from_user.id if callback.from_user else 0
+        from utils.solution_card import get_solution_cache
+        sol = get_solution_cache(user_id)
+        if sol and sol.get("card_bytes"):
+            doc_file = types.BufferedInputFile(sol["card_bytes"], filename="Math_Solution_HD.png")
+            await callback.message.reply_document(
+                document=doc_file,
+                caption="🔍 <b>រូបភាព HD Solution Card (Uncompressed PNG Document)</b>",
+                parse_mode="HTML"
+            )
+        else:
+            await callback.answer("⚠️ រូបភាព HD ផុតកំណត់ពី Cache (Expired)", show_alert=True)
+
+    @router.callback_query(F.data == "cb_download_pdf")
+    async def callback_download_pdf(callback: types.CallbackQuery):
+        await callback.answer("📥 កំពុងបម្លែងជា File PDF...")
+        user_id = callback.from_user.id if callback.from_user else 0
+        from utils.solution_card import get_solution_cache
+        sol = get_solution_cache(user_id)
+        card_bytes = sol.get("card_bytes") if sol else None
+
+        if card_bytes:
+            try:
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(card_bytes))
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
+                pdf_io = io.BytesIO()
+                img.save(pdf_io, format="PDF", quality=95)
+                pdf_bytes = pdf_io.getvalue()
+
+                pdf_file = types.BufferedInputFile(pdf_bytes, filename="Math_Solution_Card.pdf")
+                await callback.message.reply_document(
+                    document=pdf_file,
+                    caption="📥 <b>File PDF ចម្លើយលំហាត់ (Printable PDF Document)</b>",
+                    parse_mode="HTML"
+                )
+                return
+            except Exception as e:
+                logging.error(f"Error converting solution card to PDF: {e}")
+
+        await callback.answer("⚠️ មិនអាចបង្កើត File PDF បានទេ (Expired or invalid)", show_alert=True)
+
+    @router.callback_query(F.data == "cb_retry")
+    async def callback_retry(callback: types.CallbackQuery):
+        await callback.answer()
+        msg = (
+            "🔄 <b>សាកល្បងម្ដងទៀត / Retry Solution:</b>\n\n"
+            "👉 សូមផ្ញើរូបភាព ឬ វាយសំណួរលំហាត់សារជាថ្មី មកកាន់ AI Assistant!"
+        )
+        await callback.message.reply(msg, parse_mode="HTML")
+
     return router

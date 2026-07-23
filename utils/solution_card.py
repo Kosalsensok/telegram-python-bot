@@ -4,6 +4,28 @@ import os
 import logging
 from PIL import Image, ImageDraw, ImageFont
 
+import time
+from typing import Dict, Any, Optional
+
+SOLUTION_CACHE: Dict[int, Dict[str, Any]] = {}
+
+def save_solution_cache(user_id: int, text: str, card_bytes: bytes):
+    """
+    Save generated solution text and card bytes in memory for inline callback actions.
+    """
+    SOLUTION_CACHE[user_id] = {
+        "text": text,
+        "card_bytes": card_bytes,
+        "timestamp": time.time()
+    }
+
+def get_solution_cache(user_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Get cached solution data for a user ID.
+    """
+    return SOLUTION_CACHE.get(user_id)
+
+
 FONT_PATHS = [
     os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFontBold.ttf"),
     os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFont.ttf"),
