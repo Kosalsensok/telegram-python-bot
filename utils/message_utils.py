@@ -339,10 +339,11 @@ def split_message(text: str, max_length: int = 4000) -> list[str]:
     return split_html_message(text, max_length)
 
 
-async def send_safe_response(message: types.Message, text: str):
+async def send_safe_response(message: types.Message, text: str, reply_markup=None):
     """
     Converts AI response to Telegram HTML, splits long messages safely,
     and sends each chunk with parse_mode='HTML'.
+    Optionally attaches reply_markup (e.g. inline keyboard) to the last chunk.
     Falls back to sanitized plain text if HTML parsing fails.
     """
     if not text or not text.strip():
@@ -354,15 +355,16 @@ async def send_safe_response(message: types.Message, text: str):
     # 2. Split long formatted text into safe chunks
     chunks = split_html_message(formatted_html, max_length=3800)
 
-    for chunk in chunks:
+    for i, chunk in enumerate(chunks):
+        current_markup = reply_markup if i == len(chunks) - 1 else None
         try:
-            await message.reply(chunk, parse_mode="HTML")
+            await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup)
         except Exception as e:
             logging.warning(f"Failed to send HTML formatted message chunk, attempting plain text fallback: {e}")
             # Fallback: Strip HTML tags, unescape, and send as pure plain text without parse_mode
             plain_text = re.sub(r'<[^>]+>', '', chunk)
             plain_text = html.unescape(plain_text)
             try:
-                await message.reply(plain_text, parse_mode=None)
+                await message.reply(plain_text, parse_mode=None, reply_markup=current_markup)
             except Exception as fallback_err:
                 logging.error(f"Fallback plain text message send failed: {fallback_err}")

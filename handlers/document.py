@@ -94,9 +94,9 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
                         content_text = content_text[:15000] + "\n...[File Content Truncated for Analysis]"
 
                     full_prompt = (
-                        f"📁 <b>File Name:</b> <code>{escape(file_name)}</code>\n\n"
-                        f"<b>Question/Task:</b> {caption}\n\n"
-                        f"<b>File Content:</b>\n```\n{content_text}\n```"
+                        f"File Name: {file_name}\n"
+                        f"Question/Task: {caption}\n\n"
+                        f"File Content:\n```\n{content_text}\n```"
                     )
                     ai_response = await gemini_service.generate_text_chat(user_prompt=full_prompt, mode=active_mode)
 
