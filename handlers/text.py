@@ -6,13 +6,12 @@ from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
 
-router = Router(name="text_router")
-
-
 def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, db_service: DatabaseService = None) -> Router:
     """
     Construct text chat router with injected Gemini service, memory, and database service.
     """
+    router = Router(name="text_router")
+
     @router.message(F.text & ~F.text.startswith("/"))
     async def handle_text_message(message: types.Message):
         """

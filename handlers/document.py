@@ -6,8 +6,6 @@ from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
 
-router = Router(name="document_router")
-
 SUPPORTED_EXTENSIONS = {
     ".txt", ".py", ".json", ".csv", ".md", ".js", ".html", 
     ".css", ".cpp", ".c", ".java", ".sql", ".xml", ".log", 
@@ -23,6 +21,8 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
     """
     Construct document router to process code files and text documents.
     """
+    router = Router(name="document_router")
+
     @router.message(F.document)
     async def handle_document_message(message: types.Message):
         if message.from_user:

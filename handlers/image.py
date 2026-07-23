@@ -7,8 +7,6 @@ from utils.message_utils import send_safe_response
 from utils.memory import ConversationMemory
 from config import MAX_IMAGE_SIZE_MB
 
-router = Router(name="image_router")
-
 DEFAULT_IMAGE_PROMPT = (
     "សូមពិពណ៌នា និងវិភាគរូបភាពនេះឱ្យបានច្បាស់។ ប្រសិនបើមានអត្ថបទ សូមអាន និងពន្យល់អត្ថបទសំខាន់ៗផង។"
 )
@@ -18,6 +16,8 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
     """
     Construct image vision router with injected GeminiService and DatabaseService.
     """
+    router = Router(name="image_router")
+
     @router.message(F.photo)
     async def handle_photo_message(message: types.Message):
         """

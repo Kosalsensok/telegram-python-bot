@@ -1,14 +1,13 @@
 from aiogram import Router, types, F
 from services.db_service import DatabaseService
 
-router = Router(name="fallback_router")
-
-
 def get_fallback_router(db_service: DatabaseService = None) -> Router:
     """
     Construct fallback router with injected database service.
     """
-    @router.message(F.voice | F.video | F.sticker | F.contact | F.location | F.audio | F.animation)
+    router = Router(name="fallback_router")
+
+    @router.message(F.video | F.sticker | F.contact | F.location | F.animation)
     async def handle_unsupported_messages(message: types.Message):
         """
         Catch-all handler for media types not yet supported for direct text conversion (voice, video, stickers).

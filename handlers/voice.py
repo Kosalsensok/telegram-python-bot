@@ -5,8 +5,6 @@ from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
 
-router = Router(name="voice_router")
-
 DEFAULT_VOICE_PROMPT = (
     "🎙️ សូមស្តាប់សំឡេងនេះ ឆ្លើយតប និងពន្យល់ខ្លឹមសារជាភាសាខ្មែរ/អង់គ្លេសឱ្យបានច្បាស់លាស់។"
 )
@@ -16,6 +14,8 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
     """
     Construct voice router to process Telegram voice notes (.ogg) and audio files using Gemini Audio AI.
     """
+    router = Router(name="voice_router")
+
     @router.message(F.voice | F.audio)
     async def handle_voice_message(message: types.Message):
         if message.from_user:

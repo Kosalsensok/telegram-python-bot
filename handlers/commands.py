@@ -18,13 +18,11 @@ from config import (
     ADMIN_USER_IDS
 )
 
-router = Router(name="commands_router")
-
-
 def get_command_router(memory: ConversationMemory, db_service: DatabaseService = None, gemini_service: GeminiService = None) -> Router:
     """
     Construct command router with injected conversation memory instance and database service.
     """
+    router = Router(name="commands_router")
 
     async def _register_user(from_user: types.User, bot: types.Bot = None):
         if db_service and from_user:
@@ -328,34 +326,69 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         if message.from_user:
             await _register_user(message.from_user)
 
-        raw_text = message.text.strip()
-        parts = raw_text.split(maxsplit=2)
-
-        if len(parts) < 2:
+        raw_text = message.text.strip() if message.text else ""
+        
+        import re
+        parts = raw_text.split(maxsplit=1)
+        if len(parts) < 2 or not parts[1].strip():
             usage_msg = (
                 "⚡ <b>របៀបប្រើប្រាស់ /run ឬ /code (Execute Code):</b>\n\n"
                 "• <b>Python:</b> <code>/run python print('Hello World!')</code>\n"
                 "• <b>JavaScript:</b> <code>/run js console.log('Hello!')</code>\n"
-                "• <b>Auto-detect (Python):</b> <code>/run print('Hello!')</code>\n\n"
-                "👉 គាំទ្រភាសា៖ Python, JavaScript, Java"
+                "• <b>TypeScript:</b> <code>/run ts const x: number = 10; console.log(x);</code>\n"
+                "• <b>Java:</b> <code>/run java public class Main { public static void main(String[] a) { System.out.println(10); } }</code>\n"
+                "• <b>Code block:</b> <code>/code ```python\nprint('Hello')\n```</code>\n\n"
+                "👉 គាំទ្រភាសា៖ Python, JavaScript, TypeScript, Java"
             )
             await message.answer(usage_msg, parse_mode="HTML")
             return
 
-        first_arg = parts[1].lower().strip()
-        if len(parts) == 2:
-            if first_arg in ["py", "python", "js", "javascript", "java"]:
-                await message.answer("⚠️ សូមបញ្ចូល Code ដែលត្រូវ Run! ឧទាហរណ៍៖ <code>/run python print('Hello')</code>", parse_mode="HTML")
-                return
-            lang = "python"
-            code_to_run = parts[1]
+        body = parts[1].strip()
+        LANG_MAP = {
+            "py": "python", "python": "python", "python3": "python",
+            "js": "javascript", "javascript": "javascript", "node": "javascript", "nodejs": "javascript",
+            "ts": "typescript", "typescript": "typescript",
+            "java": "java",
+            "cpp": "cpp", "c++": "cpp", "c": "cpp",
+        }
+
+        lang = "python"
+        code_to_run = ""
+
+        fence_pattern = r"^```([a-zA-Z0-9_+\-#]*)\s*\n?(.*?)\n?```$"
+        match = re.match(fence_pattern, body, re.DOTALL)
+        if match:
+            lang_tag = match.group(1).strip().lower()
+            code_to_run = match.group(2).strip()
+            lang = LANG_MAP.get(lang_tag, "python" if not lang_tag else lang_tag)
         else:
-            if first_arg in ["py", "python", "js", "javascript", "java"]:
-                lang = first_arg
-                code_to_run = parts[2]
+            words = body.split(maxsplit=1)
+            first_word = words[0].lower().strip("`:")
+            if first_word in LANG_MAP:
+                lang = LANG_MAP[first_word]
+                code_to_run = words[1].strip() if len(words) > 1 else ""
+                inner_match = re.match(fence_pattern, code_to_run, re.DOTALL)
+                if inner_match:
+                    code_to_run = inner_match.group(2).strip()
+            elif body.startswith("```"):
+                lines = body.splitlines()
+                first_line = lines[0].lstrip("`").strip().lower()
+                if first_line in LANG_MAP:
+                    lang = LANG_MAP[first_line]
+                    lines = lines[1:]
+                else:
+                    lang = "python"
+                    lines = lines[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                code_to_run = "\n".join(lines).strip()
             else:
                 lang = "python"
-                code_to_run = parts[1] + " " + parts[2]
+                code_to_run = body
+
+        if not code_to_run:
+            await message.answer("⚠️ សូមបញ្ចូល Code ដែលត្រូវ Run! ឧទាហរណ៍៖ <code>/run python print('Hello')</code>", parse_mode="HTML")
+            return
 
         try:
             await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")

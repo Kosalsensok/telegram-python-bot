@@ -9,13 +9,11 @@ from config import BOT_DISPLAY_NAME, GEMINI_MODEL
 from utils.memory import ConversationMemory
 from prompts.mode_prompts import MODE_DESCRIPTIONS, MODE_EXPLANATIONS
 
-router = Router(name="callbacks_router")
-
-
 def get_callbacks_router(db_service: DatabaseService = None, memory: ConversationMemory = None) -> Router:
     """
     Construct callbacks router with injected database service and conversation memory.
     """
+    router = Router(name="callbacks_router")
 
     @router.callback_query(F.data == "cb_mode_menu")
     async def callback_mode_menu(callback: types.CallbackQuery):

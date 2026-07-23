@@ -10,15 +10,15 @@ from services.gemini_service import GeminiService
 from config import ADMIN_USER_IDS
 import os
 
-router = Router(name="admin_router")
-
 class AdminStates(StatesGroup):
     waiting_for_broadcast = State()
+
 
 def get_admin_router(db_service: DatabaseService = None, gemini_service: GeminiService = None) -> Router:
     """
     Construct admin router with injected database and gemini services.
     """
+    router = Router(name="admin_router")
 
     @router.message(Command("admin"))
     async def cmd_admin(message: types.Message):
