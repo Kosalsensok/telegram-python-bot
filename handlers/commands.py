@@ -260,11 +260,9 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         if message.from_user:
             await _register_user(message.from_user)
 
-        if not db_service or not db_service.is_connected:
-            await message.answer("⚠️ មូលដ្ឋានទិន្នន័យមិនដំណើរការ។ សូមសាកល្បងម្ដងទៀតនៅពេលក្រោយ។", parse_mode="HTML")
-            return
-
-        user_stats = await db_service.get_user_stats(user_id)
+        user_stats = {"total_messages": 0, "text_count": 0, "image_count": 0}
+        if db_service:
+            user_stats = await db_service.get_user_stats(user_id)
         
         stats_text = (
             "📊 <b>ស្ថិតិផ្ទាល់ខ្លួនរបស់អ្នក / Your Usage Stats</b>\n\n"
@@ -287,9 +285,10 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
 
         total_users = 0
         total_messages = 0
-        db_status = "🔴 Disconnected"
-        if db_service and db_service.is_connected:
-            db_status = "🟢 Connected (MySQL)"
+        db_status = "🟡 Active (In-Memory Mode)"
+        if db_service:
+            if db_service.is_connected:
+                db_status = "🟢 Connected (MySQL)"
             global_stats = await db_service.get_global_stats()
             total_users = global_stats.get("total_users", 0)
             total_messages = global_stats.get("total_messages", 0)

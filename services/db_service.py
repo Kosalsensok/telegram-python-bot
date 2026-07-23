@@ -24,6 +24,7 @@ class DatabaseService:
         self.is_connected: bool = False
         self.in_memory_users: set = set()
         self.in_memory_messages_count: int = 0
+        self.in_memory_user_stats: Dict[int, Dict[str, int]] = {}
         self.user_modes: Dict[int, str] = {}
 
 
@@ -182,6 +183,16 @@ class DatabaseService:
         Saves a chat message turn (user or model) to MySQL database and in-memory counter.
         """
         self.in_memory_messages_count += 1
+        if telegram_id:
+            if telegram_id not in self.in_memory_user_stats:
+                self.in_memory_user_stats[telegram_id] = {"total_messages": 0, "text_count": 0, "image_count": 0}
+            if role == "user":
+                self.in_memory_user_stats[telegram_id]["total_messages"] += 1
+                if message_type == "image":
+                    self.in_memory_user_stats[telegram_id]["image_count"] += 1
+                else:
+                    self.in_memory_user_stats[telegram_id]["text_count"] += 1
+
         if not self.is_connected or not self.pool:
             return
 
@@ -239,10 +250,11 @@ class DatabaseService:
 
     async def get_user_stats(self, telegram_id: int) -> Dict[str, Any]:
         """
-        Retrieves user usage statistics from MySQL database.
+        Retrieves user usage statistics from MySQL database or in-memory fallback.
         """
+        in_mem_stat = self.in_memory_user_stats.get(telegram_id, {"total_messages": 0, "text_count": 0, "image_count": 0})
         if not self.is_connected or not self.pool:
-            return {"total_messages": 0, "text_count": 0, "image_count": 0}
+            return in_mem_stat
 
         try:
             sql = """
@@ -256,15 +268,15 @@ class DatabaseService:
                 async with conn.cursor() as cur:
                     await cur.execute(sql, (telegram_id,))
                     row = await cur.fetchone()
-                    if row:
+                    if row and row[0] is not None:
                         return {
-                            "total_messages": row[0] or 0,
-                            "text_count": int(row[1] or 0),
-                            "image_count": int(row[2] or 0)
+                            "total_messages": max(row[0] or 0, in_mem_stat["total_messages"]),
+                            "text_count": max(int(row[1] or 0), in_mem_stat["text_count"]),
+                            "image_count": max(int(row[2] or 0), in_mem_stat["image_count"])
                         }
         except Exception as e:
             logging.error(f"Error fetching stats for user {telegram_id} from MySQL: {e}")
-        return {"total_messages": 0, "text_count": 0, "image_count": 0}
+        return in_mem_stat
 
     async def get_global_stats(self) -> Dict[str, Any]:
         """
