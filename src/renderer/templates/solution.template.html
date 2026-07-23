@@ -2,60 +2,83 @@
 <html lang="km">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{TITLE}}</title>
   <!-- KaTeX CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <!-- Google Fonts: Kantumruy Pro, Inter & Noto Sans Khmer -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Khmer:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <style>
+    @font-face {
+      font-family: "Noto Sans Khmer";
+      src: url("../../../assets/fonts/KhmerFont.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Noto Sans Khmer";
+      src: url("../../../assets/fonts/KhmerFontBold.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 700;
+      font-display: block;
+    }
+
     :root {
       --bg-color: #f8fafc;
       --card-bg: #ffffff;
       --primary-color: #2563eb;
       --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
-      --text-dark: #0f172a;
+      --text-dark: #172033;
       --text-muted: #475569;
       --border-color: #e2e8f0;
       --accent-light: #f1f5f9;
+      --warning-bg: #fffbe6;
+      --warning-border: #ffe58f;
+      --warning-text: #d48806;
       --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
     }
 
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
     body {
-      width: 1200px;
+      width: 1000px;
       margin: 0 auto;
       background-color: var(--bg-color);
-      font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Inter', -apple-system, sans-serif;
+      font-family: "Noto Sans Khmer", "Noto Sans", Arial, sans-serif;
       color: var(--text-dark);
-      padding: 40px;
+      padding: 20px;
       -webkit-font-smoothing: antialiased;
     }
 
     .solution-card {
+      box-sizing: border-box;
+      width: 960px;
+      max-width: 960px;
+      min-height: auto;
+      height: auto;
+      padding: 48px;
       background: var(--card-bg);
       border-radius: 24px;
       box-shadow: var(--box-shadow);
       border: 1px solid var(--border-color);
-      padding: 48px;
       display: flex;
       flex-direction: column;
-      gap: 36px;
+      gap: 32px;
+      overflow: visible;
     }
 
     /* HEADER SECTION */
-    .header {
+    .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 2px solid var(--border-color);
       padding-bottom: 24px;
+      width: 100%;
     }
 
     .brand {
@@ -64,7 +87,7 @@
       gap: 16px;
     }
 
-    .logo {
+    .brand-logo {
       width: 56px;
       height: 56px;
       background: var(--primary-gradient);
@@ -78,34 +101,166 @@
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
 
-    .brand-text h1 {
+    .brand-title h1 {
       font-size: 24px;
       font-weight: 700;
       color: var(--text-dark);
-      line-height: 1.2;
+      line-height: 1.3;
     }
 
-    .brand-text p {
+    .brand-title p {
       font-size: 14px;
       color: var(--text-muted);
       font-weight: 500;
     }
 
-    .badge {
+    .response-badge {
       background-color: var(--accent-light);
       color: var(--primary-color);
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 9999px;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       border: 1px solid rgba(37, 99, 235, 0.2);
     }
 
-    /* QUESTION SECTION */
-    .question-block {
+    /* CONTENT LAYOUT & TYPOGRAPHY */
+    .card-body {
       display: flex;
       flex-direction: column;
       gap: 24px;
+      width: 100%;
+    }
+
+    .summary-card {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .summary-card h2, .section-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+    }
+
+    .content-text, .paragraph, .summary-card p {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      font-size: 26px;
+      line-height: 1.8;
+      color: #334155;
+    }
+
+    /* KEY VALUE DATA GRID */
+    .data-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px 24px;
+    }
+
+    .data-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .data-label {
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--text-dark);
+      width: 220px;
+      flex: 0 0 220px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .data-value {
+      font-size: 22px;
+      color: #1e293b;
+      flex: 1;
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+    /* WARNING & RECOMMENDATION CARDS */
+    .warning-card {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      color: #873800;
+    }
+
+    .warning-card h2 {
+      font-size: 20px;
+      color: #d48806;
+      margin-bottom: 8px;
+    }
+
+    .recommendation-card {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 16px;
+      padding: 20px 24px;
+      color: #166534;
+    }
+
+    .recommendation-card h2 {
+      font-size: 20px;
+      color: #15803d;
+      margin-bottom: 8px;
+    }
+
+    /* BULLET ITEM WITH CSS CIRCLE BULLET */
+    .bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      width: 100%;
+      min-width: 0;
+      font-size: 24px;
+      line-height: 1.85;
+    }
+
+    .bullet-item::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      flex: 0 0 auto;
+      margin-top: 14px;
+    }
+
+    .bullet-text {
+      flex: 1;
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+    /* MATH PROBLEM & STEPS */
+    .question-block {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
       padding: 24px;
       background: #fafafa;
       border-radius: 16px;
@@ -113,25 +268,17 @@
     }
 
     .question-title {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      gap: 10px;
     }
 
     .math-display {
-      font-size: 22px;
-      padding: 16px 0;
+      font-size: 24px;
+      padding: 12px 0;
       overflow-x: auto;
-    }
-
-    .steps-container {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      margin-top: 10px;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .step-item {
@@ -143,9 +290,11 @@
     }
 
     .step-explanation {
-      font-size: 16px;
+      font-size: 22px;
       color: #334155;
       font-weight: 500;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .final-answer-box {
@@ -158,7 +307,7 @@
     }
 
     .final-answer-box .label {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--primary-color);
       text-transform: uppercase;
@@ -166,15 +315,16 @@
       margin-bottom: 8px;
     }
 
-    /* FOOTER SECTION */
-    .footer {
+    /* FOOTER */
+    .card-footer {
       border-top: 1px solid var(--border-color);
-      padding-top: 24px;
+      padding-top: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: 14px;
+      width: 100%;
     }
 
     .footer-left {
@@ -182,42 +332,38 @@
       align-items: center;
       gap: 8px;
     }
-
-    .disclaimer {
-      font-size: 12px;
-      color: #94a3b8;
-      font-style: italic;
-    }
   </style>
 </head>
 <body>
 
 <div class="solution-card" id="solution-card">
   <!-- HEADER -->
-  <div class="header">
+  <header class="card-header">
     <div class="brand">
-      <div class="logo">∑</div>
-      <div class="brand-text">
+      <div class="brand-logo">🤖</div>
+      <div class="brand-title">
         <h1>{{BOT_NAME}}</h1>
-        <p>AI Math Solution Card</p>
+        <p>Smart AI Assistant Solution</p>
       </div>
     </div>
-    <div class="badge">{{SUBJECT}}</div>
-  </div>
+    <div class="response-badge">{{RESPONSE_TYPE_LABEL}}</div>
+  </header>
 
-  <!-- CONTENT QUESTIONS -->
-  {{QUESTIONS_CONTENT}}
+  <!-- BODY CONTENT -->
+  <main class="card-body">
+    {{MAIN_CONTENT}}
+  </main>
 
   <!-- FOOTER -->
-  <div class="footer">
+  <footer class="card-footer">
     <div class="footer-left">
-      <span>⚡ Generated by Smart AI Assistant</span> • 
+      <span>⚡ Generated by {{BOT_NAME}}</span> • 
       <span>{{BOT_USERNAME}}</span>
     </div>
     <div class="footer-right">
-      <span class="disclaimer">{{GENERATED_AT}} • Verify academic results</span>
+      <span>{{GENERATED_AT}}</span>
     </div>
-  </div>
+  </footer>
 </div>
 
 <script>

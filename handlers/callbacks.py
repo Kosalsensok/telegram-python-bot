@@ -420,28 +420,44 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         await callback.answer("📄 កំពុងបង្ហាញអត្ថបទចម្លើយ...")
         user_id = callback.from_user.id if callback.from_user else 0
         from utils.solution_card import get_solution_cache
+        from utils.response_router import format_telegram_html, parse_ai_structured_response
         from utils.message_utils import send_safe_response
-        sol = get_solution_cache(user_id)
-        if sol and sol.get("text"):
-            await send_safe_response(callback.message, sol["text"])
-        else:
-            if memory:
-                hist = await memory.get_history_async(user_id)
-                if hist:
-                    last_msg = hist[-1].get("content", "")
-                    if last_msg:
-                        await send_safe_response(callback.message, last_msg)
-                        return
-            await callback.message.reply("ℹ️ មិនមានប្រវត្តិអត្ថបទចម្លើយដែលត្រូវបង្ហាញទេ។ (Text solution expired)", parse_mode="HTML")
+        
+        sol = get_solution_cache(str(user_id))
+        if sol and sol.get("data"):
+            text_html = format_telegram_html(sol["data"])
+            await send_safe_response(callback.message, text_html)
+            return
+        elif sol and sol.get("raw_text"):
+            parsed = parse_ai_structured_response(sol["raw_text"])
+            text_html = format_telegram_html(parsed)
+            await send_safe_response(callback.message, text_html)
+            return
+
+        if memory:
+            hist = await memory.get_history_async(user_id)
+            if hist:
+                last_msg = hist[-1].get("content", "")
+                if last_msg:
+                    parsed = parse_ai_structured_response(last_msg)
+                    await send_safe_response(callback.message, format_telegram_html(parsed))
+                    return
+        await callback.message.reply("ℹ️ មិនមានប្រវត្តិអត្ថបទចម្លើយដែលត្រូវបង្ហាញទេ។ (Text solution expired)", parse_mode="HTML")
 
     @router.callback_query(F.data == "cb_view_hd")
     async def callback_view_hd(callback: types.CallbackQuery):
-        await callback.answer("🔍 កំពុងផ្ញើរូបភាព HD Solution Card Document...")
+        await callback.answer("🔍 កំពុងបង្កើតរូបភាព HD Solution Card Document...")
         user_id = callback.from_user.id if callback.from_user else 0
-        from utils.solution_card import get_solution_cache
-        sol = get_solution_cache(user_id)
-        if sol and sol.get("card_bytes"):
-            doc_file = types.BufferedInputFile(sol["card_bytes"], filename="Math_Solution_HD.png")
+        from utils.solution_card import get_solution_cache, render_solution_card
+        
+        sol = get_solution_cache(str(user_id))
+        card_bytes = sol.get("card_bytes") if sol else None
+        
+        if not card_bytes and sol and sol.get("raw_text"):
+            card_bytes = render_solution_card(sol["raw_text"])
+
+        if card_bytes:
+            doc_file = types.BufferedInputFile(card_bytes, filename="AI_Solution_HD.png")
             await callback.message.reply_document(
                 document=doc_file,
                 caption="🔍 <b>រូបភាព HD Solution Card (Uncompressed PNG Document)</b>",
@@ -454,30 +470,21 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     async def callback_download_pdf(callback: types.CallbackQuery):
         await callback.answer("📥 កំពុងបម្លែងជា File PDF...")
         user_id = callback.from_user.id if callback.from_user else 0
-        from utils.solution_card import get_solution_cache
-        sol = get_solution_cache(user_id)
-        card_bytes = sol.get("card_bytes") if sol else None
+        from utils.solution_card import get_solution_cache, render_solution_pdf
+        
+        sol = get_solution_cache(str(user_id))
+        raw_text = sol.get("raw_text") if sol else ""
 
-        if card_bytes:
-            try:
-                from PIL import Image
-                import io
-                img = Image.open(io.BytesIO(card_bytes))
-                if img.mode != "RGB":
-                    img = img.convert("RGB")
-                pdf_io = io.BytesIO()
-                img.save(pdf_io, format="PDF", quality=95)
-                pdf_bytes = pdf_io.getvalue()
-
-                pdf_file = types.BufferedInputFile(pdf_bytes, filename="Math_Solution_Card.pdf")
+        if raw_text:
+            pdf_bytes = render_solution_pdf(raw_text)
+            if pdf_bytes:
+                pdf_file = types.BufferedInputFile(pdf_bytes, filename="AI_Solution_Document.pdf")
                 await callback.message.reply_document(
                     document=pdf_file,
-                    caption="📥 <b>File PDF ចម្លើយលំហាត់ (Printable PDF Document)</b>",
+                    caption="📥 <b>File PDF ចម្លើយ (Printable PDF Document)</b>",
                     parse_mode="HTML"
                 )
                 return
-            except Exception as e:
-                logging.error(f"Error converting solution card to PDF: {e}")
 
         await callback.answer("⚠️ មិនអាចបង្កើត File PDF បានទេ (Expired or invalid)", show_alert=True)
 

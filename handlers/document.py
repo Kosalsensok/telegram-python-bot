@@ -5,6 +5,12 @@ from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
+from utils.response_router import (
+    parse_ai_structured_response,
+    format_telegram_html
+)
+from utils.solution_card import save_solution_cache
+from keyboards.inline import get_solution_inline_keyboard
 
 SUPPORTED_EXTENSIONS = {
     ".txt", ".py", ".json", ".csv", ".md", ".js", ".html", 
@@ -98,7 +104,11 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
                     await memory.add_user_message_async(user_id, f"[Document: {file_name}] {caption}")
                     await memory.add_assistant_message_async(user_id, ai_response)
 
-            await send_safe_response(message, ai_response)
+                parsed_data = parse_ai_structured_response(ai_response, f"Document: {file_name}")
+                save_solution_cache(str(user_id), ai_response, parsed_data, None)
+                formatted_html = format_telegram_html(parsed_data)
+
+            await send_safe_response(message, formatted_html, reply_markup=get_solution_inline_keyboard())
 
         except Exception as e:
             logging.error(f"Error processing document {file_name} for user {user_id}: {e}", exc_info=True)

@@ -1,10 +1,19 @@
 import logging
+import uuid
+import html
 from aiogram import Router, types, F
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.image_utils import process_image_bytes
 from utils.message_utils import send_safe_response
 from utils.memory import ConversationMemory
+from utils.response_router import (
+    parse_ai_structured_response,
+    format_telegram_html,
+    clean_broken_characters
+)
+from utils.solution_card import render_solution_card, save_solution_cache
+from keyboards.inline import get_solution_inline_keyboard
 from config import MAX_IMAGE_SIZE_MB
 
 DEFAULT_IMAGE_PROMPT = (
@@ -36,7 +45,6 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
         else:
             user_id = message.chat.id
 
-        loading_msg = None
         try:
             try:
                 await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
@@ -98,26 +106,33 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                     await memory.add_user_message_async(user_id, prompt, message_type="image")
                     await memory.add_assistant_message_async(user_id, vision_response, message_type="text")
 
-                # If the image is a math problem or active mode is math-related, render a PNG Solution Card
-                from utils.solution_card import render_solution_card, save_solution_cache
-                from keyboards.inline import get_solution_inline_keyboard
+                # Response Type Routing & Classification
+                parsed_data = parse_ai_structured_response(vision_response, prompt)
+                res_type = parsed_data.get("response_type", "general_image")
+                solution_id = str(user_id)
 
-                card_bytes = render_solution_card(vision_response)
-                if card_bytes and len(card_bytes) > 500:
-                    save_solution_cache(user_id, vision_response, card_bytes)
-                    photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
-                    try:
-                        await message.reply_photo(
-                            photo=photo_card,
-                            caption="🎓 <b>លំហាត់រួចរាល់ !</b>",
-                            reply_markup=get_solution_inline_keyboard(),
-                            parse_mode="HTML"
-                        )
-                        return  # Sent single clean photo answer with inline actions; skip sending duplicate long text
-                    except Exception as e:
-                        logging.warning(f"Could not reply with solution card photo, falling back to text: {e}")
+                # Output Strategy Decision
+                if res_type in ["mathematics", "chemistry", "physics"]:
+                    # Visual Solution Card is primary for math / formulas
+                    card_bytes = render_solution_card(vision_response)
+                    save_solution_cache(solution_id, vision_response, parsed_data, card_bytes)
+                    if card_bytes and len(card_bytes) > 500:
+                        photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
+                        try:
+                            await message.reply_photo(
+                                photo=photo_card,
+                                caption="🎓 <b>ចម្លើយលំហាត់រួចរាល់ !</b>",
+                                reply_markup=get_solution_inline_keyboard(),
+                                parse_mode="HTML"
+                            )
+                            return
+                        except Exception as e:
+                            logging.warning(f"Could not reply with solution card photo, falling back to text: {e}")
 
-            await send_safe_response(message, vision_response)
+                # For Email, Document, Table, General Image -> Telegram HTML Text is primary!
+                save_solution_cache(solution_id, vision_response, parsed_data, None)
+                formatted_html = format_telegram_html(parsed_data)
+                await send_safe_response(message, formatted_html, reply_markup=get_solution_inline_keyboard())
 
         except ValueError as ve:
             logging.warning(f"Image validation warning for user {user_id}: {ve}")

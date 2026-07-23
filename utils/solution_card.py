@@ -1,189 +1,169 @@
 import io
 import re
 import os
+import json
 import logging
-from PIL import Image, ImageDraw, ImageFont
-
+import subprocess
+import tempfile
 import time
 from typing import Dict, Any, Optional
 
-SOLUTION_CACHE: Dict[int, Dict[str, Any]] = {}
+from utils.response_router import (
+    parse_ai_structured_response,
+    clean_broken_characters,
+    format_telegram_html
+)
 
-def save_solution_cache(user_id: int, text: str, card_bytes: bytes):
+SOLUTION_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
+def save_solution_cache(solution_id: str, raw_text: str, parsed_data: Dict[str, Any], card_bytes: Optional[bytes] = None):
     """
-    Save generated solution text and card bytes in memory for inline callback actions.
+    Saves solution text, parsed data structure, and card bytes in memory.
     """
-    SOLUTION_CACHE[user_id] = {
-        "text": text,
+    SOLUTION_CACHE[solution_id] = {
+        "raw_text": raw_text,
+        "data": parsed_data,
         "card_bytes": card_bytes,
         "timestamp": time.time()
     }
 
-def get_solution_cache(user_id: int) -> Optional[Dict[str, Any]]:
+
+def get_solution_cache(solution_id: str) -> Optional[Dict[str, Any]]:
     """
-    Get cached solution data for a user ID.
+    Retrieves cached solution data by solution_id or user_id string.
     """
-    return SOLUTION_CACHE.get(user_id)
-
-
-FONT_PATHS = [
-    os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFontBold.ttf"),
-    os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFont.ttf"),
-    "C:/Windows/Fonts/LEELAWAD.TTF",
-    "C:/Windows/Fonts/LEELAWDB.TTF",
-    "C:/Windows/Fonts/arialbd.ttf",
-    "C:/Windows/Fonts/arial.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
-]
-
-
-def _get_font(size: int):
-    """
-    Tries loading available TrueType fonts with proper fallback.
-    """
-    for font_path in FONT_PATHS:
-        if os.path.exists(font_path):
-            try:
-                return ImageFont.truetype(font_path, size)
-            except Exception:
-                continue
-    return ImageFont.load_default()
-
-
-def clean_text_for_card(text: str) -> str:
-    """
-    Strips raw HTML tags, Markdown symbols, and decorative lines to clean up text for rendering.
-    """
-    if not text:
-        return ""
-
-    # Remove HTML tags
-    text = re.sub(r'<[^>]+>', '', text)
-    # Remove markdown headers and emphasis
-    text = re.sub(r'[*_`#~]', '', text)
-    # Remove long divider lines
-    text = re.sub(r'^[=\-─_]{3,}$', '', text, flags=re.MULTILINE)
-    # Replace unescaped &amp; / &lt; / &gt;
-    text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
-
-    return text.strip()
-
-
-def extract_core_solution_lines(text: str, max_lines: int = 18) -> list:
-    """
-    Extracts the most relevant solution lines (Given, Steps, Proof, Final Answer)
-    filtering out long verbose intro/outro fluff.
-    """
-    cleaned = clean_text_for_card(text)
-    raw_lines = [l.strip() for l in cleaned.split("\n") if l.strip()]
-
-    filtered_lines = []
-    skip_keywords = ["វិភាគប្រធានលំហាត់", "Problem Analysis", "Technical Explanation", "ទស្សនៈបន្ថែម", "កំណត់ចំណាំ"]
-
-    for line in raw_lines:
-        if any(kw.lower() in line.lower() for kw in skip_keywords):
-            continue
-        filtered_lines.append(line)
-
-    if len(filtered_lines) > max_lines:
-        # Keep head (Given / Steps) and tail (Conclusion / Final answer)
-        head = filtered_lines[:12]
-        tail = [l for l in filtered_lines[12:] if "ដូចនេះ" in l or "=" in l or "final" in l.lower() or "answer" in l.lower() or "≅" in l]
-        filtered_lines = head + (tail if tail else filtered_lines[12:max_lines])
-
-    return filtered_lines[:max_lines]
+    return SOLUTION_CACHE.get(str(solution_id))
 
 
 def render_solution_card(
     solution_text: str,
-    title: str = "ចម្លើយលំហាត់ (Math Solution)",
-    bot_branding: str = "AI : imsela.com",
-    footer_tag: str = "🎓 លំហាត់រួចរាល់ !"
-) -> bytes:
+    bot_branding: str = "Smart AI Assistant",
+    bot_username: str = "@mysmart_v2_2026_bot"
+) -> Optional[bytes]:
     """
-    Renders a pristine, high-resolution solution card PNG image (imsela.com layout style).
-    Optimized with large crisp Khmer typography, soft card container, and highlighted answer box.
+    Renders dynamic-height Solution Card PNG via Playwright HTML Renderer (dist/renderer/cli_render.js).
     """
+    parsed_data = parse_ai_structured_response(solution_text)
+
+    # Prepare temporary payload JSON file
+    temp_dir = tempfile.gettempdir()
+    payload_file = os.path.join(temp_dir, f"sol_input_{int(time.time()*1000)}.json")
+    output_png = os.path.join(temp_dir, f"sol_output_{int(time.time()*1000)}.png")
+
     try:
-        lines = extract_core_solution_lines(solution_text)
-        if not lines:
-            lines = ["1.", "គេមាន:", "MA = MD, AB = DB", "ដូចនេះ ΔABC ≅ ΔDBC (លក្ខខណ្ឌ ជ-ជ-ជ)"]
+        with open(payload_file, "w", encoding="utf-8") as f:
+            json.dump(parsed_data, f, ensure_ascii=False)
 
-        width = 1100
-        padding = 45
-
-        # Fonts
-        branding_font = _get_font(34)
-        body_font = _get_font(28)
-        bold_font = _get_font(30)
-        footer_font = _get_font(22)
-
-        line_height = 48
-        header_height = 110
-        footer_height = 70
-
-        # Calculate exact card height
-        content_lines_count = len(lines)
-        total_height = header_height + (content_lines_count * line_height) + footer_height + (padding * 2) + 40
-        total_height = max(total_height, 450)
-
-        # Create White Image Canvas
-        card = Image.new("RGBA", (width, total_height), (255, 255, 255, 255))
-        draw = ImageDraw.Draw(card)
-
-        # 1. Subtle Outer Border (2px)
-        draw.rectangle(
-            [15, 15, width - 15, total_height - 15],
-            outline=(225, 230, 238),
-            width=2
-        )
-
-        # 2. Header Branding Bar: "🤖 AI : imsela.com"
-        draw.text((padding, padding), f"🤖  {bot_branding}", fill=(60, 64, 72), font=branding_font)
-        draw.line([padding, padding + 55, width - padding, padding + 55], fill=(230, 235, 242), width=2)
-
-        # 3. Render Solution Text Lines
-        y_cursor = padding + 80
-
-        for line in lines:
-            line_str = line.strip()
-            if not line_str:
-                y_cursor += 15
-                continue
-
-            # Identify if this is a conclusion / final answer line
-            is_conclusion = any(k in line_str for k in ["ដូចនេះ", "Final Answer", "≅", "ចម្លើយ"])
-            is_section_header = line_str.startswith(("1.", "2.", "3.", "4.", "គេមាន:", "ប្រៀបធៀប", "គណនា", "ស្រាយបញ្ជាក់"))
-
-            if is_conclusion:
-                # Draw Highlighted Box for Conclusion Line
-                box_top = y_cursor - 6
-                box_bottom = y_cursor + line_height - 6
-                draw.rectangle(
-                    [padding - 10, box_top, width - padding + 10, box_bottom],
-                    fill=(240, 246, 255), # Soft blue background
-                    outline=(180, 210, 255), # Accent border
-                    width=1
-                )
-                draw.text((padding + 10, y_cursor), line_str, fill=(15, 85, 195), font=bold_font)
-            elif is_section_header:
-                draw.text((padding, y_cursor), line_str, fill=(20, 25, 35), font=bold_font)
+        cli_js = os.path.join(os.path.dirname(__file__), "..", "dist", "renderer", "cli_render.js")
+        if os.path.exists(cli_js):
+            res = subprocess.run(
+                ["node", cli_js, payload_file, output_png, "png"],
+                capture_output=True,
+                text=True,
+                timeout=25
+            )
+            if res.returncode == 0 and os.path.exists(output_png):
+                with open(output_png, "rb") as f:
+                    png_bytes = f.read()
+                return png_bytes
             else:
-                draw.text((padding, y_cursor), line_str, fill=(45, 50, 60), font=body_font)
-
-            y_cursor += line_height
-
-        # 4. Footer Accent Bar
-        footer_y = total_height - padding - 35
-        draw.line([padding, footer_y - 15, width - padding, footer_y - 15], fill=(230, 235, 242), width=2)
-        draw.text((padding, footer_y), footer_tag, fill=(110, 115, 125), font=footer_font)
-
-        out = io.BytesIO()
-        card.convert("RGB").save(out, format="PNG", quality=95)
-        return out.getvalue()
-
+                logging.warning(f"cli_render.js failed: {res.stderr}")
     except Exception as e:
-        logging.error(f"Error rendering solution card PNG: {e}")
-        return b""
+        logging.error(f"Error rendering solution card via Playwright CLI: {e}")
+    finally:
+        for p in [payload_file, output_png]:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
+
+    return _fallback_pil_solution_card(parsed_data)
+
+
+def render_solution_pdf(
+    solution_text: str,
+    bot_branding: str = "Smart AI Assistant",
+    bot_username: str = "@mysmart_v2_2026_bot"
+) -> Optional[bytes]:
+    """
+    Renders printable Solution Card PDF via Playwright HTML Renderer.
+    """
+    parsed_data = parse_ai_structured_response(solution_text)
+
+    temp_dir = tempfile.gettempdir()
+    payload_file = os.path.join(temp_dir, f"sol_pdf_input_{int(time.time()*1000)}.json")
+    output_pdf = os.path.join(temp_dir, f"sol_output_{int(time.time()*1000)}.pdf")
+
+    try:
+        with open(payload_file, "w", encoding="utf-8") as f:
+            json.dump(parsed_data, f, ensure_ascii=False)
+
+        cli_js = os.path.join(os.path.dirname(__file__), "..", "dist", "renderer", "cli_render.js")
+        if os.path.exists(cli_js):
+            res = subprocess.run(
+                ["node", cli_js, payload_file, output_pdf, "pdf"],
+                capture_output=True,
+                text=True,
+                timeout=25
+            )
+            if res.returncode == 0 and os.path.exists(output_pdf):
+                with open(output_pdf, "rb") as f:
+                    pdf_bytes = f.read()
+                return pdf_bytes
+    except Exception as e:
+        logging.error(f"Error rendering PDF via Playwright CLI: {e}")
+    finally:
+        for p in [payload_file, output_pdf]:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
+
+    return None
+
+
+def _fallback_pil_solution_card(parsed_data: Dict[str, Any]) -> bytes:
+    """
+    Emergency PIL fallback generator.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    width = 960
+    padding = 40
+    lines = [clean_broken_characters(parsed_data.get("title", "Solution Card"))]
+    if parsed_data.get("summary"):
+        lines.append(clean_broken_characters(parsed_data["summary"]))
+
+    for kv in parsed_data.get("key_values", []):
+        lines.append(f"• {clean_broken_characters(kv.get('label',''))}: {clean_broken_characters(kv.get('value',''))}")
+
+    for sec in parsed_data.get("sections", []):
+        lines.append(f"[{clean_broken_characters(sec.get('heading',''))}]")
+        for sub_line in clean_broken_characters(sec.get("content","")).split("\n"):
+            if sub_line.strip():
+                lines.append(sub_line.strip())
+
+    font_path = os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "KhmerFont.ttf")
+    try:
+        font = ImageFont.truetype(font_path, 24)
+    except Exception:
+        font = ImageFont.load_default()
+
+    line_height = 42
+    total_height = max(500, padding * 2 + len(lines) * line_height + 60)
+
+    card = Image.new("RGB", (width, total_height), (255, 255, 255))
+    draw = ImageDraw.Draw(card)
+
+    draw.rectangle([10, 10, width - 10, total_height - 10], outline=(220, 225, 235), width=2)
+    y = padding + 20
+    for l in lines[:25]:
+        draw.text((padding, y), l[:75], fill=(23, 32, 51), font=font)
+        y += line_height
+
+    out = io.BytesIO()
+    card.save(out, format="PNG")
+    return out.getvalue()
