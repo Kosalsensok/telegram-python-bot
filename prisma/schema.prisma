@@ -1,0 +1,71 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             Int        @id @default(autoincrement())
+  telegramId     BigInt     @unique
+  username       String?    @db.VarChar(255)
+  firstName      String?    @db.VarChar(255)
+  lastName       String?    @db.VarChar(255)
+  language       String     @default("km") @db.VarChar(10)
+  selectedMode   String     @default("standard") @db.VarChar(50)
+  totalRequests  Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  lastActiveAt   DateTime   @default(now())
+
+  solutions      Solution[]
+  logs           UsageLog[]
+
+  @@map("users")
+}
+
+model Solution {
+  id                Int      @id @default(autoincrement())
+  publicId          String   @unique @db.VarChar(64)
+  userId            Int
+  telegramMessageId Int?
+  originalImagePath String?  @db.VarChar(500)
+  outputImagePath   String?  @db.VarChar(500)
+  outputPdfPath     String?  @db.VarChar(500)
+  subject           String   @default("mathematics") @db.VarChar(100)
+  extractedQuestion String?  @db.Text
+  structuredResult  Json?
+  status            String   @default("PENDING") @db.VarChar(20) // PENDING, PROCESSING, COMPLETED, FAILED
+  errorMessage      String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("solutions")
+}
+
+model UsageLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String   @db.VarChar(100)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("usage_logs")
+}
+
+model BotSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(100)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("bot_settings")
+}

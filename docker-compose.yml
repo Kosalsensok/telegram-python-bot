@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: math_bot_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: smart_ai_assistant
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  bot:
+    build: .
+    container_name: math_bot_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_USERNAME=${BOT_USERNAME}
+      - AI_PROVIDER=${AI_PROVIDER}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_URL=mysql://root:rootpassword@mysql:3306/smart_ai_assistant
+      - APP_URL=${APP_URL}
+      - PORT=3000
+    depends_on:
+      - mysql
+    volumes:
+      - ./temp:/app/temp
+
+volumes:
+  mysql_data:

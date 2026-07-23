@@ -1,0 +1,44 @@
+{
+  "name": "telegram-ai-math-solver-bot",
+  "version": "1.0.0",
+  "description": "Production-Ready Telegram AI Math Solver Bot with KaTeX and Playwright Rendering",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@prisma/client": "^5.10.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "katex": "^0.16.9",
+    "mime-types": "^2.1.35",
+    "openai": "^4.28.0",
+    "playwright": "^1.42.0",
+    "telegraf": "^4.16.3",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/katex": "^0.16.7",
+    "@types/mime-types": "^2.1.4",
+    "@types/node": "^20.11.24",
+    "jest": "^29.7.0",
+    "prisma": "^5.10.0",
+    "ts-jest": "^29.1.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
