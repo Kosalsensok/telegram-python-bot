@@ -102,11 +102,6 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
 
         except Exception as e:
             logging.error(f"Error processing document {file_name} for user {user_id}: {e}", exc_info=True)
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
             await message.reply(f"⚠️ មិនអាចវិភាគ File <b>{escape(file_name)}</b> បានទេ។ សូមពិនិត្យ File ហើយព្យាយាមម្តងទៀត!", parse_mode="HTML")
 
     return router

@@ -77,11 +77,6 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
 
         except Exception as e:
             logging.error(f"Error processing voice for user {user_id}: {e}", exc_info=True)
-            if loading_msg:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
             await message.reply("⚠️ មិនអាចស្ដាប់ ឬដំណើរការសារសំឡេងនេះបានទេ។ សូមព្យាយាមម្តងទៀត! / Could not process voice note.", parse_mode="HTML")
 
     return router
