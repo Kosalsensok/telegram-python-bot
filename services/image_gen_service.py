@@ -4,21 +4,37 @@ import aiohttp
 import random
 import urllib.parse
 import logging
+import gc
 from typing import Optional, Tuple, Dict, Any
 from PIL import Image
 from services.gemini_service import GeminiService
 
 # In-memory image cache to store generated images for instant JPG/PNG download & ratio change
+# Kept small (max 15 items + 20-min TTL) to prevent memory limit crashes on Render 512MB RAM
 IMAGE_CACHE: Dict[str, Dict[str, Any]] = {}
-MAX_IMAGE_CACHE_SIZE = 100
+MAX_IMAGE_CACHE_SIZE = 15
 
-ASPECT_RATIOS: Dict[str, Tuple[int, int, str]] = {
-    "1:1": (1024, 1024, "📐 1:1 (Square - 1024x1024)"),
-    "16:9": (1280, 720, "🖼 16:9 (Landscape - 1280x720)"),
-    "9:16": (720, 1280, "📱 9:16 (Portrait - 720x1280)"),
-    "4:3": (1024, 768, "🖥 4:3 (Desktop - 1024x768)"),
-    "3:4": (768, 1024, "📸 3:4 (Photo - 768x1024)")
-}
+
+def clean_expired_cache():
+    """
+    Cleans expired cache items older than 20 minutes (1200s) to free RAM.
+    """
+    try:
+        now = time.time()
+        expired = [
+            k for k, v in IMAGE_CACHE.items() 
+            if now - v.get("created_at", v.get("timestamp", now)) > 1200
+        ]
+        for k in expired:
+            IMAGE_CACHE.pop(k, None)
+        if len(IMAGE_CACHE) > MAX_IMAGE_CACHE_SIZE:
+            overflow = len(IMAGE_CACHE) - MAX_IMAGE_CACHE_SIZE
+            for _ in range(overflow):
+                oldest_key = next(iter(IMAGE_CACHE))
+                IMAGE_CACHE.pop(oldest_key, None)
+        gc.collect()
+    except Exception as e:
+        logging.debug(f"Cache cleanup warning: {e}")
 
 
 def convert_to_png(image_bytes: bytes) -> bytes:
@@ -29,6 +45,8 @@ def convert_to_png(image_bytes: bytes) -> bytes:
         img = Image.open(io.BytesIO(image_bytes))
         out = io.BytesIO()
         img.save(out, format="PNG", optimize=True)
+        del img
+        gc.collect()
         return out.getvalue()
     except Exception as e:
         logging.error(f"Error converting image to PNG: {e}")
@@ -44,57 +62,72 @@ def convert_to_jpg(image_bytes: bytes) -> bytes:
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
         out = io.BytesIO()
-        img.save(out, format="JPEG", quality=95, optimize=True)
+        img.save(out, format="JPEG", quality=92, optimize=True)
+        del img
+        gc.collect()
         return out.getvalue()
     except Exception as e:
         logging.error(f"Error converting image to JPG: {e}")
         return image_bytes
 
 
-def enhance_image_hd(image_bytes: bytes, sharpness_factor: float = 2.2, contrast_factor: float = 1.15) -> bytes:
+def enhance_image_hd(image_bytes: bytes, sharpness_factor: float = 2.0, contrast_factor: float = 1.12) -> bytes:
     """
-    Enhances blurry or low-res images using Lanczos 2x super-resolution,
+    Enhances blurry or low-res images using Lanczos super-resolution,
     Unsharp Masking, Detail Filter, and PIL ImageEnhance contrast & sharpness tuning.
-    Returns crystal clear high-definition JPEG bytes.
+    Memory-optimized for Render 512MB RAM limits with explicit garbage collection.
     """
+    clean_expired_cache()
     try:
         from PIL import ImageEnhance, ImageFilter
         img = Image.open(io.BytesIO(image_bytes))
         if img.mode != "RGB":
             img = img.convert("RGB")
 
-        # 1. Lanczos 2x Super-Resolution Upscaling
+        # 1. Cap upscale resolution to max 1920px to protect 512MB RAM
         width, height = img.size
-        new_width = max(width * 2, 1024)
-        new_height = max(height * 2, 1024)
-        
-        # Cap max resolution to 4096 to prevent memory overflow
-        if new_width > 4096 or new_height > 4096:
-            scale = min(4096 / new_width, 4096 / new_height)
-            new_width = int(new_width * scale)
-            new_height = int(new_height * scale)
+        target_max = 1920
+        scale = min(target_max / max(width, 1), target_max / max(height, 1), 2.0)
+        new_width = max(int(width * scale), 768)
+        new_height = max(int(height * scale), 768)
+
+        if new_width > 1920 or new_height > 1920:
+            scale_cap = min(1920 / new_width, 1920 / new_height)
+            new_width = int(new_width * scale_cap)
+            new_height = int(new_height * scale_cap)
 
         upscaled = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        del img
 
-        # 2. Unsharp Mask & Detail Filter Enhancement
-        sharpened = upscaled.filter(ImageFilter.UnsharpMask(radius=2, percent=180, threshold=3))
+        # 2. Unsharp Mask & Detail Filter
+        sharpened = upscaled.filter(ImageFilter.UnsharpMask(radius=2, percent=150, threshold=3))
+        del upscaled
+
         detailed = sharpened.filter(ImageFilter.DETAIL)
+        del sharpened
 
         # 3. Tune Sharpness, Contrast & Color Vibrance
         enhancer_sharp = ImageEnhance.Sharpness(detailed)
         img_sharp = enhancer_sharp.enhance(sharpness_factor)
+        del detailed
 
         enhancer_contrast = ImageEnhance.Contrast(img_sharp)
         img_contrast = enhancer_contrast.enhance(contrast_factor)
+        del img_sharp
 
         enhancer_color = ImageEnhance.Color(img_contrast)
-        final_img = enhancer_color.enhance(1.08)
+        final_img = enhancer_color.enhance(1.06)
+        del img_contrast
 
         output = io.BytesIO()
-        final_img.save(output, format="JPEG", quality=95, optimize=True)
+        final_img.save(output, format="JPEG", quality=92, optimize=True)
+        del final_img
+        gc.collect()
+
         return output.getvalue()
     except Exception as e:
         logging.error(f"Error in enhance_image_hd: {e}")
+        gc.collect()
         return image_bytes
 
 
