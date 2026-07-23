@@ -1,0 +1,1 @@
+{"version":3,"file":"main.keyboard.js","sourceRoot":"","sources":["../../../src/bot/keyboards/main.keyboard.ts"],"names":[],"mappings":";;AAEA,oDAMC;AARD,uCAAkC;AAElC,SAAgB,oBAAoB;IAClC,OAAO,iBAAM,CAAC,QAAQ,CAAC;QACrB,CAAC,0BAA0B,EAAE,iBAAiB,CAAC;QAC/C,CAAC,qBAAqB,EAAE,qBAAqB,CAAC;QAC9C,CAAC,wBAAwB,EAAE,sBAAsB,CAAC;KACnD,CAAC,CAAC,MAAM,EAAE,CAAC,UAAU,EAAE,CAAC;AAC3B,CAAC"}

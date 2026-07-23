@@ -8,7 +8,6 @@ logs/*.log
 .vscode/
 .DS_Store
 node_modules/
-dist/
 data/*.db
 data/*.sqlite
 temp/
