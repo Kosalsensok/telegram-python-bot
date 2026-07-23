@@ -34,6 +34,88 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
         if not user_text:
             return
 
+        # Reply Keyboard Fast Action Intercepts
+        if "ជ្រើសរើស Mode" in user_text:
+            from keyboards.inline import get_mode_inline_keyboard
+            current_mode = "general"
+            if db_service:
+                current_mode = await db_service.get_user_mode(user_id)
+            mode_text = (
+                "🎯 <b>ជ្រើសរើស AI Operating Mode / Select AI Mode:</b>\n\n"
+                "• <b>🤖 General AI Mode:</b> ជំនួយការ AI ទូទៅ\n"
+                "• <b>📐 Standard Mode:</b> បម្លែងសមីការ គណិត/គីមី/រូបវិទ្យា ជា LaTeX\n"
+                "• <b>🇰🇭 Khmer Math Mode:</b> បម្លែងសមីការ ជា LaTeX ភាសាខ្មែរ\n"
+                "• <b>🌐 Translate to ខ្មែរ Mode:</b> បកប្រែអត្ថបទ/រូបភាព ទៅជាខ្មែរ\n"
+                "• <b>🎨 TikZ Mode:</b> បម្លែង ក្រាហ្វ/Circuit/ធរណីមាត្រ ជា TikZ Code\n"
+                "• <b>📄 PDF to Text Mode:</b> ទាញយកអត្ថបទពី PDF ខ្មែរ\n"
+                "• <b>✍️ Handwrite Mode:</b> បម្លែងអក្សរដៃ/សមីការដៃ ជា LaTeX\n\n"
+                f"📌 Mode បច្ចុប្បន្នរបស់អ្នក៖ <b>{current_mode.upper()}</b>"
+            )
+            await message.answer(mode_text, parse_mode="HTML", reply_markup=get_mode_inline_keyboard(current_mode))
+            return
+
+        if "បង្កើតរូបភាព" in user_text:
+            msg = (
+                "🎨 <b>បង្កើតរូបភាព AI ឥតដែនកំណត់ (Unlimited HD AI Image Generator):</b>\n\n"
+                "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
+                "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
+                "<b>ឧទាហរណ៍៖</b>\n"
+                "• <code>/image 16:9 នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
+                "• <code>/image 9:16 futuristic Phnom Penh city in 2050, 8k resolution</code>"
+            )
+            await message.answer(msg, parse_mode="HTML")
+            return
+
+        if "វិភាគរូបភាព" in user_text:
+            msg = (
+                "🖼 <b>សូមផ្ញើរូបភាព ហើយសរសេរសំណួរនៅក្នុង Caption៖</b>\n\n"
+                "1. ចុច <b>Attach File / Photo</b> ក្នុង Telegram\n"
+                "2. ជ្រើសរើសរូបភាព ឬ Screenshot របស់អ្នក\n"
+                "3. វាយសំណួររបស់អ្នកនៅក្នុងប្រអប់ <b>Caption</b>\n"
+                "4. ចុច <b>Send</b> ជាការស្រេច!"
+            )
+            await message.answer(msg, parse_mode="HTML")
+            return
+
+        if "របៀបសួរសំណួរ" in user_text or "Help" in user_text:
+            help_text = (
+                "📖 <b>ការណែនាំពីរបៀបប្រើប្រាស់ / Usage Guide:</b>\n\n"
+                "<b>1. 💬 សួរសំណួរជាអក្សរ (Text Chat):</b>\n"
+                "• វាយសំណួរជាភាសាខ្មែរ ឬអង់គ្លេស រួចផ្ញើចេញ.\n\n"
+                "<b>2. 🖼 ផ្ញើរូបភាពវិភាគ (Vision AI):</b>\n"
+                "• ផ្ញើរូបភាពលំហាត់ សមរភូមិ កូដ ឬសំណួរ រួចដាក់ Caption.\n\n"
+                "<b>3. 🎨 បង្កើតរូបភាព AI (/image /imagine):</b>\n"
+                "• វាយ <code>/image [prompt]</code> ដើម្បីបង្កើតរូបភាព HD 4K.\n\n"
+                "<b>4. 🎯 7 Specialized AI Operating Modes (/mode):</b>\n"
+                "• ជ្រើសរើស Mode តាមតម្រូវការការងាររបស់អ្នក!"
+            )
+            await message.answer(help_text, parse_mode="HTML")
+            return
+
+        if "ស្ថិតិ" in user_text:
+            user_stats = {"total_messages": 0, "text_count": 0, "image_count": 0}
+            if db_service:
+                user_stats = await db_service.get_user_stats(user_id)
+            stats_text = (
+                "📊 <b>ស្ថិតិផ្ទាល់ខ្លួនរបស់អ្នក / Your Usage Stats</b>\n\n"
+                f"💬 <b>សំណួរសរុប (Total Questions):</b> {user_stats.get('total_messages', 0)}\n"
+                f"📝 <b>អត្ថបទ (Text):</b> {user_stats.get('text_count', 0)}\n"
+                f"🖼️ <b>រូបភាព (Images):</b> {user_stats.get('image_count', 0)}"
+            )
+            await message.answer(stats_text, parse_mode="HTML")
+            return
+
+        if "លុប History" in user_text:
+            cleared_db = False
+            if db_service:
+                cleared_db = await db_service.clear_history(user_id)
+            cleared_cache = memory.clear_history(user_id) if memory else False
+            if cleared_cache or cleared_db:
+                await message.answer("🧹 <b>ប្រវត្តិសន្ទនារបស់អ្នកត្រូវបានលុបរួចរាល់!</b>", parse_mode="HTML")
+            else:
+                await message.answer("ℹ️ មិនមានប្រវត្តិសន្ទនាដែលត្រូវលុបទេ។", parse_mode="HTML")
+            return
+
         loading_msg = None
         try:
             try:
