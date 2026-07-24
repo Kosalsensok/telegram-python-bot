@@ -39,6 +39,14 @@ class TestTelegramAIExperience(unittest.TestCase):
     Comprehensive test suite for Telegram AI Premium Experience & Production Readiness.
     """
 
+    def test_code_block_html_and_line_number_stripping(self):
+        dirty_code = "```cpp\n1: <b>#include</b> <iostream>\n2: int main() { return 0; }\n```"
+        formatted = markdown_to_telegram_html(dirty_code)
+        self.assertNotIn("<b>", formatted)
+        self.assertNotIn("1:", formatted)
+        self.assertIn("&lt;iostream&gt;", formatted)
+        self.assertIn('<pre><code class="language-cpp">#include &lt;iostream&gt;\nint main() { return 0; }</code></pre>', formatted)
+
     def test_broken_character_detection_and_cleaning(self):
         dirty = "\u25A1 Feature 1: \u25A1 POS Checkout \uFFFD"
         self.assertTrue(contains_broken_characters(dirty))

@@ -141,11 +141,33 @@ def sanitize_telegram_html(text: str) -> str:
     return "".join(parts)
 
 
+def clean_code_content(raw_code: str) -> str:
+    """
+    Strips any raw HTML tags (<b>, </b>, <i>, </i>, <code>, </code>, etc.) and line numbers from code block content.
+    Returns clean, pure executable code formatted safely for Telegram HTML.
+    """
+    if not raw_code:
+        return ""
+    # Unescape existing HTML entities first to inspect original characters
+    text = html.unescape(raw_code)
+    # Strip any embedded HTML tags inside code blocks
+    text = re.sub(r'</?(?:b|i|s|u|code|span|div|p|blockquote|pre)(?:\s+[^>]*)?>', '', text, flags=re.IGNORECASE)
+    # Strip line numbers if present (e.g. "1: #include" or "1 | #include")
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        cleaned_line = re.sub(r'^\s*\d+[:|]\s*', '', line)
+        cleaned_lines.append(cleaned_line)
+    clean_text = "\n".join(cleaned_lines).strip()
+    return escape_tg_html(clean_text)
+
+
 def markdown_to_telegram_html(text: str) -> str:
     """
     Converts standard Gemini Markdown & LaTeX into clean, valid Telegram HTML.
     Processes code blocks separately, converts LaTeX formulas to Unicode, and applies
     bold, italic, headers, links, and list formatting without breaking Telegram HTML parsing.
+    Strips HTML tags and line numbers from inside code blocks.
     """
     if not text:
         return ""
@@ -175,16 +197,24 @@ def markdown_to_telegram_html(text: str) -> str:
             # It's a markdown ``` block
             lang = match.group(2) or ""
             code_content = match.group(3)
-            escaped_code = escape_tg_html(code_content.strip())
+            sanitized_code = clean_code_content(code_content)
             if lang:
                 clean_lang = lang.lower().replace("+", "p").replace("#", "sharp")
-                parts.append(f'<pre><code class="language-{clean_lang}">{escaped_code}</code></pre>')
+                parts.append(f'<pre><code class="language-{clean_lang}">{sanitized_code}</code></pre>')
             else:
-                parts.append(f'<pre>{escaped_code}</pre>')
+                parts.append(f'<pre>{sanitized_code}</pre>')
         else:
             # It's an HTML <pre> block
             html_pre_block = match.group(4)
-            parts.append(html_pre_block)
+            lang_match = re.search(r'class="language-([\w#+-]+)"', html_pre_block, re.IGNORECASE)
+            lang = lang_match.group(1) if lang_match else ""
+            inner_content = re.sub(r'</?pre(?:\s+[^>]*)?>', '', html_pre_block, flags=re.IGNORECASE)
+            sanitized_code = clean_code_content(inner_content)
+            if lang:
+                clean_lang = lang.lower().replace("+", "p").replace("#", "sharp")
+                parts.append(f'<pre><code class="language-{clean_lang}">{sanitized_code}</code></pre>')
+            else:
+                parts.append(f'<pre>{sanitized_code}</pre>')
 
         last_idx = end
 
@@ -195,6 +225,7 @@ def markdown_to_telegram_html(text: str) -> str:
 
     final_html = "".join(parts)
     return sanitize_telegram_html(final_html)
+
 
 
 def _format_text_block(text: str) -> str:
