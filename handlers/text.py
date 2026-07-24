@@ -177,7 +177,7 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 else:
                     keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
 
-                await message.reply(summary_html, parse_mode="HTML", reply_markup=keyboard)
+                await send_safe_response(message, summary_html, reply_markup=keyboard)
 
         except Exception as e:
             logging.error(f"Error in text handler for user {user_id}: {e}", exc_info=True)
