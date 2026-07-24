@@ -7,7 +7,7 @@ import urllib.parse
 import logging
 import gc
 from typing import Optional, Tuple, Dict, Any
-from PIL import Image
+from PIL import Image, ImageEnhance
 from services.gemini_service import GeminiService
 
 # In-memory image cache to store generated images for instant JPG/PNG download & ratio change
@@ -168,6 +168,27 @@ def parse_aspect_ratio(prompt: str) -> Tuple[str, int, int, str]:
     return "1:1", 1024, 1024, clean_prompt
 
 
+def post_process_hd_image(img_bytes: bytes) -> bytes:
+    """
+    Applies PIL Sharpness (1.25x) and Contrast (1.05x) enhancement with 95% JPEG quality encoding
+    for crystal clear HD rendering.
+    """
+    try:
+        im = Image.open(io.BytesIO(img_bytes))
+        if im.mode != "RGB":
+            im = im.convert("RGB")
+        sharpener = ImageEnhance.Sharpness(im)
+        im_sharp = sharpener.enhance(1.25)
+        contraster = ImageEnhance.Contrast(im_sharp)
+        im_final = contraster.enhance(1.05)
+        buf = io.BytesIO()
+        im_final.save(buf, format="JPEG", quality=95, optimize=True)
+        return buf.getvalue()
+    except Exception as e:
+        logging.warning(f"Failed to post-process HD image: {e}")
+        return img_bytes
+
+
 class ImageGenService:
     """
     High-definition, unlimited AI Image Generator using Pollinations AI (Flux HD models)
@@ -190,7 +211,7 @@ class ImageGenService:
         enhancement_instruction = (
             "You are an expert AI prompt engineer for ultra high quality image generation.\n"
             "Translate any Khmer or foreign text into vivid, detailed English.\n"
-            "Enhance the description with high quality keywords (e.g. 8k resolution, ultra-sharp focus, cinematic lighting, masterpiece, hyper-realistic, professional photography).\n"
+            "Enhance the description with high quality keywords (e.g. 8k resolution, ultra-sharp focus, cinematic lighting, masterpiece, hyper-realistic, professional photography, crystal clear details, flawless quality, 4k uhd).\n"
             "Keep the response under 200 characters.\n"
             "Output ONLY the final English prompt string, nothing else. No markdown, no quotes."
         )
@@ -228,11 +249,11 @@ class ImageGenService:
         encoded_optimized = urllib.parse.quote(optimized_prompt[:250])
         encoded_raw = urllib.parse.quote(prompt.strip()[:200])
 
-        # Candidate fallback URLs in priority order
+        # Candidate fallback URLs in priority order with enhance=true
         urls_to_try = [
-            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&nologo=true",
-            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&model=flux&nologo=true",
-            f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&nologo=true",
+            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&nologo=true&enhance=true",
+            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&model=flux&nologo=true&enhance=true",
+            f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&nologo=true&enhance=true",
             f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&model=turbo&nologo=true"
         ]
 
@@ -249,7 +270,7 @@ class ImageGenService:
                         if resp.status == 200:
                             data = await resp.read()
                             if len(data) > 3000:
-                                image_bytes = data
+                                image_bytes = post_process_hd_image(data)
                                 logging.info(f"Image generated successfully from {candidate_url[:60]}...")
                                 break
                         else:
