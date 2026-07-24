@@ -60,7 +60,7 @@ class DynamicThinkingAnimation:
         self._task: Optional[asyncio.Task] = None
         self._stopped = False
 
-    async def start() -> types.Message:
+    async def start(self) -> types.Message:
         """Starts animation task and returns sent loading message."""
         initial_text = self.steps[0] if self.steps else "🧠 <b>SMART AI ASSISTANT</b>\n━━━━━━━━━━━━━━━━━━━\n<i>✨ AI កំពុងរៀបចំចម្លើយ...</i>"
         try:
