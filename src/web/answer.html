@@ -243,7 +243,12 @@
         </div>
 
         <!-- HIGHLIGHTED RESULT DISPLAY -->
-        <div id="result-editor" class="hidden bg-darknavy border border-borderdark rounded-xl p-3.5 min-h-[120px] text-sm sm:text-base leading-relaxed text-textprimary whitespace-pre-wrap"></div>
+        <div id="result-editor-container" class="hidden space-y-1.5">
+          <div class="text-xs font-bold text-textsecondary flex items-center justify-between">
+            <span>🔍 អត្ថបទពិនិត្យរួច (ចុចលើពាក្យក្រហមដើម្បីកែសម្រួល)៖</span>
+          </div>
+          <div id="result-editor" class="bg-darknavy border border-borderdark rounded-xl p-3.5 min-h-[90px] text-sm sm:text-base leading-relaxed text-textprimary whitespace-pre-wrap"></div>
+        </div>
 
         <!-- BEFORE & AFTER COMPARISON -->
         <div id="comparison-container" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
@@ -544,11 +549,11 @@
     // RENDER HIGHLIGHTS & SUMMARY
     function renderCheckResults(data) {
       const summaryCard = document.getElementById('summary-card');
+      const resultEditorContainer = document.getElementById('result-editor-container');
       const resultEditor = document.getElementById('result-editor');
       const compContainer = document.getElementById('comparison-container');
 
       summaryCard.classList.remove('hidden');
-      resultEditor.classList.remove('hidden');
 
       document.getElementById('stat-total').innerText = data.summary.totalIssues;
       document.getElementById('stat-errors').innerText = data.summary.errors;
@@ -558,8 +563,10 @@
       const badgeSpan = document.getElementById('summary-badge');
       if (data.summary.totalIssues === 0) {
         badgeSpan.innerHTML = `<span class="text-emerald-400">✅ មិនបានរកឃើញកំហុសច្បាស់លាស់ទេ</span>`;
+        resultEditorContainer.classList.add('hidden');
       } else {
         badgeSpan.innerHTML = `<span class="text-amber-400">⚠️ បានរកឃើញ ${data.summary.totalIssues} បញ្ហា</span>`;
+        resultEditorContainer.classList.remove('hidden');
       }
 
       document.getElementById('btn-autofix').disabled = (data.summary.autoFixable === 0);
