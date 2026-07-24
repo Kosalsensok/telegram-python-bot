@@ -211,3 +211,25 @@ def get_solution_inline_keyboard() -> InlineKeyboardMarkup:
     builder.button(text="🏠 Menu", callback_data="cb_back_main")
     builder.adjust(2, 2, 1)
     return builder.as_markup()
+
+
+def get_image_gen_inline_keyboard(cache_id: str = "") -> InlineKeyboardMarkup:
+    """
+    Inline keyboard attached to generated AI image outputs.
+    """
+    builder = InlineKeyboardBuilder()
+    if cache_id:
+        builder.button(text="📥 Download HD JPG", callback_data=f"img_dl_jpg:{cache_id[:16]}")
+        builder.button(text="📥 Download PNG", callback_data=f"img_dl_png:{cache_id[:16]}")
+    builder.button(text="🎨 Create Image", callback_data="cb_image_gen_new")
+    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+    builder.adjust(2, 1, 1)
+    return builder.as_markup()
+
+
+def get_image_download_keyboard(cache_id: str = "") -> InlineKeyboardMarkup:
+    """
+    Inline keyboard for image download options.
+    """
+    return get_image_gen_inline_keyboard(cache_id)
+
