@@ -239,16 +239,25 @@ def get_requirements_navigation_keyboard(
     return builder.as_markup()
 
 
-def get_image_gen_inline_keyboard(cache_id: str = "") -> InlineKeyboardMarkup:
+def get_image_download_keyboard(cache_id: str = "", ratio_key: str = "1:1") -> InlineKeyboardMarkup:
+    """
+    Build keyboard for AI Image Generation download & aspect ratio options:
+    Row 1: [📥 Download HD JPG] [📥 Download PNG]
+    Row 2: [🎨 បង្កើតថ្មី] [🏠 Menu]
+    """
     builder = InlineKeyboardBuilder()
+    cid = cache_id[:16] if cache_id else "def"
+    
     if cache_id:
-        builder.button(text="📥 Download HD JPG", callback_data=f"img_dl_jpg:{cache_id[:16]}")
-        builder.button(text="📥 Download PNG", callback_data=f"img_dl_png:{cache_id[:16]}")
-    builder.button(text="🎨 Create Image", callback_data="cb_image_gen_new")
+        builder.button(text="📥 Download HD JPG", callback_data=f"img_dl_jpg:{cid}")
+        builder.button(text="📥 Download PNG", callback_data=f"img_dl_png:{cid}")
+    
+    builder.button(text="🎨 បង្កើតថ្មី", callback_data="cb_image_gen_new")
     builder.button(text="🏠 Menu", callback_data="cb_back_main")
-    builder.adjust(2, 1, 1)
+    
+    if cache_id:
+        builder.adjust(2, 2)
+    else:
+        builder.adjust(2)
+        
     return builder.as_markup()
-
-
-def get_image_download_keyboard(cache_id: str = "") -> InlineKeyboardMarkup:
-    return get_image_gen_inline_keyboard(cache_id)

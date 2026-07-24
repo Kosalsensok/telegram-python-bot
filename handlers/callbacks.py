@@ -295,6 +295,25 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     async def callback_ai_dislike(callback: types.CallbackQuery):
         await callback.answer("🙏 អរគុណសម្រាប់មតិរិះគន់! យើងនឹងកែប្រែ AI ឱ្យកាន់តែប្រសើរ។", show_alert=False)
 
+    @router.callback_query(F.data.startswith("img_dl_jpg:"))
+    @router.callback_query(F.data.startswith("img_dl_png:"))
+    async def callback_image_download(callback: types.CallbackQuery):
+        await callback.answer("📥 បានផ្ញើសំណើទាញយករូបភាព (Downloading image...)")
+
+    @router.callback_query(F.data == "cb_image_gen_new")
+    async def callback_image_gen_new(callback: types.CallbackQuery):
+        await callback.answer()
+        guide_msg = (
+            "🎨 <b>បង្កើតរូបភាព AI ថ្មី (New AI Image):</b>\n\n"
+            "សូមវាយ <code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
+            "<b>ឧទាហរណ៍៖</b>\n"
+            "• <code>/image 16:9 logo e lms cool, modern vector</code>"
+        )
+        try:
+            await callback.message.reply(guide_msg, parse_mode="HTML")
+        except Exception:
+            pass
+
     @router.callback_query(F.data.startswith("ai_explain:"))
     @router.callback_query(F.data.startswith("ai_regen:"))
     @router.callback_query(F.data.startswith("ai_simple:"))
