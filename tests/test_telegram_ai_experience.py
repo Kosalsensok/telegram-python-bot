@@ -38,13 +38,22 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertIn("• Feature 1: • POS Checkout", cleaned)
 
     def test_response_type_router(self):
-        self.assertEqual(detect_response_type_from_text("Write C++ loop code"), "code_answer")
+        self.assertEqual(detect_response_type_from_text("hi"), "greeting")
+        self.assertEqual(detect_response_type_from_text("hello"), "greeting")
+        self.assertEqual(detect_response_type_from_text("សួស្តី"), "greeting")
+        self.assertEqual(detect_response_type_from_text("write a code C++ loop"), "code_answer")
         self.assertEqual(detect_response_type_from_text("Feature mart system"), "software_requirements")
         self.assertEqual(detect_response_type_from_text("Build mart system prototype"), "project_prototype")
         self.assertEqual(detect_response_type_from_text("Create database for mart system"), "database_design")
         self.assertEqual(detect_response_type_from_text("Explain microservice architecture"), "system_architecture")
         self.assertEqual(detect_response_type_from_text("Solve \\frac{1}{2} equation"), "mathematics")
         self.assertEqual(detect_response_type_from_text("Stripe payment email unsuccessful"), "email_analysis")
+
+    def test_greeting_formatting(self):
+        formatted = format_telegram_html({"response_type": "greeting"})
+        self.assertIn("សួស្តី!", formatted)
+        self.assertNotIn("MATHEMATICS SOLUTION", formatted)
+        self.assertNotIn("&lt;b&gt;", formatted)
 
     def test_structured_ai_parser(self):
         raw_json = json.dumps({

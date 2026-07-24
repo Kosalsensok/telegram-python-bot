@@ -6,13 +6,15 @@ from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
-from utils.response_router import parse_ai_structured_response, format_telegram_html
+from utils.response_router import parse_ai_structured_response, format_telegram_html, detect_response_type_from_text
 from utils.solution_card import save_solution_cache, generate_short_solution_id
 from keyboards.inline import (
     get_mode_inline_keyboard,
     get_requirements_navigation_keyboard,
     get_code_answer_keyboard,
-    get_math_answer_keyboard
+    get_math_answer_keyboard,
+    get_greeting_inline_keyboard,
+    get_welcome_inline_keyboard
 )
 from config import RENDER_EXTERNAL_URL
 
@@ -43,6 +45,12 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
 
         user_text = message.text.strip()
         if not user_text:
+            return
+
+        # Fast Intercept for Greetings (hi, hello, សួស្តី)
+        if detect_response_type_from_text("", user_prompt=user_text) == "greeting":
+            greeting_html = format_telegram_html({"response_type": "greeting"})
+            await message.answer(greeting_html, parse_mode="HTML", reply_markup=get_greeting_inline_keyboard())
             return
 
         # Reply Keyboard Fast Action Intercepts
@@ -169,13 +177,17 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 # Format Layer 1 Telegram Native summary response
                 summary_html = format_telegram_html(parsed_data)
 
-                # Attach keyboard matching response type
-                if response_type == "code_answer":
+                # Attach keyboard matching response type cleanly
+                if response_type == "greeting":
+                    keyboard = get_greeting_inline_keyboard(mini_app_url)
+                elif response_type == "code_answer":
                     keyboard = get_code_answer_keyboard(solution_id, mini_app_url)
                 elif response_type in ["mathematics", "chemistry", "physics"]:
                     keyboard = get_math_answer_keyboard(solution_id, mini_app_url)
-                else:
+                elif response_type in ["software_requirements", "project_prototype", "system_architecture", "database_design", "api_design"]:
                     keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
+                else:
+                    keyboard = get_welcome_inline_keyboard()
 
                 await send_safe_response(message, summary_html, reply_markup=keyboard)
 

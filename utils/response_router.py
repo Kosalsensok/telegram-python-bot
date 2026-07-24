@@ -6,6 +6,7 @@ import unicodedata
 from typing import Dict, Any, List, Optional, Tuple
 
 RESPONSE_TYPES = [
+    "greeting",
     "general_answer",
     "code_answer",
     "technical_explanation",
@@ -66,10 +67,17 @@ def clean_broken_characters(text: str) -> str:
 
 def detect_response_type_from_text(text: str, user_prompt: str = "") -> str:
     """
-    Intelligent classifier to assign query/response to one of the 15 ResponseType categories.
-    Prioritizes specific technical sub-domains (Database, API, Architecture, Code) before broad requirement types.
+    Intelligent classifier to assign query/response to one of the ResponseType categories.
+    Prioritizes Greetings and Specific Technical Sub-domains before broad requirement types.
     """
-    combined = (text + " " + user_prompt).lower()
+    combined = (text + " " + user_prompt).lower().strip()
+    clean_prompt = user_prompt.strip().lower()
+    clean_text = text.strip().lower()
+
+    # Priority 0: Greeting Detection
+    greeting_exact = ["hi", "hello", "hey", "greetings", "សួស្តី", "សួស្ដី", "hi bot", "hello bot", "good morning", "good evening", "good afternoon"]
+    if clean_prompt in greeting_exact or clean_text in greeting_exact or (len(combined) < 15 and any(combined.startswith(g) for g in ["hi", "hello", "hey", "សួស្តី", "សួស្ដី"])):
+        return "greeting"
 
     # Specific Technical Sub-domain Detection (Priority 1)
     if any(k in combined for k in ["database", "schema", "tables", "primary key", "foreign key", "sql", "ដាតាបេស"]):
@@ -80,7 +88,7 @@ def detect_response_type_from_text(text: str, user_prompt: str = "") -> str:
         return "system_architecture"
     if any(k in combined for k in ["prototype", "build prototype", "បង្កើត prototype", "project zip"]):
         return "project_prototype"
-    if any(k in combined for k in ["write code", "c++ loop", "python script", "code block", "#include", "def ", "function "]):
+    if any(k in combined for k in ["write code", "write a code", "code c++", "c++ loop", "python script", "code block", "#include", "def ", "function "]):
         return "code_answer"
 
     # General Requirements (Priority 2)
@@ -224,72 +232,214 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
     }
 
 
-def format_telegram_html(data: Dict[str, Any]) -> str:
+def format_greeting_telegram(data: Dict[str, Any]) -> str:
     """
-    Formats structured response into Telegram-Native Premium HTML message (Layer 1).
-    Requirement 4: Clean native summary response.
+    Format standard greeting response for Telegram output (Phase 7 A).
     """
-    res_type = data.get("response_type", "general_answer")
-    title = html.escape(clean_broken_characters(data.get("title", "")))
-    subtitle = html.escape(clean_broken_characters(data.get("subtitle", "")))
-    summary = html.escape(clean_broken_characters(data.get("summary_km") or data.get("summary") or ""))
+    return (
+        "👋 <b>សួស្តី!</b>\n"
+        "ខ្ញុំជា <b>Smart AI Assistant</b>។\n\n"
+        "ខ្ញុំអាចជួយអ្នកបានលើ៖\n"
+        "• 💻 ការសរសេរកូដ (Code Generation)\n"
+        "• 📐 គណិតវិទ្យា & វិទ្យាសាស្ត្រ (LaTeX Solver)\n"
+        "• 🖼 វិភាគរូបភាព (Vision OCR & Inspection)\n"
+        "• 🛒 Functional Requirements & Business Systems\n"
+        "• 📦 Project Prototype & Architecture\n"
+        "• 🧠 Technical Deep-Dive Explanations\n\n"
+        "👉 សូមផ្ញើសំណួររបស់អ្នក ឬចុច Menu ខាងក្រោម។"
+    )
 
-    header_icons = {
-        "software_requirements": "🛒 <b>SMART BUSINESS SYSTEM</b>\nAdvanced Functional Requirements",
-        "project_prototype": "📦 <b>PROJECT PROTOTYPE</b>\nSystem Implementation",
-        "code_answer": "💻 <b>CODE SOLUTION</b>\nTechnical Implementation",
-        "technical_explanation": "🧠 <b>TECHNICAL EXPLANATION</b>\nSystem Deep-Dive",
-        "system_architecture": "🏛 <b>SYSTEM ARCHITECTURE</b>\nHigh-Level Architecture Design",
-        "database_design": "🗄 <b>DATABASE DESIGN</b>\nRelational Schema & Models",
-        "api_design": "🔌 <b>API SPECIFICATION</b>\nREST & JSON Endpoints",
-        "mathematics": "🎓 <b>MATHEMATICS SOLUTION</b>\nStep-by-Step Explanation",
-        "chemistry": "🧪 <b>CHEMISTRY ANALYSIS</b>\nChemical Formula & Reaction",
-        "physics": "⚡ <b>PHYSICS SOLUTION</b>\nPhysics Principles & Calculation",
-        "email_analysis": "📧 <b>EMAIL ANALYSIS</b>\nEmail Verification & Security",
-        "email": "📧 <b>EMAIL ANALYSIS</b>\nEmail Verification & Security",
-        "document_analysis": "📄 <b>DOCUMENT ANALYSIS</b>\nDocument Extraction",
-        "document": "📄 <b>DOCUMENT ANALYSIS</b>\nDocument Extraction",
-        "table_analysis": "📊 <b>TABLE EXTRACTION</b>\nData Summary",
-        "table": "📊 <b>TABLE EXTRACTION</b>\nData Summary",
-        "general_image_analysis": "🖼 <b>IMAGE ANALYSIS</b>\nAI Visual Inspection",
-        "general_image": "🖼 <b>IMAGE ANALYSIS</b>\nAI Visual Inspection",
-        "general_answer": "🤖 <b>SMART AI ASSISTANT</b>\nTechnical Response"
-    }
 
-    parts = ["━━━━━━━━━━━━━━━━━━", header_icons.get(res_type, "🤖 <b>SMART AI ASSISTANT</b>"), "━━━━━━━━━━━━━━━━━━"]
+def format_code_answer_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format code answer response for Telegram output (Phase 7 B).
+    """
+    title = clean_broken_characters(data.get("title", "C++ Code Solution"))
+    subtitle = clean_broken_characters(data.get("subtitle", ""))
+    summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    tags = data.get("tags", ["Code", "Implementation"])
+    sections = data.get("sections", [])
 
-    if title:
-        parts.append(f"\n📌 <b>{title}</b>")
+    parts = [
+        "💻 <b>CODE SOLUTION</b>",
+        f"<b>{title}</b>"
+    ]
     if subtitle:
         parts.append(f"<i>{subtitle}</i>")
 
     if summary:
-        parts.append(f"\n{summary}")
+        parts.append(f"\n<b>សង្ខេប៖</b> {summary}")
 
-    tags = data.get("tags", [])
     if tags:
-        clean_tags = " · ".join([html.escape(t) for t in tags])
-        parts.append(f"\n🏷 <b>Tags:</b> {clean_tags}")
+        parts.append(f"🏷 <b>Tags:</b> {' · '.join(tags)}")
 
-    # Sections summary overview (first 5 sections)
+    if sections:
+        parts.append("")
+        for sec in sections[:4]:
+            step_num = sec.get("step_number", 1)
+            heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
+            content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
+            parts.append(f"<b>{step_num}️⃣ {heading}</b>\n{content}")
+
+    return "\n".join(parts)
+
+
+def format_software_requirements_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format software requirements response for Telegram output (Phase 7 C).
+    """
+    title = clean_broken_characters(data.get("title", "SMART SYSTEM REQUIREMENTS"))
+    subtitle = clean_broken_characters(data.get("subtitle", "Advanced Functional Requirements"))
+    summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    tags = data.get("tags", ["POS", "Inventory", "Analytics"])
     sections = data.get("sections", [])
+
+    parts = [
+        "━━━━━━━━━━━━━━━━━━",
+        f"🛒 <b>{title.upper()}</b>\n{subtitle}",
+        "━━━━━━━━━━━━━━━━━━",
+        f"\n<b>សេចក្តីសង្ខេប៖</b> {summary}"
+    ]
+
+    if tags:
+        parts.append(f"🏷 <b>Tags:</b> {' · '.join(tags)}")
+
     if sections:
         parts.append("")
         for sec in sections[:5]:
             step_num = sec.get("step_number", 1)
             num_emoji = f"{step_num}️⃣" if step_num <= 10 else f"[{step_num}]"
-            heading = html.escape(clean_broken_characters(sec.get("heading_km") or sec.get("heading") or ""))
+            heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content_snippet = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
             if content_snippet:
                 snippet = content_snippet.split("\n")[0]
                 if len(snippet) > 80:
                     snippet = snippet[:80] + "..."
-                parts.append(f"{num_emoji} <b>{heading}</b>\n{html.escape(snippet)}")
+                parts.append(f"{num_emoji} <b>{heading}</b>\n{snippet}")
             else:
                 parts.append(f"{num_emoji} <b>{heading}</b>")
 
     parts.append("\n━━━━━━━━━━━━━━━━━━")
     parts.append("👇 <b>សូមជ្រើសរើសផ្នែកខាងក្រោម ដើម្បីមើលព័ត៌មានលម្អិត</b>")
 
-    full_text = "\n".join(parts)
-    return clean_broken_characters(full_text)
+    return "\n".join(parts)
+
+
+def format_math_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format mathematics / science response for Telegram output (Phase 7 D).
+    """
+    title = clean_broken_characters(data.get("title", "Mathematics Solution"))
+    summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    sections = data.get("sections", [])
+
+    parts = [
+        "🎓 <b>MATHEMATICS SOLUTION</b>",
+        f"<b>{title}</b>"
+    ]
+    if summary:
+        parts.append(f"\n{summary}")
+
+    if sections:
+        parts.append("")
+        for sec in sections[:5]:
+            step_num = sec.get("step_number", 1)
+            heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
+            content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
+            parts.append(f"<b>{step_num}️⃣ {heading}</b>\n{content}")
+
+    return "\n".join(parts)
+
+
+def format_email_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format email analysis response for Telegram output.
+    """
+    title = clean_broken_characters(data.get("title", "Email Verification"))
+    summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    sections = data.get("sections", [])
+
+    parts = [
+        "📧 <b>EMAIL ANALYSIS</b>",
+        f"<b>{title}</b>",
+        f"\n{summary}"
+    ]
+    if sections:
+        parts.append("")
+        for sec in sections[:4]:
+            heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
+            content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
+            parts.append(f"<b>• {heading}:</b> {content}")
+
+    return "\n".join(parts)
+
+
+def format_document_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format document extraction response for Telegram output.
+    """
+    title = clean_broken_characters(data.get("title", "Document Summary"))
+    summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    sections = data.get("sections", [])
+
+    parts = [
+        "📄 <b>DOCUMENT ANALYSIS</b>",
+        f"<b>{title}</b>",
+        f"\n{summary}"
+    ]
+    if sections:
+        parts.append("")
+        for sec in sections[:5]:
+            heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
+            content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
+            parts.append(f"<b>• {heading}:</b>\n{content}")
+
+    return "\n".join(parts)
+
+
+def format_general_answer_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format general answer response for Telegram output.
+    """
+    title = clean_broken_characters(data.get("title", "Smart AI Response"))
+    summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    sections = data.get("sections", [])
+
+    parts = [
+        f"🤖 <b>{title}</b>"
+    ]
+    if summary and summary != title:
+        parts.append(f"\n{summary}")
+
+    if sections:
+        parts.append("")
+        for sec in sections[:5]:
+            heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
+            content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
+            parts.append(f"<b>• {heading}</b>\n{content}")
+
+    return "\n".join(parts)
+
+
+def format_telegram_html(data: Dict[str, Any]) -> str:
+    """
+    Formats structured response into Telegram-Native Premium HTML message (Layer 1).
+    Dispatches to dedicated formatters according to response_type.
+    """
+    res_type = data.get("response_type", "general_answer")
+
+    if res_type == "greeting":
+        return format_greeting_telegram(data)
+    elif res_type == "code_answer":
+        return format_code_answer_telegram(data)
+    elif res_type in ["software_requirements", "project_prototype", "system_architecture", "database_design", "api_design"]:
+        return format_software_requirements_telegram(data)
+    elif res_type in ["mathematics", "physics", "chemistry"]:
+        return format_math_telegram(data)
+    elif res_type in ["email_analysis", "email"]:
+        return format_email_telegram(data)
+    elif res_type in ["document_analysis", "document"]:
+        return format_document_telegram(data)
+    else:
+        return format_general_answer_telegram(data)
+

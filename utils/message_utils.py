@@ -75,16 +75,19 @@ def clean_latex_to_unicode(text: str) -> str:
 def escape_tg_html(text: str) -> str:
     """
     Escapes strictly '<', '>', and '&' for Telegram HTML parse mode.
-    Does NOT escape quotes (") to &quot; or (') to &#x27; because Telegram HTML does not support them as entities.
+    Avoids double-escaping existing entities like &amp;, &lt;, &gt;.
     """
     if not text:
         return ""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # Only escape & that is not already part of an HTML entity
+    text = re.sub(r'&(?!amp;|lt;|gt;|quot;|#\d+;)', '&amp;', text)
+    text = text.replace("<", "&lt;").replace(">", "&gt;")
+    return text
 
 
 def _sanitize_outside_pre(text: str) -> str:
     valid_tag_pattern = re.compile(
-        r'</?(?:b|i|s|u|code|blockquote|span)(?:\s+(?:class="[^"]*"|expandable))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
+        r'</?(?:b|i|s|u|pre|code|blockquote|span)(?:\s+(?:class="[^"]*"|expandable))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
         re.IGNORECASE
     )
 

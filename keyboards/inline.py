@@ -24,6 +24,27 @@ def get_welcome_inline_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def get_greeting_inline_keyboard(mini_app_url: str = "") -> InlineKeyboardMarkup:
+    """
+    Phase 7 A & Phase 9: Dedicated inline keyboard for Greeting responses.
+    Row 1: [ 💬 Ask AI ] [ 🖼 Analyze Image ]
+    Row 2: [ 🎯 AI Modes ] [ 🌐 Mini App ]
+    Row 3: [ ℹ️ Help ] [ 🏠 Menu ]
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="💬 Ask AI", callback_data="cb_ask_ai")
+    builder.button(text="🖼 Analyze Image", callback_data="cb_analyze_image")
+    builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
+    if mini_app_url:
+        builder.button(text="🌐 Mini App", web_app=WebAppInfo(url=mini_app_url))
+    else:
+        builder.button(text="🌐 Mini App", callback_data="cb_miniapp")
+    builder.button(text="ℹ️ Help", callback_data="cb_help")
+    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+    builder.adjust(2, 2, 2)
+    return builder.as_markup()
+
+
 def get_mode_inline_keyboard(current_mode: str = "general") -> InlineKeyboardMarkup:
     """
     Build AI Operating Modes selection inline keyboard.
