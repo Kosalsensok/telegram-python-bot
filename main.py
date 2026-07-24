@@ -126,6 +126,41 @@ async def handle_solution_api(request):
 
 
 
+async def handle_spell_check_api(request):
+    """API endpoint for Khmer Spelling & Writing Assistant."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({
+            "success": False,
+            "code": "INVALID_JSON",
+            "message": "Invalid JSON request payload."
+        }, status=400)
+    
+    text = data.get("text", "")
+    if not isinstance(text, str) or not text.strip():
+        return web.json_response({
+            "success": False,
+            "code": "EMPTY_TEXT",
+            "message": "សូមបញ្ចូលអត្ថបទជាមុនសិន។"
+        }, status=400)
+
+    if len(text) > 5000:
+        return web.json_response({
+            "success": False,
+            "code": "TEXT_TOO_LONG",
+            "message": "អត្ថបទមានប្រវែងលើស 5,000 តួអក្សរ។"
+        }, status=400)
+
+    language = data.get("language", "km")
+    mode = data.get("mode", "standard")
+    custom_dictionary = data.get("customDictionary", [])
+
+    from utils.khmer_spell_checker import check_khmer_spelling
+    result = check_khmer_spelling(text, language=language, mode=mode, custom_dictionary=custom_dictionary)
+    return web.json_response(result, status=200)
+
+
 async def start_health_server():
     """Starts a lightweight web server for Render Free Web Service deployment and Telegram Mini App."""
     port_str = os.getenv("PORT", "8080").strip()
@@ -145,6 +180,7 @@ async def start_health_server():
     # Mini App routes
     app.router.add_get("/answer/{solution_id}", handle_mini_app)
     app.router.add_get("/api/solution/{solution_id}", handle_solution_api)
+    app.router.add_post("/api/spell-check", handle_spell_check_api)
 
     runner = web.AppRunner(app)
     await runner.setup()

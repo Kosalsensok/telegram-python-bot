@@ -8,6 +8,8 @@ const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
 const env_1 = require("../config/env");
 const solution_routes_1 = require("./routes/solution.routes");
+const spellcheck_service_1 = require("../services/spellcheck.service");
+const spellcheck_routes_1 = require("./routes/spellcheck.routes");
 const logger_1 = require("../utils/logger");
 function createExpressServer(bot, solutionService) {
     const app = (0, express_1.default)();
@@ -16,6 +18,8 @@ function createExpressServer(bot, solutionService) {
     // Static directory for temp public file downloads
     const publicDir = path_1.default.resolve(env_1.env.TEMP_DIRECTORY || './temp');
     app.use('/public', express_1.default.static(publicDir));
+    // Spell check routes
+    app.use('/', (0, spellcheck_routes_1.createSpellCheckRoutes)(new spellcheck_service_1.SpellCheckService()));
     // Health Check Endpoint
     app.get('/health', (req, res) => {
         res.json({

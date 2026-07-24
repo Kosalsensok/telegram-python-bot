@@ -3,46 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Smart AI Assistant — Interactive Mini App</title>
+  <title>Smart AI Assistant — Interactive Mini App & Khmer Spell Checker</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
+      --background: #101a25;
+      --surface: #172333;
+      --surface-secondary: #1d2b3f;
+      --border: #30445f;
       --primary: #3b82f6;
-      --accent: #06b6d4;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(255, 255, 255, 0.1);
+      --primary-hover: #60a5fa;
+      --text-primary: #f8fafc;
+      --text-secondary: #b8c5d6;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --suggestion: #60a5fa;
+      --suggestion-bg: rgba(96, 165, 250, 0.15);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
     }
-    body.tg-theme {
-      background-color: var(--tg-theme-bg-color, var(--bg));
-      color: var(--tg-theme-text-color, var(--text));
+    
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--tg-theme-bg-color, var(--background));
+      color: var(--tg-theme-text-color, var(--text-primary));
+      font-family: "Battambang", "Noto Sans Khmer", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.75;
       padding: 16px;
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
+
     .header {
       text-align: center;
-      padding: 16px 0;
+      padding: 16px 0 20px 0;
       border-bottom: 1px solid var(--border);
       margin-bottom: 20px;
     }
-    .header h1 { font-size: 22px; color: var(--primary); }
-    .header p { font-size: 14px; color: var(--muted); margin-top: 4px; }
-    
-    /* FORM B INTERACTIVE VERTICAL STEPPER */
-    .stepper { display: flex; flex-direction: column; gap: 16px; }
+    .header h1 {
+      font-size: 24px;
+      color: var(--primary-hover);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ACCORDION STEPPER LAYOUT */
+    .stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
     .step-item {
-      background: var(--card-bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
       overflow: hidden;
-      transition: all 0.2s ease;
+      transition: border-color 200ms ease, box-shadow 200ms ease;
     }
     .step-header {
       padding: 16px 20px;
@@ -52,39 +85,469 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 16px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .step-header:hover {
+      background: rgba(255, 255, 255, 0.02);
     }
     .step-badge {
       width: 32px;
       height: 32px;
       border-radius: 50%;
       background: var(--primary);
-      color: #fff;
+      color: #ffffff;
       display: grid;
       place-items: center;
       font-size: 14px;
+      font-weight: 700;
       margin-right: 12px;
+      flex-shrink: 0;
     }
-    .step-title-group { display: flex; align-items: center; }
+    .step-title-group {
+      display: flex;
+      align-items: center;
+    }
+    .step-arrow {
+      transition: transform 200ms ease;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
     .step-content {
       padding: 0 20px 20px 20px;
       display: none;
       font-size: 15px;
-      line-height: 1.6;
-      color: #cbd5e1;
+      color: var(--text-secondary);
     }
-    .step-item.active .step-content { display: block; }
-    .step-item.active { border-color: var(--primary); }
+    .step-item.active {
+      border-color: var(--primary);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12);
+    }
+    .step-item.active .step-content {
+      display: block;
+    }
+    .step-item.active .step-arrow {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
 
+    /* SPELL CHECKER WORKSPACE STYLES */
+    .spell-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .spell-intro {
+      background: var(--surface-secondary);
+      border-radius: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+    }
+    .spell-intro-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .spell-intro-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .badges-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--primary-hover);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      font-weight: 500;
+    }
+
+    .privacy-note {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    /* EDITOR CONTAINER */
+    .editor-wrapper {
+      position: relative;
+      background: #0b131e;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      transition: border-color 200ms ease;
+    }
+    .editor-wrapper:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    textarea.spell-textarea {
+      width: 100%;
+      min-height: 180px;
+      max-height: 400px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.75;
+      resize: vertical;
+    }
+    textarea.spell-textarea::placeholder {
+      color: #64748b;
+    }
+
+    .editor-counter {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* BUTTONS GRID */
+    .action-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .primary-btn {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 200ms ease, opacity 200ms ease;
+    }
+    .primary-btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+    .primary-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .secondary-btn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .secondary-btn {
+      min-height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-secondary);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 150ms ease;
+      padding: 6px 12px;
+    }
+    .secondary-btn:hover:not(:disabled) {
+      background: #253750;
+    }
+    .secondary-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* SUMMARY CARD */
+    .summary-card {
+      background: var(--surface-secondary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: none;
+    }
+    .summary-card.active {
+      display: block;
+    }
+    .summary-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 8px;
+    }
+    .stat-box {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* HIGHLIGHTED RESULT DISPLAY */
+    .result-editor {
+      background: #0b131e;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      min-height: 140px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      display: none;
+    }
+    .result-editor.active {
+      display: block;
+    }
+
+    /* ISSUE HIGHLIGHT STYLES */
+    .issue-mark {
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: background-color 150ms ease;
+    }
+    .issue-mark.error {
+      color: #fca5a5;
+      background-color: var(--error-bg);
+      text-decoration: underline wavy var(--error);
+    }
+    .issue-mark.warning {
+      color: #fde047;
+      background-color: var(--warning-bg);
+      text-decoration: underline wavy var(--warning);
+    }
+    .issue-mark.suggestion {
+      color: #93c5fd;
+      background-color: var(--suggestion-bg);
+      text-decoration: underline wavy var(--suggestion);
+    }
+
+    /* SUGGESTION CARD / POPOVER / BOTTOM SHEET */
+    .suggestion-sheet-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      display: none;
+      place-items: end center;
+    }
+    .suggestion-sheet-overlay.active {
+      display: grid;
+    }
+    .suggestion-card {
+      width: 100%;
+      max-width: 500px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+      animation: slideUp 200ms ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sug-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .sug-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .sug-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .sug-body {
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .sug-original {
+      text-decoration: line-through;
+      color: var(--error);
+      font-weight: 600;
+    }
+    .sug-replacement {
+      color: var(--success);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .sug-explanation {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.03);
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .sug-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .sug-btn {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-secondary);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .sug-btn.apply {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* BEFORE AND AFTER COMPARISON VIEW */
+    .comparison-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 600px) {
+      .comparison-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .comp-box {
+      background: #0b131e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13.5px;
+    }
+    .comp-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    /* DICTIONARY MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      place-items: center;
+      padding: 16px;
+    }
+    .modal-overlay.active {
+      display: grid;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .dict-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin: 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dict-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-secondary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    /* TOAST NOTIFICATION */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--primary);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13.5px;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      z-index: 2000;
+      transition: transform 250ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+    }
+    .toast.active {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* CODE & EXISTING SECTIONS STYLES */
     .code-box {
       background: #090d16;
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 14px;
       font-family: monospace;
-      font-size: 14px;
+      font-size: 13.5px;
       overflow-x: auto;
       margin-top: 10px;
       color: #a7f3d0;
       position: relative;
+      border: 1px solid var(--border);
     }
     .copy-btn {
       position: absolute;
@@ -101,15 +564,15 @@
     .btn-group {
       display: flex;
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 24px;
     }
-    .btn {
+    .footer-btn {
       flex: 1;
       padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: var(--primary);
-      color: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-primary);
       font-weight: 600;
       font-size: 14px;
       cursor: pointer;
@@ -117,81 +580,559 @@
     }
   </style>
 </head>
-<body class="tg-theme">
+<body>
   <div class="header">
     <h1 id="solution-title">Smart AI Assistant</h1>
-    <p id="solution-subtitle">Interactive Requirements & Prototype</p>
+    <p id="solution-subtitle">Interactive Mini App & Khmer Writing Assistant</p>
   </div>
 
   <div class="stepper" id="stepper-container">
-    <div class="step-item active">
+    
+    <!-- ACCORDION ITEM 1: KHMER SPELL CHECKER (OPEN BY DEFAULT!) -->
+    <div class="step-item active" id="spell-checker-step">
       <div class="step-header" onclick="toggleStep(this)">
         <div class="step-title-group">
-          <div class="step-badge">1</div>
-          <span>ទិដ្ឋភាពទូទៅ (Overview)</span>
+          <div class="step-badge">✍️</div>
+          <span>១. ពិនិត្យអក្ខរាវិរុទ្ធ (Khmer Spelling)</span>
         </div>
-        <span>▼</span>
+        <span class="step-arrow">▼</span>
       </div>
       <div class="step-content">
-        <p id="summary-text">កំពុងផ្ទុកទិន្នន័យ...</p>
+        <div class="spell-workspace">
+          
+          <div class="spell-intro">
+            <div class="spell-intro-title">✍️ ពិនិត្យ និងកែអក្ខរាវិរុទ្ធ</div>
+            <div class="spell-intro-desc">
+              សរសេរ ឬបិទភ្ជាប់អត្ថបទខ្មែររបស់អ្នក ដើម្បីពិនិត្យពាក្យដែលអាចសរសេរខុស ការប្រើចន្លោះ សញ្ញាវណ្ណយុត្ត និងរចនាសម្ព័ន្ធប្រយោគ។
+            </div>
+            <div class="badges-row">
+              <span class="badge">🇰🇭 ភាសាខ្មែរ</span>
+              <span class="badge">⚡ AI Assisted</span>
+              <span class="badge">🔒 ឯកជនភាព</span>
+            </div>
+            <div class="privacy-note">
+              🔒 អត្ថបទរបស់អ្នកមិនត្រូវបានរក្សាទុកជាអចិន្ត្រៃយ៍ទេ។
+            </div>
+          </div>
+
+          <!-- EDITOR WRAPPER -->
+          <div class="editor-wrapper">
+            <textarea
+              id="spell-textarea"
+              class="spell-textarea"
+              placeholder="សូមសរសេរ ឬបិទភ្ជាប់អត្ថបទដែលអ្នកចង់ពិនិត្យនៅទីនេះ..."
+              oninput="handleTextareaInput()"
+            ></textarea>
+            <div class="editor-counter">
+              <span id="word-count">ពាក្យ៖ 0</span>
+              <span id="char-count">តួអក្សរ៖ 0 / 5,000</span>
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="action-btn-group">
+            <button id="btn-check" class="primary-btn" onclick="runSpellCheck()" disabled>
+              <span id="btn-check-spinner" style="display:none;">⌛</span>
+              <span>🔍 ពិនិត្យឥឡូវនេះ</span>
+            </button>
+            <div class="secondary-btn-grid">
+              <button id="btn-autofix" class="secondary-btn" onclick="confirmAutoCorrect()" disabled>✨ កែដោយស្វ័យប្រវត្តិ</button>
+              <button id="btn-clear" class="secondary-btn" onclick="clearTextarea()">🧹 សម្អាត</button>
+              <button id="btn-undo" class="secondary-btn" onclick="undoLastAction()" disabled>↶ មិនធ្វើវិញ</button>
+              <button id="btn-restore" class="secondary-btn" onclick="confirmRestoreOriginal()">⟳ ត្រឡប់ទៅអត្ថបទដើម</button>
+              <button id="btn-copy" class="secondary-btn" onclick="copyCorrectedText()">📋 ចម្លងអត្ថបទដែលបានកែ</button>
+              <button class="secondary-btn" onclick="openDictModal()">📖 វចនានុក្រមរបស់ខ្ញុំ</button>
+            </div>
+          </div>
+
+          <!-- SUMMARY CARD -->
+          <div id="summary-card" class="summary-card">
+            <div class="summary-title">
+              <span>📊 លទ្ធផលនៃការពិនិត្យ</span>
+              <span id="summary-status-badge" style="font-size:12px; font-weight:normal;"></span>
+            </div>
+            <div class="summary-stats">
+              <div class="stat-box">
+                <div class="stat-num" id="stat-total" style="color:var(--primary-hover);">0</div>
+                <div class="stat-label">បញ្ហាទាំងអស់</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-num" id="stat-errors" style="color:var(--error);">0</div>
+                <div class="stat-label">កំហុស</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-num" id="stat-warnings" style="color:var(--warning);">0</div>
+                <div class="stat-label">ការព្រមាន</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-num" id="stat-autofix" style="color:var(--success);">0</div>
+                <div class="stat-label">អាចកែស្វ័យប្រវត្តិ</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HIGHLIGHTED RESULT EDITOR -->
+          <div id="result-editor" class="result-editor"></div>
+
+          <!-- BEFORE AND AFTER COMPARISON -->
+          <div id="comparison-view" class="comparison-container" style="display:none;">
+            <div class="comp-box">
+              <div class="comp-label">អត្ថបទដើម (Original)</div>
+              <div id="comp-original" style="white-space:pre-wrap; color:var(--text-secondary);"></div>
+            </div>
+            <div class="comp-box">
+              <div class="comp-label">អត្ថបទដែលបានកែ (Corrected)</div>
+              <div id="comp-corrected" style="white-space:pre-wrap; color:var(--success);"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- EXISTING SECTIONS WILL BE DYNAMICALLY RENDERED HERE (2..N) -->
+
+  </div>
+
+  <div class="btn-group">
+    <button class="footer-btn" onclick="if(window.Telegram?.WebApp) Telegram.WebApp.close();">✕ បិទ App (Close)</button>
+  </div>
+
+  <!-- SUGGESTION CARD POPOVER / BOTTOM SHEET -->
+  <div id="suggestion-overlay" class="suggestion-sheet-overlay" onclick="closeSuggestionOverlay(event)">
+    <div class="suggestion-card" onclick="event.stopPropagation()">
+      <div class="sug-header">
+        <span class="sug-title">💡 ការណែនាំកែសម្រួល</span>
+        <button class="sug-close" onclick="closeSuggestionSheet()">✕</button>
+      </div>
+      <div class="sug-body">
+        <div>ពាក្យដើម៖ <span id="sug-orig-text" class="sug-original"></span> ➔ <span id="sug-repl-text" class="sug-replacement"></span></div>
+        <div id="sug-explanation" class="sug-explanation"></div>
+      </div>
+      <div class="sug-actions">
+        <button class="sug-btn apply" onclick="applyCurrentSuggestion()">ប្រើពាក្យនេះ (Apply)</button>
+        <button class="sug-btn" onclick="ignoreCurrentSuggestion()">មិនអើពើ (Ignore)</button>
+        <button class="sug-btn" onclick="addCurrentToDict()">បន្ថែមទៅវចនានុក្រម</button>
+        <button class="sug-btn" onclick="closeSuggestionSheet()">បិទ</button>
       </div>
     </div>
   </div>
 
-  <div class="btn-group">
-    <button class="btn" onclick="Telegram.WebApp.close()">Close App</button>
+  <!-- CUSTOM DICTIONARY MODAL -->
+  <div id="dict-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="sug-header">
+        <span class="sug-title">📖 វចនានុក្រមរបស់ខ្ញុំ (Custom Dictionary)</span>
+        <button class="sug-close" onclick="closeDictModal()">✕</button>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <input type="text" id="dict-input" placeholder="បញ្ចូលពាក្យខ្មែរថ្មី..." style="flex:1; background:var(--surface-secondary); border:1px solid var(--border); padding:8px 12px; border-radius:8px; color:#fff; outline:none;" />
+        <button onclick="addWordFromInput()" style="background:var(--primary); border:none; color:#fff; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer;">បន្ថែម</button>
+      </div>
+      <div id="dict-list" class="dict-list"></div>
+      <div style="text-align:right; margin-top:10px;">
+        <button onclick="clearAllDictWords()" style="background:transparent; border:none; color:var(--error); font-size:12px; cursor:pointer;">លុបទាំងអស់</button>
+      </div>
+    </div>
   </div>
 
+  <!-- TOAST CONTAINER -->
+  <div id="toast" class="toast"></div>
+
   <script>
+    // Initialize Telegram Web App SDK
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
     }
 
+    // STATE VARIABLES
+    let currentCheckResult = null;
+    let selectedIssue = null;
+    let originalInputBackup = "";
+    let undoStack = []; // History stack for undo (max 20)
+    const DICT_STORAGE_KEY = "smart_ai_spell_dictionary_v1";
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('active');
+      setTimeout(() => toast.classList.remove('active'), 2500);
+    }
+
+    function triggerHaptic(type = 'impact', style = 'medium') {
+      try {
+        if (tg && tg.HapticFeedback) {
+          if (type === 'notification') tg.HapticFeedback.notificationOccurred(style);
+          else tg.HapticFeedback.impactOccurred(style);
+        }
+      } catch(e) {}
+    }
+
     function toggleStep(el) {
       const parent = el.parentElement;
       parent.classList.toggle('active');
+      triggerHaptic('impact', 'light');
     }
 
-    function copyCode(text) {
-      navigator.clipboard.writeText(text);
-      if (tg) tg.showAlert("✅ Code copied to clipboard!");
-      else alert("✅ Code copied!");
+    // TEXTAREA COUNTERS & RESIZE
+    function handleTextareaInput() {
+      const textarea = document.getElementById('spell-textarea');
+      const val = textarea.value;
+      const charCount = val.length;
+      
+      // Calculate word count
+      const tokens = val.trim().split(/[\s\u200B]+/);
+      const wordCount = val.trim() ? tokens.length : 0;
+
+      document.getElementById('char-count').innerText = `តួអក្សរ៖ ${charCount.toLocaleString()} / 5,000`;
+      document.getElementById('word-count').innerText = `ពាក្យ៖ ${wordCount.toLocaleString()}`;
+
+      document.getElementById('btn-check').disabled = (charCount === 0 || charCount > 5000);
     }
 
+    function pushUndoState() {
+      const text = document.getElementById('spell-textarea').value;
+      if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== text) {
+        undoStack.push(text);
+        if (undoStack.length > 20) undoStack.shift();
+      }
+      document.getElementById('btn-undo').disabled = (undoStack.length <= 1);
+    }
+
+    function undoLastAction() {
+      if (undoStack.length > 1) {
+        undoStack.pop(); // Remove current
+        const prev = undoStack[undoStack.length - 1];
+        document.getElementById('spell-textarea').value = prev;
+        handleTextareaInput();
+        showToast("↶ បានធ្វើវិញរួចរាល់");
+        triggerHaptic('impact', 'light');
+      }
+      document.getElementById('btn-undo').disabled = (undoStack.length <= 1);
+    }
+
+    function clearTextarea() {
+      pushUndoState();
+      document.getElementById('spell-textarea').value = "";
+      handleTextareaInput();
+      document.getElementById('summary-card').classList.remove('active');
+      document.getElementById('result-editor').classList.remove('active');
+      document.getElementById('comparison-view').style.display = 'none';
+      document.getElementById('btn-autofix').disabled = true;
+      currentCheckResult = null;
+      showToast("🧹 បានសម្អាតអត្ថបទ");
+    }
+
+    function confirmRestoreOriginal() {
+      if (!originalInputBackup) {
+        showToast("គ្មានអត្ថបទដើមសម្រាប់ត្រឡប់ទេ");
+        return;
+      }
+      if (confirm("តើអ្នកពិតជាចង់ត្រឡប់ទៅកាន់អត្ថបទដើមវិញមែនទេ?")) {
+        pushUndoState();
+        document.getElementById('spell-textarea').value = originalInputBackup;
+        handleTextareaInput();
+        showToast("⟳ បានត្រឡប់ទៅអត្ថបទដើម");
+        triggerHaptic('impact', 'medium');
+      }
+    }
+
+    // CUSTOM DICTIONARY UTILS
+    function getCustomDictionary() {
+      try {
+        const data = localStorage.getItem(DICT_STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function saveCustomDictionary(list) {
+      try {
+        localStorage.setItem(DICT_STORAGE_KEY, JSON.stringify(list));
+      } catch(e) {}
+    }
+
+    function openDictModal() {
+      renderDictList();
+      document.getElementById('dict-modal').classList.add('active');
+    }
+
+    function closeDictModal() {
+      document.getElementById('dict-modal').classList.remove('active');
+    }
+
+    function renderDictList() {
+      const list = getCustomDictionary();
+      const container = document.getElementById('dict-list');
+      container.innerHTML = "";
+      if (list.length === 0) {
+        container.innerHTML = `<div style="font-size:13px; color:var(--text-secondary); text-align:center; padding:10px;">គ្មានពាក្យក្នុងវចនានុក្រមទេ</div>`;
+        return;
+      }
+      list.forEach(w => {
+        const div = document.createElement('div');
+        div.className = 'dict-item';
+        div.innerHTML = `
+          <span>${w}</span>
+          <button onclick="removeDictWord('${w}')" style="background:none; border:none; color:var(--error); cursor:pointer; font-size:14px;">✕</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addWordFromInput() {
+      const inp = document.getElementById('dict-input');
+      const w = inp.value.trim();
+      if (w) {
+        const list = getCustomDictionary();
+        if (!list.includes(w)) {
+          list.push(w);
+          saveCustomDictionary(list);
+          renderDictList();
+          showToast(`✅ បានបន្ថែម «${w}» ទៅវចនានុក្រម`);
+        }
+        inp.value = "";
+      }
+    }
+
+    function removeDictWord(w) {
+      let list = getCustomDictionary();
+      list = list.filter(item => item !== w);
+      saveCustomDictionary(list);
+      renderDictList();
+      showToast(`បានលុប «${w}» ចេញ`);
+    }
+
+    function clearAllDictWords() {
+      if (confirm("តើអ្នកពិតជាចង់លុបវចនានុក្រមទាំងអស់មែនទេ?")) {
+        saveCustomDictionary([]);
+        renderDictList();
+        showToast("បានលុបវចនានុក្រមទាំងអស់");
+      }
+    }
+
+    // SPELL CHECK API CALL
+    async function runSpellCheck() {
+      const textarea = document.getElementById('spell-textarea');
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      originalInputBackup = text;
+      pushUndoState();
+
+      const btnCheck = document.getElementById('btn-check');
+      const spinner = document.getElementById('btn-check-spinner');
+      btnCheck.disabled = true;
+      spinner.style.display = 'inline';
+
+      const customDict = getCustomDictionary();
+
+      try {
+        const response = await fetch('/api/spell-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            language: 'km',
+            mode: 'standard',
+            customDictionary: customDict
+          })
+        });
+
+        const data = await response.json();
+        spinner.style.display = 'none';
+        btnCheck.disabled = false;
+
+        if (data && data.success) {
+          currentCheckResult = data;
+          renderCheckResults(data);
+          showToast("✅ ពិនិត្យអត្ថបទបានជោគជ័យ");
+          triggerHaptic('notification', 'success');
+        } else {
+          showToast(data.message || "មិនអាចពិនិត្យអត្ថបទបានទេ");
+          triggerHaptic('notification', 'error');
+        }
+      } catch(err) {
+        console.error("Spell check error:", err);
+        spinner.style.display = 'none';
+        btnCheck.disabled = false;
+        showToast("ការតភ្ជាប់មានបញ្ហា។ សូមព្យាយាមម្តងទៀត។");
+        triggerHaptic('notification', 'error');
+      }
+    }
+
+    // RENDER HIGHLIGHTS & SUMMARY
+    function renderCheckResults(data) {
+      const summaryCard = document.getElementById('summary-card');
+      const resultEditor = document.getElementById('result-editor');
+      const compView = document.getElementById('comparison-view');
+
+      summaryCard.classList.add('active');
+      resultEditor.classList.add('active');
+
+      document.getElementById('stat-total').innerText = data.summary.totalIssues;
+      document.getElementById('stat-errors').innerText = data.summary.errors;
+      document.getElementById('stat-warnings').innerText = data.summary.warnings;
+      document.getElementById('stat-autofix').innerText = data.summary.autoFixable;
+
+      const badgeSpan = document.getElementById('summary-status-badge');
+      if (data.summary.totalIssues === 0) {
+        badgeSpan.innerHTML = `<span style="color:var(--success);">✅ មិនបានរកឃើញកំហុសច្បាស់លាស់ទេ</span>`;
+      } else {
+        badgeSpan.innerHTML = `<span style="color:var(--warning);">⚠️ បានរកឃើញ ${data.summary.totalIssues} បញ្ហា</span>`;
+      }
+
+      document.getElementById('btn-autofix').disabled = (data.summary.autoFixable === 0);
+
+      // Render highlighted text safely
+      const origText = data.originalText;
+      let htmlContent = "";
+      let lastIndex = 0;
+
+      data.issues.forEach(issue => {
+        // Text before issue
+        htmlContent += escapeHtml(origText.substring(lastIndex, issue.start));
+        // Issue mark
+        const origWord = escapeHtml(origText.substring(issue.start, issue.end));
+        htmlContent += `<span class="issue-mark ${issue.severity}" onclick="openSuggestion('${issue.id}')">${origWord}</span>`;
+        lastIndex = issue.end;
+      });
+
+      htmlContent += escapeHtml(origText.substring(lastIndex));
+      resultEditor.innerHTML = htmlContent;
+
+      // Render comparison
+      compView.style.display = 'grid';
+      document.getElementById('comp-original').innerText = data.originalText;
+      document.getElementById('comp-corrected').innerText = data.correctedText;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // SUGGESTION POPOVER / BOTTOM SHEET
+    function openSuggestion(issueId) {
+      if (!currentCheckResult) return;
+      selectedIssue = currentCheckResult.issues.find(i => i.id === issueId);
+      if (!selectedIssue) return;
+
+      document.getElementById('sug-orig-text').innerText = selectedIssue.original;
+      document.getElementById('sug-repl-text').innerText = selectedIssue.replacement || selectedIssue.suggestions[0] || "";
+      document.getElementById('sug-explanation').innerText = selectedIssue.explanation || "";
+
+      document.getElementById('suggestion-overlay').classList.add('active');
+      triggerHaptic('impact', 'medium');
+    }
+
+    function closeSuggestionSheet() {
+      document.getElementById('suggestion-overlay').classList.remove('active');
+      selectedIssue = null;
+    }
+
+    function closeSuggestionOverlay(e) {
+      if (e.target.id === 'suggestion-overlay') closeSuggestionSheet();
+    }
+
+    function applyCurrentSuggestion() {
+      if (!selectedIssue) return;
+      pushUndoState();
+      const textarea = document.getElementById('spell-textarea');
+      const orig = textarea.value;
+      const s = selectedIssue.start;
+      const e = selectedIssue.end;
+      textarea.value = orig.substring(0, s) + selectedIssue.replacement + orig.substring(e);
+      handleTextareaInput();
+      closeSuggestionSheet();
+      showToast(`✅ បានប្តូរទៅជា «${selectedIssue.replacement}»`);
+      triggerHaptic('impact', 'medium');
+      runSpellCheck();
+    }
+
+    function ignoreCurrentSuggestion() {
+      if (!selectedIssue) return;
+      closeSuggestionSheet();
+      showToast("បានមិនអើពើនឹងការណែនាំនេះ");
+    }
+
+    function addCurrentToDict() {
+      if (!selectedIssue) return;
+      const word = selectedIssue.original;
+      const list = getCustomDictionary();
+      if (!list.includes(word)) {
+        list.push(word);
+        saveCustomDictionary(list);
+        showToast(`✅ បានបន្ថែម «${word}» ទៅវចនានុក្រម`);
+      }
+      closeSuggestionSheet();
+      runSpellCheck();
+    }
+
+    function confirmAutoCorrect() {
+      if (!currentCheckResult || currentCheckResult.summary.autoFixable === 0) return;
+      if (confirm("តើអ្នកចង់អនុវត្តការកែដែលមានភាពជឿជាក់ខ្ពស់ទាំងអស់មែនទេ?\n\nការកែនេះនឹងមិនប៉ះពាល់ដល់ឈ្មោះ URL អ៊ីមែល កូដ ឬរូបមន្តឡើយ។")) {
+        pushUndoState();
+        document.getElementById('spell-textarea').value = currentCheckResult.correctedText;
+        handleTextareaInput();
+        showToast("✨ បានអនុវត្តការកែស្វ័យប្រវត្តិជោគជ័យ");
+        triggerHaptic('notification', 'success');
+        runSpellCheck();
+      }
+    }
+
+    function copyCorrectedText() {
+      const textToCopy = (currentCheckResult && currentCheckResult.correctedText) 
+        ? currentCheckResult.correctedText 
+        : document.getElementById('spell-textarea').value;
+
+      if (!textToCopy) {
+        showToast("គ្មានអត្ថបទសម្រាប់ចម្លងទេ");
+        return;
+      }
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast("✅ បានចម្លងអត្ថបទដែលបានកែទៅ Clipboard");
+        triggerHaptic('notification', 'success');
+      }).catch(() => {
+        showToast("✅ បានចម្លងអត្ថបទ");
+      });
+    }
+
+    // EXISTING SECTIONS DYNAMIC RENDERER
     const defaultDemoData = {
       title: "Smart AI Assistant Mini App",
-      subtitle: "Interactive Software Requirements & Prototype Stepper",
+      subtitle: "Interactive Requirements & Prototype Stepper",
       sections: [
-        { step_number: 1, heading_km: "1️⃣ ទិដ្ឋភាពទូទៅ (System Overview)", content_km: "ប្រព័ន្ធគ្រប់គ្រង Mart និងលក់ទំនិញ (Smart Mart Management System) សម្រាប់គ្រប់គ្រងការលក់ POS, ស្តុកផលិតផល, បុគ្គលិក, អតិថិជន, និងរបាយការណ៍ហិរញ្ញវត្ថុ។" },
-        { step_number: 2, heading_km: "2️⃣ Functional Modules", content_km: "• POS Sales & Barcode Checkout\n• Inventory & Stock Low Alerts\n• Supplier Purchase Orders\n• Multi-Payment (KHQR + Cash)\n• User Roles & Permissions" },
-        { step_number: 3, heading_km: "3️⃣ User Roles & Permissions", content_km: "• Admin: Full System Audit Logs\n• Manager: Reports & Stock Adjustments\n• Cashier: POS Register & Receipt Printing" },
-        { step_number: 4, heading_km: "4️⃣ User Flows & Processes", content_km: "1. Cashier logs in to register.\n2. Barcode scanner reads product ID.\n3. System calculates tax, discount & subtotal.\n4. Sale is committed and stock updates atomically." },
-        { step_number: 5, heading_km: "5️⃣ Prototype Code Preview", content_km: "pos_service.py — Atomic Stock Checkout Service:", code: "# pos_service.py\ndef checkout(cashier, items, payment_method):\n    subtotal = sum(i.total_price for i in items)\n    receipt = generate_receipt()\n    update_stock_atomically(items)\n    return receipt" },
-        { step_number: 6, heading_km: "6️⃣ Deployment & Docker Setup", content_km: "• Python 3.11 Containerized Microservice\n• PostgreSQL Multi-tenant DB\n• 24/7 Keep-Alive Worker on Render" }
+        { step_number: 2, heading_km: "២. ទិដ្ឋភាពទូទៅនៃប្រព័ន្ធ (System Overview)", content_km: "ប្រព័ន្ធគ្រប់គ្រង Mart និងលក់ទំនិញ (Smart Mart Management System) សម្រាប់គ្រប់គ្រងការលក់ POS, ស្តុកផលិតផល, បុគ្គលិក, អតិថិជន, និងរបាយការណ៍ហិរញ្ញវត្ថុ។" },
+        { step_number: 3, heading_km: "៣. Functional Modules", content_km: "• POS Sales & Barcode Checkout\n• Inventory & Stock Low Alerts\n• Supplier Purchase Orders\n• Multi-Payment (KHQR + Cash)\n• User Roles & Permissions" },
+        { step_number: 4, heading_km: "៤. User Roles & Permissions", content_km: "• Admin: Full System Audit Logs\n• Manager: Reports & Stock Adjustments\n• Cashier: POS Register & Receipt Printing" },
+        { step_number: 5, heading_km: "៥. User Flows & Processes", content_km: "1. Cashier logs in to register.\n2. Barcode scanner reads product ID.\n3. System calculates tax, discount & subtotal.\n4. Sale is committed and stock updates atomically." },
+        { step_number: 6, heading_km: "៦. Prototype Code Preview", content_km: "pos_service.py — Atomic Stock Checkout Service:", code: "# pos_service.py\ndef checkout(cashier, items, payment_method):\n    subtotal = sum(i.total_price for i in items)\n    receipt = generate_receipt()\n    update_stock_atomically(items)\n    return receipt" },
+        { step_number: 7, heading_km: "៧. Deployment & Docker Setup", content_km: "• Python 3.11 Containerized Microservice\n• PostgreSQL Multi-tenant DB\n• 24/7 Keep-Alive Worker on Render" }
       ]
     };
 
     function renderSolutionData(data) {
       if (!data || !data.sections) return;
       document.getElementById('solution-title').innerText = data.title || 'Smart AI Assistant';
-      document.getElementById('solution-subtitle').innerText = data.subtitle || data.response_type || 'Interactive Solution Stepper';
+      document.getElementById('solution-subtitle').innerText = data.subtitle || 'Interactive Mini App & Khmer Writing Assistant';
 
       const container = document.getElementById('stepper-container');
-      container.innerHTML = '';
-      let stepNum = 1;
-
+      
+      // Preserve Accordion 1 (Spell Checker) and append existing sections 2..N
       data.sections.forEach((sec, idx) => {
         const item = document.createElement('div');
-        item.className = 'step-item' + (idx === 0 ? ' active' : '');
+        item.className = 'step-item';
         
         let contentHtml = `<p>${(sec.content_km || sec.content || '').replace(/\n/g, '<br/>')}</p>`;
         if (sec.code) {
           contentHtml += `
             <div class="code-box">
               <button class="copy-btn" onclick="copyCode(\`${sec.code.replace(/`/g, '\\`')}\`)">Copy</button>
-              <pre><code>${sec.code}</code></pre>
+              <pre><code>${escapeHtml(sec.code)}</code></pre>
             </div>
           `;
         }
@@ -199,10 +1140,10 @@
         item.innerHTML = `
           <div class="step-header" onclick="toggleStep(this)">
             <div class="step-title-group">
-              <div class="step-badge">${sec.step_number || stepNum++}</div>
+              <div class="step-badge">${sec.step_number || (idx + 2)}</div>
               <span>${sec.heading_km || sec.heading || 'Section'}</span>
             </div>
-            <span>▼</span>
+            <span class="step-arrow">▼</span>
           </div>
           <div class="step-content">
             ${contentHtml}
@@ -212,28 +1153,27 @@
       });
     }
 
-    // Parse Solution ID from URL path or query params
+    function copyCode(text) {
+      navigator.clipboard.writeText(text);
+      if (tg) tg.showAlert("✅ Code copied to clipboard!");
+      else showToast("✅ Code copied to clipboard!");
+    }
+
+    // Fetch existing solution data if ID present, else render demo sections
     const pathParts = window.location.pathname.split('/');
     const solutionId = pathParts[pathParts.length - 1] || new URLSearchParams(window.location.search).get('id');
 
-    if (solutionId) {
+    if (solutionId && solutionId !== 'demo') {
       fetch('/api/solution/' + solutionId)
         .then(res => res.json())
         .then(data => {
-          if (data && data.sections) {
-            renderSolutionData(data);
-          } else {
-            renderSolutionData(defaultDemoData);
-          }
+          if (data && data.sections) renderSolutionData(data);
+          else renderSolutionData(defaultDemoData);
         })
-        .catch(err => {
-          console.warn("Using demo fallback:", err);
-          renderSolutionData(defaultDemoData);
-        });
+        .catch(() => renderSolutionData(defaultDemoData));
     } else {
       renderSolutionData(defaultDemoData);
     }
-
   </script>
 </body>
 </html>

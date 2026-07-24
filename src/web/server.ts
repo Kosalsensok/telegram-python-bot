@@ -4,6 +4,8 @@ import { Telegraf } from 'telegraf';
 import { env } from '../config/env';
 import { SolutionService } from '../services/solution.service';
 import { createSolutionRoutes } from './routes/solution.routes';
+import { SpellCheckService } from '../services/spellcheck.service';
+import { createSpellCheckRoutes } from './routes/spellcheck.routes';
 import { logger } from '../utils/logger';
 
 export function createExpressServer(bot: Telegraf, solutionService: SolutionService) {
@@ -15,6 +17,9 @@ export function createExpressServer(bot: Telegraf, solutionService: SolutionServ
   // Static directory for temp public file downloads
   const publicDir = path.resolve(env.TEMP_DIRECTORY || './temp');
   app.use('/public', express.static(publicDir));
+
+  // Spell check routes
+  app.use('/', createSpellCheckRoutes(new SpellCheckService()));
 
   // Health Check Endpoint
   app.get('/health', (req, res) => {
