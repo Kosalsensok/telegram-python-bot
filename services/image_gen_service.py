@@ -249,11 +249,11 @@ class ImageGenService:
         encoded_optimized = urllib.parse.quote(optimized_prompt[:250])
         encoded_raw = urllib.parse.quote(prompt.strip()[:200])
 
-        # Candidate fallback URLs in priority order with enhance=true
+        # Candidate fallback URLs in priority order
         urls_to_try = [
-            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&nologo=true&enhance=true",
-            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&model=flux&nologo=true&enhance=true",
-            f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&nologo=true&enhance=true",
+            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&nologo=true",
+            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&model=flux&nologo=true",
+            f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&nologo=true",
             f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&model=turbo&nologo=true"
         ]
 
