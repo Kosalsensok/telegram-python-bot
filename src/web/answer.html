@@ -200,22 +200,22 @@
 
         <!-- ACTION BUTTONS GRID (6 TOOLS) -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <button id="btn-autofix" onclick="confirmAutoCorrect()" disabled class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
+          <button id="btn-autofix" onclick="confirmAutoCorrect()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
             ✨ កែស្វ័យប្រវត្តិ
           </button>
-          <button id="btn-clear" onclick="clearTextarea()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+          <button id="btn-clear" onclick="clearTextarea()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
             🧹 សម្អាត
           </button>
-          <button id="btn-undo" onclick="undoLastAction()" disabled class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
+          <button id="btn-undo" onclick="undoLastAction()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
             ↩️ មិនធ្វើវិញ
           </button>
-          <button id="btn-restore" onclick="confirmRestoreOriginal()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+          <button id="btn-restore" onclick="confirmRestoreOriginal()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
             🔄 អត្ថបទដើម
           </button>
-          <button id="btn-copy" onclick="copyCorrectedText()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+          <button id="btn-copy" onclick="copyCorrectedText()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
             📋 ចម្លងអត្ថបទ
           </button>
-          <button onclick="openDictModal()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+          <button onclick="openDictModal()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
             📖 វចនានុក្រម
           </button>
         </div>
@@ -395,8 +395,10 @@
         updateCounters();
         showToast("↩️ បានធ្វើវិញរួចរាល់");
         triggerHaptic('impact', 'light');
+      } else {
+        showToast("↩️ គ្មានការកែសម្រួលសម្រាប់មិនធ្វើវិញទេ");
+        triggerHaptic('impact', 'light');
       }
-      document.getElementById('btn-undo').disabled = (undoStack.length <= 1);
     }
 
     function clearTextarea() {
@@ -663,7 +665,11 @@
     }
 
     function confirmAutoCorrect() {
-      if (!currentCheckResult || currentCheckResult.summary.autoFixable === 0) return;
+      if (!currentCheckResult || !currentCheckResult.summary || currentCheckResult.summary.autoFixable === 0) {
+        showToast("✨ គ្មានកំហុសដែលត្រូវកែស្វ័យប្រវត្តិទេ");
+        triggerHaptic('impact', 'light');
+        return;
+      }
       if (confirm("តើអ្នកចង់អនុវត្តការកែដែលមានភាពជឿជាក់ខ្ពស់ទាំងអស់មែនទេ?\n\nការកែនេះនឹងមិនប៉ះពាល់ដល់ឈ្មោះ URL អ៊ីមែល កូដ ឬរូបមន្តឡើយ។")) {
         pushUndoState();
         document.getElementById('spell-textarea').value = currentCheckResult.correctedText;
@@ -680,16 +686,32 @@
         : document.getElementById('spell-textarea').value;
 
       if (!textToCopy) {
-        showToast("គ្មានអត្ថបទសម្រាប់ចម្លងទេ");
+        showToast("📋 គ្មានអត្ថបទសម្រាប់ចម្លងទេ");
+        triggerHaptic('impact', 'light');
         return;
       }
 
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        showToast("✅ បានចម្លងអត្ថបទដែលបានកែទៅ Clipboard");
-        triggerHaptic('notification', 'success');
-      }).catch(() => {
-        showToast("✅ បានចម្លងអត្ថបទ");
-      });
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast("📋 បានចម្លងអត្ថបទទៅ Clipboard ជោគជ័យ");
+          triggerHaptic('notification', 'success');
+        }).catch(() => {
+          fallbackCopyText(textToCopy);
+        });
+      } else {
+        fallbackCopyText(textToCopy);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const tempInp = document.createElement('textarea');
+      tempInp.value = text;
+      document.body.appendChild(tempInp);
+      tempInp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInp);
+      showToast("📋 បានចម្លងអត្ថបទទៅ Clipboard");
+      triggerHaptic('notification', 'success');
     }
   </script>
 </body>
