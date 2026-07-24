@@ -261,3 +261,8 @@ def get_image_download_keyboard(cache_id: str = "", ratio_key: str = "1:1") -> I
         builder.adjust(2)
         
     return builder.as_markup()
+
+
+def get_image_gen_inline_keyboard(cache_id: str = "", ratio_key: str = "1:1") -> InlineKeyboardMarkup:
+    """Alias for get_image_download_keyboard for backward compatibility."""
+    return get_image_download_keyboard(cache_id, ratio_key)
