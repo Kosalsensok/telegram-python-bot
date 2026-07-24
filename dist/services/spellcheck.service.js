@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SpellCheckService = void 0;
+const generative_ai_1 = require("@google/generative-ai");
 const KHMER_RULES = {
     'សំរាប់': { suggestions: ['សម្រាប់'], explanation: 'ពាក្យនេះជាទូទៅត្រូវសរសេរជា «សម្រាប់»។', autoFixable: true, severity: 'error', confidence: 0.96 },
     'សំរេច': { suggestions: ['សម្រេច'], explanation: 'ពាក្យនេះជាទូទៅត្រូវសរសេរជា «សម្រេច»។', autoFixable: true, severity: 'error', confidence: 0.95 },
@@ -35,6 +36,13 @@ const EXCLUSION_PATTERNS = [
     /<[^>]+>/g,
 ];
 class SpellCheckService {
+    genAI;
+    constructor() {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey && !apiKey.includes('YourGeminiApiKey')) {
+            this.genAI = new generative_ai_1.GoogleGenerativeAI(apiKey);
+        }
+    }
     checkSpelling(req) {
         const text = (req.text || '').substring(0, 5000);
         const customSet = new Set((req.customDictionary || []).map(w => w.trim()));
@@ -119,7 +127,108 @@ class SpellCheckService {
                 autoFixable: issues.filter(i => i.autoFixable).length,
             },
             issues,
+            aiAssisted: false,
         };
+    }
+    async checkSpellingAI(req) {
+        const baseResult = this.checkSpelling(req);
+        const text = (req.text || '').substring(0, 5000);
+        if (!text.trim())
+            return baseResult;
+        if (this.genAI) {
+            try {
+                const modelName = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
+                const model = this.genAI.getGenerativeModel({ model: modelName });
+                const prompt = `You are an expert Khmer Proofreader, Lexicographer, and AI Writing Assistant.
+Analyze the following Khmer text for spelling errors, subscript misalignments, spacing mistakes, and phrasing improvements.
+Custom dictionary words to ignore: ${JSON.stringify(req.customDictionary || [])}
+
+Text to analyze:
+"${text}"
+
+Output STRICTLY a JSON object matching this schema with NO extra text or markdown formatting:
+{
+  "correctedText": "full corrected text here",
+  "issues": [
+    {
+      "original": "misspelled word",
+      "replacement": "correct word",
+      "explanation": "Explanation in natural Khmer",
+      "severity": "error",
+      "autoFixable": true
+    }
+  ]
+}`;
+                const result = await model.generateContent(prompt);
+                const responseText = result.response.text();
+                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const aiData = JSON.parse(jsonMatch[0]);
+                    if (aiData && Array.isArray(aiData.issues)) {
+                        const mergedIssues = [...baseResult.issues];
+                        const occupiedSpans = mergedIssues.map(i => [i.start, i.end]);
+                        let issueCount = mergedIssues.length + 1;
+                        const customSet = new Set((req.customDictionary || []).map(w => w.trim()));
+                        for (const aiIssue of aiData.issues) {
+                            const orig = (aiIssue.original || '').trim();
+                            const repl = (aiIssue.replacement || '').trim();
+                            const exp = (aiIssue.explanation || 'ការណែនាំពី Gemini AI').trim();
+                            const sev = ['error', 'warning', 'suggestion'].includes(aiIssue.severity) ? aiIssue.severity : 'suggestion';
+                            if (orig && !customSet.has(orig) && text.includes(orig)) {
+                                let pos = text.indexOf(orig);
+                                while (pos !== -1) {
+                                    const endPos = pos + orig.length;
+                                    const overlaps = occupiedSpans.some(([s, e]) => Math.max(pos, s) < Math.min(endPos, e));
+                                    if (!overlaps) {
+                                        mergedIssues.push({
+                                            id: `issue_ai_${issueCount++}`,
+                                            original: orig,
+                                            suggestions: repl ? [repl] : [],
+                                            replacement: repl,
+                                            type: sev === 'error' ? 'spelling' : 'ai_grammar',
+                                            severity: sev,
+                                            confidence: 0.95,
+                                            start: pos,
+                                            end: endPos,
+                                            explanation: exp,
+                                            autoFixable: aiIssue.autoFixable !== false,
+                                        });
+                                        occupiedSpans.push([pos, endPos]);
+                                        break;
+                                    }
+                                    pos = text.indexOf(orig, pos + 1);
+                                }
+                            }
+                        }
+                        mergedIssues.sort((a, b) => a.start - b.start);
+                        let correctedText = text;
+                        for (const issue of [...mergedIssues].sort((a, b) => b.start - a.start)) {
+                            if (issue.autoFixable && issue.replacement) {
+                                correctedText = correctedText.substring(0, issue.start) + issue.replacement + correctedText.substring(issue.end);
+                            }
+                        }
+                        return {
+                            success: true,
+                            originalText: text,
+                            correctedText,
+                            summary: {
+                                totalIssues: mergedIssues.length,
+                                errors: mergedIssues.filter(i => i.severity === 'error').length,
+                                warnings: mergedIssues.filter(i => i.severity === 'warning').length,
+                                suggestions: mergedIssues.filter(i => i.severity === 'suggestion').length,
+                                autoFixable: mergedIssues.filter(i => i.autoFixable).length,
+                            },
+                            issues: mergedIssues,
+                            aiAssisted: true,
+                        };
+                    }
+                }
+            }
+            catch (err) {
+                console.warn('TS AI Spell Check fallback to rule-based:', err);
+            }
+        }
+        return baseResult;
     }
 }
 exports.SpellCheckService = SpellCheckService;

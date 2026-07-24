@@ -11,16 +11,16 @@ class GeminiService:
     Service wrapper for Google GenAI SDK.
     Handles non-blocking asynchronous execution and model fallback logic.
     """
-    def __init__(self, api_key: str, primary_model: str = "gemini-3.6-flash"):
+    def __init__(self, api_key: str, primary_model: str = "gemini-flash-lite-latest"):
         self.api_key = api_key
         self.primary_model = primary_model
         # Priority model list including verified working models
-        self.models = list(dict.fromkeys([primary_model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"]))
+        self.models = list(dict.fromkeys([primary_model, "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-pro-latest"]))
         self.client = genai.Client(api_key=api_key)
 
     def update_primary_model(self, new_model: str):
         self.primary_model = new_model
-        self.models = list(dict.fromkeys([new_model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"]))
+        self.models = list(dict.fromkeys([new_model, "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-pro-latest"]))
 
     def _sync_generate_content(self, model: str, contents: list, mode: str = "general") -> str:
         """

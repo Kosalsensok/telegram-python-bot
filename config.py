@@ -10,7 +10,7 @@ load_dotenv()
 
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "").strip()
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip()
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest").strip()
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper().strip()
 BOT_DISPLAY_NAME: str = os.getenv("BOT_DISPLAY_NAME", "Smart AI Assistant").strip()
 RENDER_EXTERNAL_URL: str = os.getenv("RENDER_EXTERNAL_URL", "https://telegram-python-bot-yt64.onrender.com").strip()

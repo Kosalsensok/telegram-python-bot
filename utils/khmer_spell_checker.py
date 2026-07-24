@@ -239,6 +239,9 @@ async def check_khmer_spelling_ai(
     Combines rule-based checks with Google Gemini AI for contextual grammar,
     subscript misalignments, and phrasing improvements.
     """
+    if custom_dictionary is None:
+        custom_dictionary = []
+
     # Baseline rule-based results
     base_result = check_khmer_spelling(text, language=language, mode=mode, custom_dictionary=custom_dictionary)
     
@@ -256,14 +259,14 @@ async def check_khmer_spelling_ai(
         if gemini_service:
             import json
             ai_prompt = f"""
-You are an expert Khmer Lexicographer and AI Writing Assistant.
+You are an expert Khmer Proofreader, Lexicographer, and AI Writing Assistant powered by Google Gemini AI.
 Analyze the following Khmer text for spelling errors, subscript misalignments, spacing mistakes, and phrasing improvements.
 Custom dictionary words to ignore: {custom_dictionary or []}
 
-Text:
+Text to analyze:
 "{text}"
 
-Output strictly a JSON object matching this schema:
+Output STRICTLY a JSON object matching this schema with NO extra text or markdown formatting:
 {{
   "correctedText": "full corrected text here",
   "issues": [
@@ -271,59 +274,93 @@ Output strictly a JSON object matching this schema:
       "original": "misspelled word",
       "replacement": "correct word",
       "explanation": "Explanation in natural Khmer",
-      "severity": "error"
+      "severity": "error",
+      "autoFixable": true
     }}
   ]
 }}
 """
-            raw_ai_response = await gemini_service.generate_text_chat(ai_prompt, mode="general")
+            # Use mode="raw" so general chatbot prompt doesn't pollute the JSON output format
+            raw_ai_response = await gemini_service.generate_text_chat(ai_prompt, mode="raw")
             
-            # Clean JSON markdown fences if present
             clean_json = raw_ai_response.strip()
-            if clean_json.startswith("```"):
-                clean_json = re.sub(r'^```[a-zA-Z]*\n', '', clean_json)
-                clean_json = re.sub(r'\n```$', '', clean_json).strip()
+            # Extract JSON object block { ... } using regex if present
+            json_match = re.search(r'\{[\s\S]*\}', clean_json)
+            if json_match:
+                clean_json = json_match.group(0)
 
             ai_data = json.loads(clean_json)
             
-            if isinstance(ai_data, dict) and "correctedText" in ai_data:
-                ai_corrected = ai_data.get("correctedText", base_result["correctedText"])
+            if isinstance(ai_data, dict):
                 ai_issues = ai_data.get("issues", [])
                 
-                existing_originals = set(i["original"] for i in base_result["issues"])
+                # Protected ranges to prevent modifying code/URLs
+                protected_ranges: List[Tuple[int, int]] = []
+                for pattern in EXCLUSION_PATTERNS:
+                    for m in re.finditer(pattern, text):
+                        protected_ranges.append((m.start(), m.end()))
+
+                custom_dict_set = set(w.strip() for w in custom_dictionary if w.strip())
                 merged_issues = list(base_result["issues"])
+                occupied_spans = [(i["start"], i["end"]) for i in merged_issues]
+
+                def _overlaps(s: int, e: int) -> bool:
+                    for os, oe in occupied_spans:
+                        if max(s, os) < min(e, oe):
+                            return True
+                    return False
+
                 issue_counter = len(merged_issues) + 1
 
                 for ai_issue in ai_issues:
                     orig = ai_issue.get("original", "").strip()
                     repl = ai_issue.get("replacement", "").strip()
-                    if orig and orig not in existing_originals and orig in text:
-                        pos = text.find(orig)
-                        merged_issues.append({
-                            "id": f"issue_ai_{issue_counter}",
-                            "original": orig,
-                            "suggestions": [repl] if repl else [],
-                            "replacement": repl,
-                            "type": "ai_grammar",
-                            "severity": ai_issue.get("severity", "suggestion"),
-                            "confidence": 0.95,
-                            "start": pos if pos != -1 else 0,
-                            "end": pos + len(orig) if pos != -1 else len(orig),
-                            "explanation": ai_issue.get("explanation", "AI Recommended Adjustment"),
-                            "autoFixable": True
-                        })
-                        issue_counter += 1
+                    exp = ai_issue.get("explanation", "ការណែនាំពី Gemini AI").strip()
+                    sev = ai_issue.get("severity", "suggestion").strip().lower()
+                    if sev not in ("error", "warning", "suggestion"):
+                        sev = "suggestion"
+                    auto_fix = bool(ai_issue.get("autoFixable", True))
+
+                    if orig and orig not in custom_dict_set and orig in text:
+                        # Find non-overlapping occurrences of original text
+                        for match in re.finditer(re.escape(orig), text):
+                            s_pos, e_pos = match.span()
+                            if not _overlaps(s_pos, e_pos) and not _is_protected_range(s_pos, e_pos, protected_ranges):
+                                merged_issues.append({
+                                    "id": f"issue_ai_{issue_counter}",
+                                    "original": orig,
+                                    "suggestions": [repl] if repl else [],
+                                    "replacement": repl,
+                                    "type": "ai_grammar" if sev != "error" else "spelling",
+                                    "severity": sev,
+                                    "confidence": 0.95,
+                                    "start": s_pos,
+                                    "end": e_pos,
+                                    "explanation": exp,
+                                    "autoFixable": auto_fix
+                                })
+                                occupied_spans.append((s_pos, e_pos))
+                                issue_counter += 1
+                                break  # Process first matching span
 
                 merged_issues.sort(key=lambda x: x["start"])
 
-                base_result["correctedText"] = ai_corrected
+                # Recompute correctedText cleanly from merged issues
+                corrected_text = text
+                for issue in sorted(merged_issues, key=lambda x: x["start"], reverse=True):
+                    if issue.get("autoFixable") and issue.get("replacement") is not None:
+                        s_idx = issue["start"]
+                        e_idx = issue["end"]
+                        corrected_text = corrected_text[:s_idx] + issue["replacement"] + corrected_text[e_idx:]
+
+                base_result["correctedText"] = corrected_text
                 base_result["issues"] = merged_issues
                 base_result["summary"] = {
                     "totalIssues": len(merged_issues),
                     "errors": sum(1 for i in merged_issues if i["severity"] == "error"),
                     "warnings": sum(1 for i in merged_issues if i["severity"] == "warning"),
                     "suggestions": sum(1 for i in merged_issues if i["severity"] == "suggestion"),
-                    "autoFixable": sum(1 for i in merged_issues if i["autoFixable"])
+                    "autoFixable": sum(1 for i in merged_issues if i.get("autoFixable", False))
                 }
                 base_result["aiAssisted"] = True
 

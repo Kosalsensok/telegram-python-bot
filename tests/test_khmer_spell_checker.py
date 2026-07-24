@@ -62,5 +62,16 @@ class TestKhmerSpellChecker(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertGreaterEqual(res["summary"]["totalIssues"], 1)
 
+    def test_ai_spell_checker_full_integration(self):
+        import asyncio
+        from utils.khmer_spell_checker import check_khmer_spelling_ai
+        text = "ខ្ញុំចង់អោយអ្នកជួយរៀបចំកំនត់ត្រានិងសំរេចចិត្តសំរាប់អនាគត"
+        res = asyncio.run(check_khmer_spelling_ai(text))
+        self.assertTrue(res["success"])
+        self.assertTrue(res["aiAssisted"])
+        self.assertIn("correctedText", res)
+        self.assertIn("summary", res)
+        self.assertGreaterEqual(res["summary"]["totalIssues"], 1)
+
 if __name__ == "__main__":
     unittest.main()

@@ -29,7 +29,11 @@ export interface SpellCheckResponse {
         autoFixable: number;
     };
     issues: SpellCheckIssue[];
+    aiAssisted?: boolean;
 }
 export declare class SpellCheckService {
+    private genAI?;
+    constructor();
     checkSpelling(req: SpellCheckRequest): SpellCheckResponse;
+    checkSpellingAI(req: SpellCheckRequest): Promise<SpellCheckResponse>;
 }

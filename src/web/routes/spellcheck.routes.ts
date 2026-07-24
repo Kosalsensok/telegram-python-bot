@@ -4,7 +4,7 @@ import { SpellCheckService } from '../../services/spellcheck.service';
 export function createSpellCheckRoutes(spellCheckService: SpellCheckService): Router {
   const router = Router();
 
-  router.post('/api/spell-check', (req: Request, res: Response) => {
+  router.post('/api/spell-check', async (req: Request, res: Response) => {
     const text = req.body?.text;
     if (!text || typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({
@@ -23,7 +23,7 @@ export function createSpellCheckRoutes(spellCheckService: SpellCheckService): Ro
     }
 
     try {
-      const result = spellCheckService.checkSpelling({
+      const result = await spellCheckService.checkSpellingAI({
         text,
         language: req.body.language || 'km',
         mode: req.body.mode || 'standard',

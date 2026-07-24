@@ -4,7 +4,7 @@ exports.createSpellCheckRoutes = createSpellCheckRoutes;
 const express_1 = require("express");
 function createSpellCheckRoutes(spellCheckService) {
     const router = (0, express_1.Router)();
-    router.post('/api/spell-check', (req, res) => {
+    router.post('/api/spell-check', async (req, res) => {
         const text = req.body?.text;
         if (!text || typeof text !== 'string' || !text.trim()) {
             return res.status(400).json({
@@ -21,7 +21,7 @@ function createSpellCheckRoutes(spellCheckService) {
             });
         }
         try {
-            const result = spellCheckService.checkSpelling({
+            const result = await spellCheckService.checkSpellingAI({
                 text,
                 language: req.body.language || 'km',
                 mode: req.body.mode || 'standard',
