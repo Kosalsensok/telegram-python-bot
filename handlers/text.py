@@ -1,5 +1,5 @@
 import logging
-import os
+import asyncio
 from html import escape
 from aiogram import Router, types, F
 from services.db_service import DatabaseService
@@ -8,27 +8,25 @@ from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
 from utils.response_router import parse_ai_structured_response, format_telegram_html, detect_response_type_from_text
 from utils.solution_card import save_solution_cache, generate_short_solution_id
+from utils.localization import format_ai_result, get_str
 from keyboards.inline import (
+    get_welcome_inline_keyboard,
     get_mode_inline_keyboard,
-    get_requirements_navigation_keyboard,
-    get_code_answer_keyboard,
-    get_math_answer_keyboard,
     get_greeting_inline_keyboard,
-    get_welcome_inline_keyboard
+    get_ai_result_contextual_keyboard,
+    get_error_retry_keyboard
 )
-from config import RENDER_EXTERNAL_URL
 
 def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, db_service: DatabaseService = None) -> Router:
     """
-    Construct text chat router with injected Gemini service, memory, and database service.
-    Implements Response Type Router, structured AI parsing, short solution caching, and Layer 1 summary message.
+    Construct text chat router with Fast AI Request Workflow and Loading State Editing.
     """
     router = Router(name="text_router")
 
     @router.message(F.text & ~F.text.startswith("/"))
     async def handle_text_message(message: types.Message):
         """
-        Handle incoming user text messages.
+        Handle incoming user text messages with fast status message edit.
         """
         if message.from_user:
             if db_service:
@@ -47,152 +45,131 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
         if not user_text:
             return
 
-        # Fast Intercept for Greetings (hi, hello, សួស្តី)
+        # 1. Fast Intercept for Greetings
         if detect_response_type_from_text("", user_prompt=user_text) == "greeting":
             greeting_html = format_telegram_html({"response_type": "greeting"})
             await message.answer(greeting_html, parse_mode="HTML", reply_markup=get_greeting_inline_keyboard())
             return
 
-        # Reply Keyboard Fast Action Intercepts
-        if "ជ្រើសរើស Mode" in user_text:
+        # 2. Fast Intercepts for Keyword Commands
+        if "ជ្រើសរើស Mode" in user_text or "AI Modes" in user_text:
             current_mode = "general"
             if db_service:
                 current_mode = await db_service.get_user_mode(user_id)
             mode_text = (
-                "🎯 <b>ជ្រើសរើស AI Operating Mode / Select AI Mode:</b>\n\n"
-                "• <b>🤖 General AI Mode:</b> ជំនួយការ AI ទូទៅ\n"
-                "• <b>📐 Standard Mode:</b> បម្លែងសមីការ គណិត/គីមី/រូបវិទ្យា ជា LaTeX\n"
-                "• <b>🇰🇭 Khmer Math Mode:</b> បម្លែងសមីការ ជា LaTeX ភាសាខ្មែរ\n"
-                "• <b>🌐 Translate to ខ្មែរ Mode:</b> បកប្រែអត្ថបទ/រូបភាព ទៅជាខ្មែរ\n"
-                "• <b>🎨 TikZ Mode:</b> បម្លែង ក្រាហ្វ/Circuit/ធរណីមាត្រ ជា TikZ Code\n"
-                "• <b>📄 PDF to Text Mode:</b> ទាញយកអត្ថបទពី PDF ខ្មែរ\n"
-                "• <b>✍️ Handwrite Mode:</b> បម្លែងអក្សរដៃ/សមីការដៃ ជា LaTeX\n\n"
-                f"📌 Mode បច្ចុប្បន្នរបស់អ្នក៖ <b>{current_mode.upper()}</b>"
+                "🎯 <b>ជ្រើសរើស AI Mode</b>\n"
+                "━━━━━━━━━━━━━━━━━━\n\n"
+                "សូមជ្រើសរើស AI Mode ដែលសមស្របនឹងសំណួររបស់អ្នក៖"
             )
             await message.answer(mode_text, parse_mode="HTML", reply_markup=get_mode_inline_keyboard(current_mode))
             return
 
-        if "បង្កើតរូបភាព" in user_text:
-            msg = (
-                "🎨 <b>បង្កើតរូបភាព AI ឥតដែនកំណត់ (Unlimited HD AI Image Generator):</b>\n\n"
-                "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
-                "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
-                "<b>ឧទាហរណ៍៖</b>\n"
-                "• <code>/image 16:9 នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
-                "• <code>/image 9:16 futuristic Phnom Penh city in 2050, 8k resolution</code>"
-            )
-            await message.answer(msg, parse_mode="HTML")
-            return
-
         if "វិភាគរូបភាព" in user_text:
-            msg = (
-                "🖼 <b>សូមផ្ញើរូបភាព ហើយសរសេរសំណួរនៅក្នុង Caption៖</b>\n\n"
-                "1. ចុច <b>Attach File / Photo</b> ក្នុង Telegram\n"
-                "2. ជ្រើសរើសរូបភាព ឬ Screenshot របស់អ្នក\n"
-                "3. វាយសំណួររបស់អ្នកនៅក្នុងប្រអប់ <b>Caption</b>\n"
-                "4. ចុច <b>Send</b> ជាការស្រេច!"
+            from keyboards.inline import get_image_analysis_banner_keyboard
+            banner_text = (
+                "🖼 <b>វិភាគរូបភាព</b>\n"
+                "━━━━━━━━━━━━━━━━━━\n\n"
+                "សូមផ្ញើរូបភាពដែលអ្នកចង់ឱ្យ AI វិភាគ។\n\n"
+                "AI អាចសម្គាល់៖\n"
+                "• Screenshot\n• ឯកសារ\n• អត្ថបទ\n• តារាង\n• រូបមន្ត\n• ផលិតផល"
             )
-            await message.answer(msg, parse_mode="HTML")
+            await message.answer(banner_text, parse_mode="HTML", reply_markup=get_image_analysis_banner_keyboard())
             return
 
         if "របៀបសួរសំណួរ" in user_text or "Help" in user_text:
             help_text = (
-                "📖 <b>ការណែនាំពីរបៀបប្រើប្រាស់ / Usage Guide:</b>\n\n"
-                "<b>1. 💬 សួរសំណួរជាអក្សរ (Text Chat):</b>\n"
-                "• វាយសំណួរជាភាសាខ្មែរ ឬអង់គ្លេស រួចផ្ញើចេញ.\n\n"
-                "<b>2. 🖼 ផ្ញើរូបភាពវិភាគ (Vision AI):</b>\n"
-                "• ផ្ញើរូបភាពលំហាត់ សមរភូមិ កូដ ឬសំណួរ រួចដាក់ Caption.\n\n"
-                "<b>3. 🎨 បង្កើតរូបភាព AI (/image /imagine):</b>\n"
-                "• វាយ <code>/image [prompt]</code> ដើម្បីបង្កើតរូបភាព HD 4K.\n\n"
-                "<b>4. 🎯 7 Specialized AI Operating Modes (/mode):</b>\n"
-                "• ជ្រើសរើស Mode តាមតម្រូវការការងាររបស់អ្នក!"
+                "ℹ️ <b>ជំនួយ និងការណែនាំ</b>\n"
+                "━━━━━━━━━━━━━━━━━━\n\n"
+                "<b>1. 💬 សួរសំណួរ AI:</b> វាយសំណួរជាភាសាខ្មែរ ឬ English រួចផ្ញើចេញ\n"
+                "<b>2. 🖼 វិភាគរូបភាព:</b> ផ្ញើរូបភាពលំហាត់ សមរភូមិ ឬអត្ថបទ\n"
+                "<b>3. 🎯 AI Modes:</b> ប្តូរ Mode តាមមុខវិជ្ជា\n"
+                "<b>4. 🌐 Mini App:</b> ប្រើប្រាស់ Mini App"
             )
-            await message.answer(help_text, parse_mode="HTML")
+            await message.answer(help_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
             return
 
-        if "ស្ថិតិ" in user_text:
-            user_stats = {"total_messages": 0, "text_count": 0, "image_count": 0}
-            if db_service:
-                user_stats = await db_service.get_user_stats(user_id)
-            stats_text = (
-                "📊 <b>ស្ថិតិផ្ទាល់ខ្លួនរបស់អ្នក / Your Usage Stats</b>\n\n"
-                f"💬 <b>សំណួរសរុប (Total Questions):</b> {user_stats.get('total_messages', 0)}\n"
-                f"📝 <b>អត្ថបទ (Text):</b> {user_stats.get('text_count', 0)}\n"
-                f"🖼️ <b>រូបភាព (Images):</b> {user_stats.get('image_count', 0)}"
-            )
-            await message.answer(stats_text, parse_mode="HTML")
-            return
-
-        if "លុប History" in user_text:
-            cleared_db = False
-            if db_service:
-                cleared_db = await db_service.clear_history(user_id)
-            cleared_cache = memory.clear_history(user_id) if memory else False
-            if cleared_cache or cleared_db:
-                await message.answer("🧹 <b>ប្រវត្តិសន្ទនារបស់អ្នកត្រូវបានលុបរួចរាល់!</b>", parse_mode="HTML")
-            else:
-                await message.answer("ℹ️ មិនមានប្រវត្តិសន្ទនាដែលត្រូវលុបទេ។", parse_mode="HTML")
-            return
-
-        loading_msg = None
+        # 3. Fast AI Workflow Implementation
+        # Step A: Send typing action
         try:
-            try:
-                await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
-            except Exception as e:
-                logging.warning(f"Could not send typing action: {e}")
+            await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+        except Exception as e:
+            logging.warning(f"Could not send typing action: {e}")
 
-            from utils.thinking_animation import DynamicThinkingAnimation, TEXT_THINKING_STEPS
+        # Step B: Immediately send one loading message
+        loading_msg = await message.answer("✨ កំពុងរៀបចំចម្លើយ...", parse_mode="HTML")
 
-            async with DynamicThinkingAnimation(message, TEXT_THINKING_STEPS) as anim:
-                active_mode = "general"
-                if db_service:
-                    active_mode = await db_service.get_user_mode(user_id)
+        # Step C: Start AI request asynchronously with strict timeout
+        try:
+            active_mode = "general"
+            user_lang = "km"
+            if db_service:
+                active_mode = await db_service.get_user_mode(user_id)
+                user_lang = await db_service.get_user_language(user_id)
 
-                history = await memory.get_history_async(user_id)
-                ai_response = await gemini_service.generate_text_chat(user_prompt=user_text, history=history, mode=active_mode)
+            history = memory.get_history(user_id) if memory else []
 
+            # 45-second timeout for AI request
+            ai_response = await asyncio.wait_for(
+                gemini_service.generate_text_chat(
+                    user_prompt=user_text,
+                    history=history,
+                    mode=active_mode
+                ),
+                timeout=45.0
+            )
+
+            if memory:
                 await memory.add_user_message_async(user_id, user_text)
                 await memory.add_assistant_message_async(user_id, ai_response)
 
-                # Parse AI response into structured JSON schema
-                parsed_data = parse_ai_structured_response(ai_response, user_prompt=user_text)
-                response_type = parsed_data.get("response_type", "general_answer")
+            # Parse structured output and format clean result
+            parsed_data = parse_ai_structured_response(ai_response, user_text)
+            
+            title = parsed_data.get("topic") or parsed_data.get("title") or user_text[:35]
+            answer = parsed_data.get("answer") or parsed_data.get("solution_summary") or ai_response
+            explanation = parsed_data.get("explanation") or parsed_data.get("details") or ""
+            tips = parsed_data.get("tips") or parsed_data.get("recommendation") or ""
 
-                # Generate short solution ID and cache in memory with TTL
-                solution_id = generate_short_solution_id()
-                save_solution_cache(
-                    solution_id=solution_id,
-                    raw_text=ai_response,
-                    parsed_data=parsed_data,
-                    telegram_user_id=user_id,
-                    chat_id=message.chat.id
-                )
+            formatted_result = format_ai_result(
+                title=title,
+                answer=answer,
+                explanation=explanation,
+                tips=tips,
+                header_title="SMART AI ASSISTANT"
+            )
 
-                # Build Mini App URL if configured
-                mini_app_url = ""
-                if RENDER_EXTERNAL_URL:
-                    base_url = RENDER_EXTERNAL_URL.rstrip('/')
-                    mini_app_url = f"{base_url}/answer/{solution_id}"
+            solution_id = generate_short_solution_id()
+            save_solution_cache(solution_id, ai_response, parsed_data, user_id, message.chat.id)
 
-                # Format Layer 1 Telegram Native summary response
-                summary_html = format_telegram_html(parsed_data)
+            keyboard = get_ai_result_contextual_keyboard(solution_id)
 
-                # Attach keyboard matching response type cleanly
-                if response_type == "greeting":
-                    keyboard = get_greeting_inline_keyboard(mini_app_url)
-                elif response_type == "code_answer":
-                    keyboard = get_code_answer_keyboard(solution_id, mini_app_url)
-                elif response_type in ["mathematics", "chemistry", "physics"]:
-                    keyboard = get_math_answer_keyboard(solution_id, mini_app_url)
-                elif response_type in ["software_requirements", "project_prototype", "system_architecture", "database_design", "api_design"]:
-                    keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
-                else:
-                    keyboard = get_welcome_inline_keyboard()
+            # Step D: Edit the same loading message into the result
+            try:
+                await loading_msg.edit_text(formatted_result, parse_mode="HTML", reply_markup=keyboard)
+            except Exception:
+                await send_safe_response(message, formatted_result, reply_markup=keyboard)
 
-                await send_safe_response(message, summary_html, reply_markup=keyboard)
+        except asyncio.TimeoutError:
+            error_msg = (
+                "⚠️ <b>មិនអាចបំពេញសំណើបាន</b>\n"
+                "━━━━━━━━━━━━━━━━━━\n\n"
+                "⚠️ ការឆ្លើយតបពី AI ប្រើពេលយូរពេក។ សូមព្យាយាមម្តងទៀត!"
+            )
+            try:
+                await loading_msg.edit_text(error_msg, parse_mode="HTML", reply_markup=get_error_retry_keyboard())
+            except Exception:
+                await message.answer(error_msg, parse_mode="HTML", reply_markup=get_error_retry_keyboard())
 
         except Exception as e:
-            logging.error(f"Error in text handler for user {user_id}: {e}", exc_info=True)
-            await message.reply("⚠️ មានបញ្ហាក្នុងការភ្ជាប់ទៅ AI Server។ សូមព្យាយាមម្តងទៀតបន្តិចក្រោយនេះ / ⚠️ The AI service is temporarily unavailable. Please try again.")
+            logging.error(f"Error handling AI text request for user {user_id}: {e}", exc_info=True)
+            error_msg = (
+                "⚠️ <b>មិនអាចបំពេញសំណើបាន</b>\n"
+                "━━━━━━━━━━━━━━━━━━\n\n"
+                "⚠️ មានបញ្ហាបច្ចេកទេសមួយបានកើតឡើង។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ។"
+            )
+            try:
+                await loading_msg.edit_text(error_msg, parse_mode="HTML", reply_markup=get_error_retry_keyboard())
+            except Exception:
+                await message.answer(error_msg, parse_mode="HTML", reply_markup=get_error_retry_keyboard())
 
     return router

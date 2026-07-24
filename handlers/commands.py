@@ -47,9 +47,11 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             )
 
     @router.message(CommandStart())
+    @router.message(Command("menu"))
+    @router.message(F.text == "🏠 Menu")
     async def cmd_start(message: types.Message):
         """
-        Handle /start command with user database registration and modern HTML welcome message.
+        Handle /start and /menu commands with user database registration and clean inline menu.
         """
         if message.from_user:
             await _register_user(message.from_user, message.bot)
@@ -66,25 +68,13 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         formatted_users = format_user_count(total_users)
 
         welcome_text = (
-            f"<b>🤖 {BOT_DISPLAY_NAME.upper()}</b>\n\n"
-            f"<blockquote>សួស្តី {escaped_user_name}! 👋\n"
-            "ខ្ញុំជាជំនួយការ AI ដែលអាចនិយាយភាសាខ្មែរ និង English។</blockquote>\n\n"
-            f"👥 <b>អ្នកប្រើប្រាស់សរុប (Total Registered Users):</b> {total_users} ({formatted_users} users)\n\n"
-            "<b>✨ ខ្ញុំអាចជួយអ្នកបាន៖</b>\n\n"
-            "💬 សួរសំណួរទូទៅ (Text Chat)\n"
-            "🖼 វិភាគរូបភាព (Vision AI)\n"
-            "🌐 <b>Telegram Mini App (/miniapp):</b> អន្តរកម្មតាម Interactive Stepper\n"
-            "🎙️ វិភាគ និងបកប្រែសារសំឡេង (Voice Notes AI)\n"
-            "📄 វិភាគ និងទាញយកអត្ថបទពី PDF & Code Files\n"
-            "🎯 7 Specialized AI Operating Modes (/mode)\n"
-            "💻 ពន្យល់ និងដំណើរការកូដ (/run /code)\n"
-            "📚 ជួយការសិក្សា និងស្រាវជ្រាវ\n"
-            "🌐 បកប្រែ Khmer ↔ English\n\n"
-            "<b>🚀 ចាប់ផ្ដើមប្រើប្រាស់</b>\n\n"
-            "ផ្ញើសំណួរ, ផ្ញើរូបភាព, ផ្ញើសារសំឡេង ឬប្រើ /mode!"
+            "🧠 <b>SMART AI ASSISTANT</b>\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            f"សួស្តី {escaped_user_name}! 👋\n"
+            "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            f"👥 <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
+            "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
-
-        await message.answer("👇 <b>Menu ត្រូវបានបើកអូតូ៖</b>", parse_mode="HTML", reply_markup=get_main_reply_keyboard())
 
         await message.answer(
             welcome_text,

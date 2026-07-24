@@ -1,42 +1,19 @@
 from aiogram.types import (
     InlineKeyboardMarkup, 
     InlineKeyboardButton, 
-    ReplyKeyboardMarkup, 
-    KeyboardButton
+    ReplyKeyboardRemove
 )
 
-def get_main_reply_keyboard() -> ReplyKeyboardMarkup:
+def get_main_reply_keyboard() -> ReplyKeyboardRemove:
     """
-    Build persistent main menu reply keyboard at the bottom of the Telegram screen.
-    Includes persistent 🌐 Telegram Mini App (/miniapp) button.
+    Removed persistent main menu reply keyboard per prompt UX specification.
+    Returns ReplyKeyboardRemove to clean up any leftover reply keyboards on client devices.
     """
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(text="🌐 Telegram Mini App (/miniapp)"),
-                KeyboardButton(text="🎯 ជ្រើសរើស Mode (/mode)")
-            ],
-            [
-                KeyboardButton(text="🎨 បង្កើតរូបភាព (/image)"),
-                KeyboardButton(text="🖼️ វិភាគរូបភាព (Vision)")
-            ],
-            [
-                KeyboardButton(text="💬 របៀបសួរសំណួរ (Help)"),
-                KeyboardButton(text="📊 ស្ថិតិ (Stats)")
-            ],
-            [
-                KeyboardButton(text="🧹 លុប History (Clear)")
-            ]
-        ],
-        resize_keyboard=True,
-        persistent=True
-    )
-    return keyboard
-
+    return ReplyKeyboardRemove()
 
 def get_start_inline_keyboard() -> InlineKeyboardMarkup:
     """
-    Build quick action inline keyboard for start & help messages.
+    Build quick action inline keyboard.
     """
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[

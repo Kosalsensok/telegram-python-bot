@@ -26,6 +26,7 @@ class DatabaseService:
         self.in_memory_messages_count: int = 0
         self.in_memory_user_stats: Dict[int, Dict[str, int]] = {}
         self.user_modes: Dict[int, str] = {}
+        self.user_languages: Dict[int, str] = {}
 
 
     async def init_db(self) -> bool:
@@ -402,4 +403,44 @@ class DatabaseService:
             logging.error(f"Error fetching active_mode for user {telegram_id} from MySQL: {e}")
 
         return "general"
+
+    async def set_user_language(self, telegram_id: int, lang: str) -> None:
+        """
+        Set active language for a user in MySQL and in-memory cache.
+        """
+        self.user_languages[telegram_id] = lang
+        if not self.is_connected or not self.pool:
+            return
+
+        try:
+            sql = "UPDATE users SET language_code = %s WHERE telegram_id = %s;"
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(sql, (lang, telegram_id))
+        except Exception as e:
+            logging.error(f"Error updating language_code for user {telegram_id} in MySQL: {e}")
+
+    async def get_user_language(self, telegram_id: int) -> str:
+        """
+        Retrieve active language for a user from MySQL or in-memory cache.
+        """
+        if telegram_id in self.user_languages:
+            return self.user_languages[telegram_id]
+
+        if not self.is_connected or not self.pool:
+            return "km"
+
+        try:
+            sql = "SELECT language_code FROM users WHERE telegram_id = %s;"
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(sql, (telegram_id,))
+                    row = await cur.fetchone()
+                    if row and row[0]:
+                        self.user_languages[telegram_id] = row[0]
+                        return row[0]
+        except Exception as e:
+            logging.error(f"Error fetching language_code for user {telegram_id} from MySQL: {e}")
+
+        return "km"
 

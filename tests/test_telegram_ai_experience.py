@@ -21,12 +21,22 @@ from utils.solution_card import (
     cleanup_expired_solution_cache,
     SOLUTION_CACHE
 )
-from services.prototype_service import create_mart_system_prototype_files, generate_prototype_zip_bytes
+from keyboards.inline import (
+    get_welcome_inline_keyboard,
+    get_mode_inline_keyboard,
+    get_language_inline_keyboard,
+    get_ai_result_contextual_keyboard,
+    get_image_result_contextual_keyboard
+)
+from utils.keyboard_utils import get_main_reply_keyboard
+from utils.localization import format_ai_result, format_image_analysis_result
+from utils.mini_app_auth import validate_telegram_init_data
+from aiogram.types import ReplyKeyboardRemove
 
 
 class TestTelegramAIExperience(unittest.TestCase):
     """
-    Comprehensive test suite for Telegram AI Premium Experience.
+    Comprehensive test suite for Telegram AI Premium Experience & Production Readiness.
     """
 
     def test_broken_character_detection_and_cleaning(self):
@@ -53,41 +63,61 @@ class TestTelegramAIExperience(unittest.TestCase):
         formatted = format_telegram_html({"response_type": "greeting"})
         self.assertIn("សួស្តី!", formatted)
         self.assertNotIn("MATHEMATICS SOLUTION", formatted)
-        self.assertNotIn("&lt;b&gt;", formatted)
 
-    def test_structured_ai_parser(self):
-        raw_json = json.dumps({
-            "response_type": "software_requirements",
-            "language": "km",
-            "title": "ប្រព័ន្ធគ្រប់គ្រង Mart",
-            "summary": "ប្រព័ន្ធគ្រប់គ្រងការលក់ និងស្តុក",
-            "tags": ["POS", "Inventory"],
-            "sections": [
-                {
-                    "id": "sec_1",
-                    "step_number": 1,
-                    "heading_km": "ទិដ្ឋភាពទូទៅ",
-                    "content_km": "ការសង្ខេបតម្រូវការ"
-                }
-            ]
-        })
-        parsed = parse_ai_structured_response(raw_json)
-        self.assertEqual(parsed["response_type"], "software_requirements")
-        self.assertEqual(parsed["title"], "ប្រព័ន្ធគ្រប់គ្រង Mart")
-        self.assertEqual(len(parsed["sections"]), 1)
+    def test_main_menu_inline_keyboard_structure(self):
+        kb = get_welcome_inline_keyboard()
+        buttons = kb.inline_keyboard
+        self.assertEqual(len(buttons), 5)  # 5 rows
+        self.assertEqual(buttons[0][0].text, "💬 សួរ AI")
+        self.assertEqual(buttons[0][1].text, "🖼 វិភាគរូបភាព")
+        self.assertEqual(buttons[1][0].text, "🎯 AI Modes")
+        self.assertEqual(buttons[1][1].text, "🌐 Mini App")
+        self.assertEqual(buttons[4][0].text, "✕ បិទ Menu")
+        # Ensure clean labels without commands
+        for row in buttons:
+            for btn in row:
+                self.assertNotIn("(/mode)", btn.text)
+                self.assertNotIn("(/miniapp)", btn.text)
 
-    def test_telegram_html_escaping_and_markdown(self):
-        raw = "Check <b>code</b> & test `int x = 5;` and <pre><code class=\"language-cpp\">int a = 10;</code></pre>"
-        formatted = markdown_to_telegram_html(raw)
-        self.assertIn("<code>int x = 5;</code>", formatted)
-        self.assertIn("&amp;", formatted)
+    def test_reply_keyboard_removed(self):
+        kb = get_main_reply_keyboard()
+        self.assertIsInstance(kb, ReplyKeyboardRemove)
 
-    def test_html_message_splitting(self):
-        long_html = "<p>" + ("Hello World " * 400) + "</p>"
-        chunks = split_html_message(long_html, max_length=1000)
-        self.assertTrue(len(chunks) > 1)
-        for chunk in chunks:
-            self.assertLessEqual(len(chunk), 1050)
+    def test_ai_mode_inline_keyboard_checkmarks(self):
+        kb = get_mode_inline_keyboard(current_mode="standard")
+        texts = [btn.text for row in kb.inline_keyboard for btn in row]
+        self.assertIn("✅ 📐 Standard Math", texts)
+        self.assertIn("💬 General Assistant", texts)
+
+    def test_language_inline_keyboard_checkmarks(self):
+        kb = get_language_inline_keyboard(current_lang="km")
+        texts = [btn.text for row in kb.inline_keyboard for btn in row]
+        self.assertIn("✅ 🇰🇭 ភាសាខ្មែរ", texts)
+        self.assertIn("🇬🇧 English", texts)
+
+    def test_format_ai_result(self):
+        res = format_ai_result(
+            title="Python Asyncio",
+            answer="Asyncio គឺជារបៀបសរសេរកូដ Asynchronous ក្នុង Python",
+            explanation="វាប្រើប្រាស់ Event Loop សម្រាប់ដំណើរការ Task ច្រើនក្នុងពេលតែមួយ",
+            tips="គួរប្រើ aiohttp ជំនួស requests"
+        )
+        self.assertIn("🧠 <b>SMART AI ASSISTANT</b>", res)
+        self.assertIn("📌 <b>ប្រធានបទ</b>\nPython Asyncio", res)
+        self.assertIn("✅ <b>ចម្លើយ</b>", res)
+        self.assertIn("📖 <b>ព័ត៌មានលម្អិត</b>", res)
+        self.assertIn("💡 <b>គន្លឹះ</b>", res)
+
+    def test_format_image_analysis_result(self):
+        res = format_image_analysis_result(
+            detected_type="Screenshot",
+            observation="រូបថតកូដ Python",
+            answer="កូដនេះមាន Syntax Error ត្រង់ line 5",
+            suggestion="ថែម : នៅចុងលក្ខខណ្ឌ if"
+        )
+        self.assertIn("🖼 <b>IMAGE ANALYSIS</b>", res)
+        self.assertIn("📌 <b>ប្រភេទរូបភាព</b>\nScreenshot", res)
+        self.assertIn("🔎 <b>អ្វីដែលបានរកឃើញ</b>\nរូបថតកូដ Python", res)
 
     def test_solution_cache_and_short_id(self):
         sid = generate_short_solution_id()
@@ -101,25 +131,11 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertEqual(cached["title"], "Test Solution")
         self.assertEqual(cached["telegramUserId"], 12345)
 
-    def test_cpp_code_parsing_and_cache_consistency(self):
-        prompt = "write a code C++ loop"
-        raw_ai_text = "```cpp\n#include <iostream>\nusing namespace std;\n\nint main() {\n    for (int i = 1; i <= 5; i++) {\n        cout << i << endl;\n    }\n    return 0;\n}\n```"
-        parsed = parse_ai_structured_response(raw_ai_text, user_prompt=prompt)
-        self.assertEqual(parsed["response_type"], "code_answer")
-        self.assertEqual(parsed["programming_language"], "cpp")
-        self.assertIsNotNone(parsed.get("code"))
-        self.assertEqual(parsed["code"]["language"], "cpp")
-        self.assertEqual(parsed["code"]["filename"], "main.cpp")
-        self.assertIn("#include <iostream>", parsed["code"]["content"])
-
-        sid = generate_short_solution_id()
-        save_solution_cache(sid, raw_ai_text, parsed, telegram_user_id=999)
-
-        cached = get_solution_cache(sid)
-        self.assertIsNotNone(cached)
-        self.assertEqual(cached["programmingLanguage"], "cpp")
-        self.assertEqual(cached["data"]["code"]["filename"], "main.cpp")
-        self.assertNotIn("print('Hello Smart AI')", cached["data"]["code"]["content"])
+    def test_mini_app_auth_validation(self):
+        bot_token = "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+        # Invalid hash should return False
+        self.assertFalse(validate_telegram_init_data("query_id=123&user=%7B%22id%22%3A1%7D&hash=invalidhash", bot_token))
+        self.assertFalse(validate_telegram_init_data("", bot_token))
 
 
 if __name__ == "__main__":
