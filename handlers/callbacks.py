@@ -287,6 +287,14 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             pass
 
     # 14. Contextual Result Action Callbacks
+    @router.callback_query(F.data.startswith("ai_like:"))
+    async def callback_ai_like(callback: types.CallbackQuery):
+        await callback.answer("❤️ អរគុណសម្រាប់ការវាយតម្លៃ! (Thank you for your feedback!)", show_alert=False)
+
+    @router.callback_query(F.data.startswith("ai_dislike:"))
+    async def callback_ai_dislike(callback: types.CallbackQuery):
+        await callback.answer("🙏 អរគុណសម្រាប់មតិរិះគន់! យើងនឹងកែប្រែ AI ឱ្យកាន់តែប្រសើរ។", show_alert=False)
+
     @router.callback_query(F.data.startswith("ai_explain:"))
     @router.callback_query(F.data.startswith("ai_regen:"))
     @router.callback_query(F.data.startswith("ai_simple:"))
@@ -295,6 +303,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     @router.callback_query(F.data.startswith("math_latex:"))
     @router.callback_query(F.data.startswith("math_steps:"))
     async def callback_contextual_actions(callback: types.CallbackQuery):
-        await callback.answer("✅ Action requested!")
+        await callback.answer("✅ ទទួលបានសំណើ! (Action requested)")
 
     return router
+

@@ -104,18 +104,21 @@ def get_language_inline_keyboard(current_lang: str = "km") -> InlineKeyboardMark
 
 def get_ai_result_contextual_keyboard(solution_id: str = "") -> InlineKeyboardMarkup:
     """
-    Contextual buttons for text AI results per spec:
-    [💬 ពន្យល់បន្ថែម] [🔁 បង្កើតម្ដងទៀត]
-    [📋 ទម្រង់សាមញ្ញ] [🏠 Menu]
+    Contextual buttons for text AI results per full prompt spec:
+    [👍 ចូលចិត្ត] [👎 មិនចូលចិត្ត] [🔄 បង្កើតម្ដងទៀត]
+    [💬 ពន្យល់បន្ថែម] [📋 ទម្រង់សាមញ្ញ] [🏠 Menu]
     """
     builder = InlineKeyboardBuilder()
     sid = solution_id[:16] if solution_id else "def"
+    builder.button(text="👍 ចូលចិត្ត", callback_data=f"ai_like:{sid}")
+    builder.button(text="👎 មិនចូលចិត្ត", callback_data=f"ai_dislike:{sid}")
+    builder.button(text="🔄 បង្កើតម្ដងទៀត", callback_data=f"ai_regen:{sid}")
     builder.button(text="💬 ពន្យល់បន្ថែម", callback_data=f"ai_explain:{sid}")
-    builder.button(text="🔁 បង្កើតម្ដងទៀត", callback_data=f"ai_regen:{sid}")
     builder.button(text="📋 ទម្រង់សាមញ្ញ", callback_data=f"ai_simple:{sid}")
     builder.button(text="🏠 Menu", callback_data="cb_back_main")
-    builder.adjust(2, 2)
+    builder.adjust(3, 3)
     return builder.as_markup()
+
 
 
 def get_image_result_contextual_keyboard(solution_id: str = "") -> InlineKeyboardMarkup:
