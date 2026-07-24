@@ -1101,32 +1101,29 @@
       });
     }
 
-    // EXISTING SECTIONS DYNAMIC RENDERER
+    // DYNAMIC SECTIONS RENDERER (Clean layout without hardcoded demo sections)
     const defaultDemoData = {
       title: "Smart AI Assistant Mini App",
-      subtitle: "Interactive Requirements & Prototype Stepper",
-      sections: [
-        { step_number: 2, heading_km: "២. ទិដ្ឋភាពទូទៅនៃប្រព័ន្ធ (System Overview)", content_km: "ប្រព័ន្ធគ្រប់គ្រង Mart និងលក់ទំនិញ (Smart Mart Management System) សម្រាប់គ្រប់គ្រងការលក់ POS, ស្តុកផលិតផល, បុគ្គលិក, អតិថិជន, និងរបាយការណ៍ហិរញ្ញវត្ថុ។" },
-        { step_number: 3, heading_km: "៣. Functional Modules", content_km: "• POS Sales & Barcode Checkout\n• Inventory & Stock Low Alerts\n• Supplier Purchase Orders\n• Multi-Payment (KHQR + Cash)\n• User Roles & Permissions" },
-        { step_number: 4, heading_km: "៤. User Roles & Permissions", content_km: "• Admin: Full System Audit Logs\n• Manager: Reports & Stock Adjustments\n• Cashier: POS Register & Receipt Printing" },
-        { step_number: 5, heading_km: "៥. User Flows & Processes", content_km: "1. Cashier logs in to register.\n2. Barcode scanner reads product ID.\n3. System calculates tax, discount & subtotal.\n4. Sale is committed and stock updates atomically." },
-        { step_number: 6, heading_km: "៦. Prototype Code Preview", content_km: "pos_service.py — Atomic Stock Checkout Service:", code: "# pos_service.py\ndef checkout(cashier, items, payment_method):\n    subtotal = sum(i.total_price for i in items)\n    receipt = generate_receipt()\n    update_stock_atomically(items)\n    return receipt" },
-        { step_number: 7, heading_km: "៧. Deployment & Docker Setup", content_km: "• Python 3.11 Containerized Microservice\n• PostgreSQL Multi-tenant DB\n• 24/7 Keep-Alive Worker on Render" }
-      ]
+      subtitle: "Interactive Mini App & Khmer Writing Assistant",
+      sections: []
     };
 
     function renderSolutionData(data) {
-      if (!data || !data.sections) return;
+      if (!data || !data.sections || data.sections.length === 0) return;
       document.getElementById('solution-title').innerText = data.title || 'Smart AI Assistant';
       document.getElementById('solution-subtitle').innerText = data.subtitle || 'Interactive Mini App & Khmer Writing Assistant';
 
       const container = document.getElementById('stepper-container');
       
-      // Preserve Accordion 1 (Spell Checker) and append existing sections 2..N
+      // Preserve Accordion 1 (Spell Checker) and append dynamic solution sections 2..N
       data.sections.forEach((sec, idx) => {
         const item = document.createElement('div');
         item.className = 'step-item';
         
+        let headingText = sec.heading_km || sec.heading || 'Section';
+        // Strip duplicate leading numbers if present (e.g. "១. ", "២. ")
+        headingText = headingText.replace(/^[0-9០-៩]+[\.\)]\s*/, '');
+
         let contentHtml = `<p>${(sec.content_km || sec.content || '').replace(/\n/g, '<br/>')}</p>`;
         if (sec.code) {
           contentHtml += `
@@ -1141,7 +1138,7 @@
           <div class="step-header" onclick="toggleStep(this)">
             <div class="step-title-group">
               <div class="step-badge">${sec.step_number || (idx + 2)}</div>
-              <span>${sec.heading_km || sec.heading || 'Section'}</span>
+              <span>${headingText}</span>
             </div>
             <span class="step-arrow">▼</span>
           </div>
@@ -1159,7 +1156,7 @@
       else showToast("✅ Code copied to clipboard!");
     }
 
-    // Fetch existing solution data if ID present, else render demo sections
+    // Fetch existing solution data if ID present, else render cleanly
     const pathParts = window.location.pathname.split('/');
     const solutionId = pathParts[pathParts.length - 1] || new URLSearchParams(window.location.search).get('id');
 
