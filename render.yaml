@@ -1,6 +1,6 @@
 services:
-  - type: worker
-    name: telegram-ai-bot
+  - type: web
+    name: telegram-python-bot
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
@@ -11,3 +11,4 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-3.6-flash
+
