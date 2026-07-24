@@ -107,12 +107,13 @@ def detect_response_type_from_text(text: str, user_prompt: str = "") -> str:
     return "general_answer"
 
 
-def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dict[str, Any]:
+def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_prompt: str = "") -> Dict[str, Any]:
     """
     Parses raw AI response into structured JSON schema matching Zod requirements.
     If raw AI response is valid JSON, extracts fields.
     Otherwise, builds structured dictionary using intelligent extraction.
     """
+    prompt = user_prompt or default_prompt
     cleaned_raw = clean_broken_characters(raw_text)
 
     # Try JSON extraction
@@ -129,7 +130,7 @@ def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dic
     if parsed and isinstance(parsed, dict) and ("sections" in parsed or "title" in parsed):
         res_type = parsed.get("response_type", "general_answer")
         if res_type not in RESPONSE_TYPES:
-            res_type = detect_response_type_from_text(cleaned_raw, default_prompt)
+            res_type = detect_response_type_from_text(cleaned_raw, prompt)
         parsed["response_type"] = res_type
         if "title" not in parsed or not parsed["title"]:
             parsed["title"] = "ចម្លើយ Smart AI"
@@ -138,7 +139,7 @@ def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dic
         return parsed
 
     # Fallback: Rule-based extraction from unstructured text
-    res_type = detect_response_type_from_text(cleaned_raw, default_prompt)
+    res_type = detect_response_type_from_text(cleaned_raw, prompt)
     lines = [l.strip() for l in cleaned_raw.split("\n") if l.strip()]
 
     title = lines[0] if lines else "Smart AI Assistant Response"
