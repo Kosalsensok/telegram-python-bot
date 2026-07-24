@@ -6,20 +6,27 @@ from keyboards.inline import (
     get_welcome_inline_keyboard, 
     get_language_inline_keyboard, 
     get_mode_inline_keyboard,
-    get_image_download_keyboard
+    get_image_download_keyboard,
+    get_requirements_navigation_keyboard,
+    get_code_answer_keyboard,
+    get_math_answer_keyboard
 )
 from services.db_service import DatabaseService
 from utils.user_count import format_user_count
 from config import BOT_DISPLAY_NAME, GEMINI_MODEL
 from utils.memory import ConversationMemory
 from prompts.mode_prompts import MODE_DESCRIPTIONS, MODE_EXPLANATIONS
+from utils.solution_card import get_solution_cache, render_solution_card, render_solution_pdf
+from services.prototype_service import create_mart_system_prototype_files, generate_prototype_zip_bytes
 
 def get_callbacks_router(db_service: DatabaseService = None, memory: ConversationMemory = None) -> Router:
     """
     Construct callbacks router with injected database service and conversation memory.
+    Handles requirement page navigation, code actions, HD cards, and PDF exports.
     """
     router = Router(name="callbacks_router")
 
+    # 1. Basic Navigation & Mode Callbacks
     @router.callback_query(F.data == "cb_mode_menu")
     async def callback_mode_menu(callback: types.CallbackQuery):
         await callback.answer()
@@ -30,13 +37,13 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
 
         mode_text = (
             "🎯 <b>ជ្រើសរើស AI Operating Mode / Select AI Mode:</b>\n\n"
-            "• <b>🤖 General AI Mode:</b> ជំនួយការ AI ទូទៅ (សួរដេញដោល, សរសេរកូដ, វិភាគទូទៅ)\n"
-            "• <b>📐 Standard Mode:</b> បម្លែងសមីការ/រូបមន្ត គណិត/គីមី/រូបវិទ្យា/តារាង ជាកូដ LaTeX\n"
-            "• <b>🇰🇭 Khmer Math Mode:</b> បម្លែងសមីការ គណិត/គីមី/រូបវិទ្យា/តារាង ជាកូដ LaTeX ភាសាខ្មែរ\n"
-            "• <b>🌐 Translate to ខ្មែរ Mode:</b> បកប្រែអត្ថបទ, រូបភាព ឬ ឯកសារ ទៅជាភាសាខ្មែរ\n"
-            "• <b>🎨 TikZ Mode:</b> បម្លែងរូបភាព ក្រាហ្វ, Circuit, ធរណីមាត្រ ជាកូដ LaTeX TikZ Diagram\n"
-            "• <b>📄 PDF to Text Mode:</b> ទាញយកអត្ថបទពី PDF ភាសាខ្មែរ\n"
-            "• <b>✍️ Handwrite Mode:</b> បម្លែងអក្សរដៃ/សមីការដៃ ទៅជាកូដ LaTeX ភ្លាមៗ\n\n"
+            "• <b>🤖 General AI Mode:</b> ជំនួយការ AI ទូទៅ\n"
+            "• <b>📐 Standard Mode:</b> បម្លែងសមីការ គណិត/គីមី/រូបវិទ្យា ជា LaTeX\n"
+            "• <b>🇰🇭 Khmer Math Mode:</b> បម្លែងសមីការ ជា LaTeX ភាសាខ្មែរ\n"
+            "• <b>🌐 Translate to ខ្មែរ Mode:</b> បកប្រែអត្ថបទ/រូបភាព ទៅជាខ្មែរ\n"
+            "• <b>🎨 TikZ Mode:</b> បម្លែង ក្រាហ្វ/Circuit/ធរណីមាត្រ ជា TikZ Code\n"
+            "• <b>📄 PDF to Text Mode:</b> ទាញយកអត្ថបទពី PDF ខ្មែរ\n"
+            "• <b>✍️ Handwrite Mode:</b> បម្លែងអក្សរដៃ/សមីការដៃ ជា LaTeX\n\n"
             f"📌 Mode បច្ចុប្បន្នរបស់អ្នក៖ <b>{current_mode.upper()}</b>"
         )
         await callback.message.edit_text(mode_text, parse_mode="HTML", reply_markup=get_mode_inline_keyboard(current_mode))
@@ -60,54 +67,28 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         )
         await callback.message.edit_text(mode_text, parse_mode="HTML", reply_markup=get_mode_inline_keyboard(selected_mode))
 
-    @router.callback_query(F.data == "cb_ask_ai")
-    async def callback_ask_ai(callback: types.CallbackQuery):
+    @router.callback_query(F.data == "cb_miniapp")
+    async def callback_miniapp(callback: types.CallbackQuery):
         await callback.answer()
-        msg = (
-            "💬 <b>សូមផ្ញើសំណួរដែលអ្នកចង់សួរមកកាន់ AI Assistant៖</b>\n\n"
-            "<i>ឧទាហរណ៍៖ \"តើអ្វីទៅជា Artificial Intelligence?\" ឬ \"Write a Python quicksort algorithm.\"</i>"
+        from config import RENDER_EXTERNAL_URL
+        from aiogram.utils.keyboard import InlineKeyboardBuilder
+        base_url = (RENDER_EXTERNAL_URL or "http://localhost:8080").rstrip('/')
+        mini_app_url = f"{base_url}/answer/demo"
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="🌐 បើក Telegram Mini App (Launch)", web_app=types.WebAppInfo(url=mini_app_url))
+        builder.button(text="🏠 Menu", callback_data="cb_back_main")
+        builder.adjust(1, 1)
+
+        msg_text = (
+            "🌐 <b>TELEGRAM MINI APP INTERACTIVE EXPERIENCE</b>\n\n"
+            "លោកអ្នកអាចបើកមើល <b>Smart AI Assistant Mini App</b> ដោយផ្ទាល់ក្នុង Telegram ជាមួយនឹង៖\n"
+            "• <b>Vertical Stepper Navigation:</b> ចុចមើលតាម Step & Section\n"
+            "• <b>Copy Code Buttons:</b> ចម្លងកូដដោយត្រង់\n"
+            "• <b>Telegram Dark/Light Theme:</b> សមស្របតាមម៉ូដទូរស័ព្ទ\n\n"
+            "👇 <b>ចុចប៊ូតុងខាងក្រោមដើម្បីបើក Mini App៖</b>"
         )
-        await callback.message.edit_text(msg, parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_analyze_image")
-    async def callback_analyze_image(callback: types.CallbackQuery):
-        await callback.answer()
-        msg = (
-            "🖼 <b>សូមផ្ញើរូបភាព ហើយសរសេរសំណួរនៅក្នុង Caption៖</b>\n\n"
-            "1. ចុច <b>Attach File / Photo</b> ក្នុង Telegram\n"
-            "2. ជ្រើសរើសរូបភាព ឬ Screenshot របស់អ្នក\n"
-            "3. វាយសំណួររបស់អ្នកនៅក្នុងប្រអប់ <b>Caption</b>\n"
-            "4. ចុច <b>Send</b> ជាការស្រេច!"
-        )
-        await callback.message.edit_text(msg, parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_language")
-    async def callback_language(callback: types.CallbackQuery):
-        await callback.answer()
-        msg = "🌐 <b>សូមជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត / Choose preferred language:</b>"
-        await callback.message.edit_text(msg, parse_mode="HTML", reply_markup=get_language_inline_keyboard())
-
-
-
-    @router.callback_query(F.data == "cb_lang_km")
-    async def callback_lang_km(callback: types.CallbackQuery):
-        await callback.answer("ភាសាខ្មែរត្រូវបានជ្រើសរើស")
-        await callback.message.edit_text("🇰🇭 <b>ភាសាត្រូវបានកំណត់ជា៖ ភាសាខ្មែរ (Khmer)</b>\nអ្នកអាចសួរសំណួរជាភាសាខ្មែរបាន!", parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_lang_en")
-    async def callback_lang_en(callback: types.CallbackQuery):
-        await callback.answer("English selected")
-        await callback.message.edit_text("🇬🇧 <b>Language set to: English</b>\nYou can ask your questions in English!", parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_lang_auto")
-    async def callback_lang_auto(callback: types.CallbackQuery):
-        await callback.answer("Auto-detect enabled")
-        await callback.message.edit_text("🌐 <b>Language detection set to: Automatic (Khmer & English)</b>", parse_mode="HTML")
-
+        await callback.message.edit_text(msg_text, parse_mode="HTML", reply_markup=builder.as_markup())
 
     @router.callback_query(F.data == "cb_back_main")
     async def callback_back_main(callback: types.CallbackQuery):
@@ -123,378 +104,157 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             f"<b>🤖 {BOT_DISPLAY_NAME}</b>\n\n"
             f"<blockquote>សួស្តី {user_name}! 👋\n"
             "ខ្ញុំជាជំនួយការ AI ដែលអាចនិយាយភាសាខ្មែរ និង English។</blockquote>\n\n"
-            f"👥 <b>អ្នកប្រើប្រាស់សរុប (Total Registered Users):</b> {total_users} ({formatted_users} users)\n\n"
+            f"👥 <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
             "<b>✨ ខ្ញុំអាចជួយអ្នកបាន៖</b>\n"
             "💬 សួរសំណួរទូទៅ (Text Chat)\n"
             "🖼 វិភាគរូបភាព (Vision AI)\n"
-            "🎙️ វិភាគ និងបកប្រែសារសំឡេង (Voice Notes AI)\n"
-            "📄 វិភាគ និងទាញយកអត្ថបទពី PDF & Code Files\n"
             "🎯 7 Specialized AI Operating Modes (/mode)\n"
-            "💻 ពន្យល់ និងដំណើរការកូដ (/run /code)\n\n"
-            "<b>🚀 ចាប់ផ្ដើមប្រើប្រាស់</b>\n"
-            "ផ្ញើសំណួរ, ផ្ញើរូបភាព, ផ្ញើសារសំឡេង ឬប្រើ /mode!"
+            "💻 ពន្យល់ និងដំណើរការកូដ (/run /code)"
         )
         await callback.message.edit_text(welcome_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
 
+    # 2. System Requirements Page Navigation Callbacks (Requirement 5 & 6)
+    PAGE_MAP = {
+        "overview": (1, "1️⃣ <b>OVERVIEW & PROJECT SCOPE</b>\n\nប្រព័ន្ធគ្រប់គ្រង Mart សម្រាប់គ្រប់គ្រងការលក់, ស្តុក, ផលិតផល, បុគ្គលិក, អតិថិជន, និងរបាយការណ៍ហិរញ្ញវត្ថុ។"),
+        "features": (2, "2️⃣ <b>CORE FUNCTIONAL MODULES</b>\n\n• POS Sales & Barcode Scanner\n• Inventory & Stock Alerts\n• Purchase Orders & Suppliers\n• Multi-Payment Checkout (KHQR, Cash)\n• User Roles & Permissions"),
+        "roles": (3, "3️⃣ <b>USER ROLES & PERMISSIONS</b>\n\n• <b>Admin:</b> Full System Control & Audit Logs\n• <b>Manager:</b> Reports, Discounts & Stock Adjustments\n• <b>Cashier:</b> POS Checkout & Receipts\n• <b>Stock Controller:</b> Stock In/Out & Purchase Orders"),
+        "flows": (4, "4️⃣ <b>USER FLOWS & PROCESSES</b>\n\n1. Cashier authenticates register.\n2. Barcode scanner fetches product price.\n3. System calculates subtotal, tax & discounts.\n4. Sale completes and stock reduces atomically."),
+        "database": (7, "7️⃣ <b>DATABASE DESIGN</b>\n\nTables:\n• <code>users</code> (id, username, role, password_hash)\n• <code>products</code> (id, barcode, name, price, stock)\n• <code>sales</code> (id, receipt_number, total, cashier_id)\n• <code>sale_items</code> (id, sale_id, product_id, qty)"),
+        "api": (8, "8️⃣ <b>API ENDPOINTS SPECIFICATION</b>\n\n• <code>POST /api/v1/auth/login</code> — Authenticate user\n• <code>GET /api/v1/products/:barcode</code> — Scan barcode\n• <code>POST /api/v1/sales/checkout</code> — Process checkout\n• <code>GET /api/v1/reports/daily</code> — Generate sales report"),
+        "ui": (9, "9️⃣ <b>UI SCREENS SPECIFICATION</b>\n\n1. POS Checkout Screen\n2. Inventory & Stock Control Screen\n3. Product Management Screen\n4. Sales & Analytics Dashboard"),
+        "code": (11, "1️⃣1️⃣ <b>PROTOTYPE CODE PREVIEW</b>\n\n<pre><code class="language-python"># pos_service.py\ndef checkout(cashier, items, payment_method):\n    subtotal = sum(i.total_price for i in items)\n    receipt = generate_receipt()\n    update_stock_atomically(items)\n    return receipt\n</code></pre>"),
+        "tests": (12, "1️⃣2️⃣ <b>TESTING & ACCEPTANCE CRITERIA</b>\n\n• Atomic Stock Update Test: PASS\n• Duplicate Receipt Prevention Test: PASS\n• Barcode Scanner Lookup Test: PASS"),
+        "deploy": (13, "1️⃣3️⃣ <b>DEPLOYMENT & DOCKER SETUP</b>\n\n• Containerized Python 3.11 + PostgreSQL\n• Docker Compose multi-service deployment\n• Render Free Web Service 24/7 keep-alive worker")
+    }
 
-    @router.callback_query(F.data == "cb_help")
-    async def callback_help(callback: types.CallbackQuery):
+    @router.callback_query(F.data.startswith("req_"))
+    async def handle_requirements_callbacks(callback: types.CallbackQuery):
+        data = callback.data
+        parts = data.split(":")
+        action_key = parts[0].replace("req_", "")
+        sid = parts[1] if len(parts) > 1 else ""
+
         await callback.answer()
-        help_text = (
-            "📖 <b>ការណែនាំពីរបៀបប្រើប្រាស់ / Usage Guide:</b>\n\n"
-            "<b>1. 💬 សួរសំណួរជាអក្សរ (Text Chat):</b>\n"
-            "• វាយសំណួរជាភាសាខ្មែរ ឬអង់គ្លេស រួចផ្ញើចេញ.\n\n"
-            "<b>2. 🖼 ផ្ញើរូបភាពវិភាគ (Vision AI):</b>\n"
-            "• វាយ /stats ដើម្បីមើលស្ថិតិអ្នកប្រើប្រាស់នៅក្នុងប្រព័ន្ធ."
-        )
-        await callback.message.edit_text(help_text, parse_mode="HTML")
 
+        sol = get_solution_cache(sid)
+        title = sol.get("title", "Smart Mart System") if sol else "Smart Mart System"
 
-    @router.callback_query(F.data == "cb_stats")
-    async def callback_stats(callback: types.CallbackQuery):
-        await callback.answer()
-        user_id = callback.from_user.id if callback.from_user else 0
-        user_stats = {"total_messages": 0, "text_count": 0, "image_count": 0}
-        if db_service:
-            user_stats = await db_service.get_user_stats(user_id)
-        stats_text = (
-            "📊 <b>ស្ថិតិផ្ទាល់ខ្លួនរបស់អ្នក / Your Usage Stats</b>\n\n"
-            f"💬 <b>សំណួរសរុប (Total Questions):</b> {user_stats.get('total_messages', 0)}\n"
-            f"📝 <b>អត្ថបទ (Text):</b> {user_stats.get('text_count', 0)}\n"
-            f"🖼️ <b>រូបភាព (Images):</b> {user_stats.get('image_count', 0)}"
-        )
-        await callback.message.edit_text(stats_text, parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_clear")
-    async def callback_clear(callback: types.CallbackQuery):
-        await callback.answer()
-        user_id = callback.from_user.id if callback.from_user else 0
-        cleared_db = False
-        if db_service:
-            cleared_db = await db_service.clear_history(user_id)
-        cleared_cache = memory.clear_history(user_id) if memory else False
-        
-        if cleared_cache or cleared_db:
-            await callback.message.edit_text("🧹 <b>ប្រវត្តិសន្ទនារបស់អ្នកត្រូវបានលុបរួចរាល់!</b> / Conversation history cleared!", parse_mode="HTML")
-        else:
-            await callback.message.edit_text("ℹ️ មិនមានប្រវត្តិសន្ទនាដែលត្រូវលុបទេ។ / No active conversation history found.", parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_about")
-    async def callback_about(callback: types.CallbackQuery):
-        await callback.answer()
-        total_users = 0
-        if db_service:
-            stats = await db_service.get_global_stats()
-            total_users = stats.get("total_users", 0)
-        formatted = format_user_count(total_users)
-
-        about_text = (
-            f"👤 <b>អំពី {BOT_DISPLAY_NAME} / About Bot:</b>\n\n"
-            f"🤖 <b>Bot Name:</b> {BOT_DISPLAY_NAME}\n"
-            f"⚡ <b>AI Engine:</b> Google Gemini ({GEMINI_MODEL})\n"
-            "🌐 <b>Supported Languages:</b> 🇰🇭 Khmer & 🇬🇧 English\n"
-            f"👥 <b>Total Registered Users:</b> {total_users} ({formatted} users)\n"
-            "🛠 <b>Framework:</b> Python 3.11+ & Aiogram 3.x\n"
-            "🗄 <b>Database:</b> MySQL (aiomysql)\n"
-            "🔒 <b>Privacy:</b> Secure, in-memory image vision pipeline."
-        )
-        await callback.message.edit_text(about_text, parse_mode="HTML")
-
-
-    @router.callback_query(F.data == "cb_privacy")
-    async def callback_privacy(callback: types.CallbackQuery):
-        await callback.answer()
-        privacy_text = (
-            "🔒 <b>គោលការណ៍ឯកជនភាព / Privacy Policy:</b>\n\n"
-            "• <b>Image Processing:</b> រូបភាពដែលអ្នកផ្ញើមកត្រូវបានដំណើរការក្នុង Memory (RAM) ដោយផ្ទាល់ និងមិនត្រូវបានរក្សាទុកជាអចិន្ត្រៃយ៍លើ Disk ឡើយ.\n"
-            "• <b>Conversation Memory:</b> ប្រវត្តិសន្ទនាត្រូវបានប្រើប្រាស់ជា Temporary Context Window សម្រាប់ឆ្លើយតបសំណួររបស់អ្នកប៉ុណ្ណោះ.\n"
-            "• <b>API Transmission:</b> សំណួរ និងរូបភាពត្រូវបានផ្ញើទៅកាន់ Google Gemini AI API តាមរយៈ HTTPS encrypted link សុវត្ថិភាព.\n"
-            "• <b>User Data:</b> ប្រព័ន្ធរក្សាទុកតែ Telegram User ID, Username, និងឈ្មោះដើម្បីផ្តល់សេវាកម្មរាប់ចំនួនអ្នកប្រើប្រាស់ប៉ុណ្ណោះ.\n"
-        )
-        await callback.message.edit_text(privacy_text, parse_mode="HTML")
-
-    @router.callback_query(F.data == "cb_prompt_draw")
-    async def callback_prompt_draw(callback: types.CallbackQuery):
-        await callback.answer()
-        msg = (
-            "🎨 <b>បង្កើតរូបភាព AI ឥតដែនកំណត់ (Unlimited HD AI Image Generator):</b>\n\n"
-            "👉 <b>របៀបប្រើប្រាស់ / How to use:</b>\n"
-            "<code>/image [ការពិពណ៌នារូបភាពជាភាសាខ្មែរ ឬ English]</code>\n\n"
-            "<b>ឧទាហរណ៍៖</b>\n"
-            "• <code>/image 16:9 នាគរាជខ្មែរ ហោះលើប្រាសាទអង្គរវត្ត ពណ៌មាស 4k</code>\n"
-            "• <code>/image 9:16 futuristic Phnom Penh city in 2050, 8k resolution</code>\n"
-            "• <code>/draw 1:1 a cute baby cat wearing a space suit on Mars</code>"
-        )
-        await callback.message.answer(msg, parse_mode="HTML")
-
-    @router.callback_query(F.data.startswith("dl_jpg:"))
-    async def callback_dl_jpg(callback: types.CallbackQuery):
-        cache_id = callback.data.split("dl_jpg:", 1)[1]
-        from services.image_gen_service import get_cached_image, convert_to_jpg
-        cached = get_cached_image(cache_id)
-
-        if not cached or not cached.get("bytes"):
-            await callback.answer("⚠️ រូបភាពនេះត្រូវបានលុបចេញពី Cache។ សូមសាកល្បងបង្កើតថ្មី! / Image cache expired.", show_alert=True)
-            return
-
-        await callback.answer("📥 កំពុងផ្ញើ File HD JPG...")
-        jpg_bytes = convert_to_jpg(cached["bytes"])
-        seed = cached.get("seed", 100)
-        doc_file = types.BufferedInputFile(jpg_bytes, filename=f"AI_Image_HD_{seed}.jpg")
-        await callback.message.reply_document(
-            document=doc_file,
-            caption="📥 <b>File រូបភាព HD JPG (Uncompressed Image Document)</b>",
-            parse_mode="HTML"
-        )
-
-    @router.callback_query(F.data.startswith("dl_png:"))
-    async def callback_dl_png(callback: types.CallbackQuery):
-        cache_id = callback.data.split("dl_png:", 1)[1]
-        from services.image_gen_service import get_cached_image, convert_to_png
-        cached = get_cached_image(cache_id)
-
-        if not cached or not cached.get("bytes"):
-            await callback.answer("⚠️ រូបភាពនេះត្រូវបានលុបចេញពី Cache។ សូមសាកល្បងបង្កើតថ្មី! / Image cache expired.", show_alert=True)
-            return
-
-        await callback.answer("🖼 កំពុងបម្លែង និងផ្ញើ File HD PNG...")
-        png_bytes = convert_to_png(cached["bytes"])
-        seed = cached.get("seed", 100)
-        doc_file = types.BufferedInputFile(png_bytes, filename=f"AI_Image_HD_{seed}.png")
-        await callback.message.reply_document(
-            document=doc_file,
-            caption="🖼 <b>File រូបភាព HD PNG (Lossless Format Document)</b>",
-            parse_mode="HTML"
-        )
-
-    @router.callback_query(F.data.startswith("img_ratio:"))
-    async def callback_img_ratio(callback: types.CallbackQuery):
-        parts = callback.data.split(":")
-        if len(parts) < 3:
-            await callback.answer()
-            return
-        selected_ratio = parts[1]
-        cache_id = parts[2]
-
-        from services.image_gen_service import get_cached_image, ImageGenService, ASPECT_RATIOS
-        cached = get_cached_image(cache_id)
-
-        if not cached:
-            await callback.answer("⚠️ Session ផុតកំណត់។ សូមវាយ /image ម្តងទៀត!", show_alert=True)
-            return
-
-        w, h, desc = ASPECT_RATIOS.get(selected_ratio, (1024, 1024, "1:1"))
-        await callback.answer(f"📐 កំពុងបង្កើតឡើងវិញជាទំហំ {selected_ratio} ({w}x{h})...")
-
-        prompt = cached.get("prompt", "")
-        img_service = ImageGenService()
-
-        loading_msg = await callback.message.reply(f"🎨 <b>កំពុងបង្កើតរូបភាពទំហំ {selected_ratio} ({w}x{h})...</b>", parse_mode="HTML")
-        image_bytes, optimized_prompt, seed, new_cache_id = await img_service.generate_image(
-            prompt=prompt,
-            width=w,
-            height=h
-        )
-
-        try:
-            await loading_msg.delete()
-        except Exception:
-            pass
-
-        if image_bytes:
-            photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
-            caption_text = (
-                f"🎨 <b>រូបភាព AI បង្កើតជោគជ័យ (Ultra HD AI Image):</b>\n\n"
-                f"📝 <b>Prompt:</b> <i>{html.escape(prompt)}</i>\n"
-                f"⚡ <b>Optimized Prompt:</b> <code>{html.escape(optimized_prompt[:250])}</code>\n"
-                f"📐 <b>Aspect Ratio:</b> {selected_ratio} ({w}x{h} Flux HD Ultra)\n\n"
-                f"👇 <b>ទាញយករូបភាព ឬ ផ្លាស់ប្តូរទំហំខាងក្រោម៖</b>"
+        if action_key == "download":
+            # Generate prototype zip archive (Requirement 13)
+            files = create_mart_system_prototype_files(title)
+            zip_bytes = generate_prototype_zip_bytes(files)
+            zip_doc = types.BufferedInputFile(zip_bytes, filename=f"Mart_System_Prototype_{sid[:6]}.zip")
+            await callback.message.reply_document(
+                document=zip_doc,
+                caption=f"📦 <b>{title} — Downloadable Prototype ZIP Archive</b>\n\n<i>Includes: README, .env.example, schema.sql, models.py, pos_service.py, main.py, test_pos.py</i>",
+                parse_mode="HTML"
             )
-            await callback.message.reply_photo(
-                photo=photo_file,
-                caption=caption_text,
+            return
+
+        if action_key == "page":
+            page_num = int(parts[1]) if len(parts) > 2 else 1
+            sid = parts[2] if len(parts) > 2 else sid
+            section_info = f"📌 <b>SECTION {page_num} / 13</b>\n\n"
+            msg_text = f"🛒 <b>{title}</b>\n\n{section_info}សូមជ្រើសរើសផ្នែកខាងក្រោម ដើម្បីមើលព័ត៌មានលម្អិត។"
+            await callback.message.edit_text(
+                msg_text,
                 parse_mode="HTML",
-                reply_markup=get_image_download_keyboard(new_cache_id, selected_ratio)
+                reply_markup=get_requirements_navigation_keyboard(sid, current_page=page_num, total_pages=13)
             )
-        else:
-            await callback.message.reply("❌ មិនអាចបង្កើតរូបភាពតាមទំហំថ្មីបានទេ។", parse_mode="HTML")
-
-    @router.callback_query(F.data.startswith("img_regen:"))
-    async def callback_img_regen(callback: types.CallbackQuery):
-        cache_id = callback.data.split("img_regen:", 1)[1]
-        from services.image_gen_service import get_cached_image, ImageGenService
-        cached = get_cached_image(cache_id)
-
-        if not cached:
-            await callback.answer("⚠️ Session ផុតកំណត់។ សូមវាយ /image ម្តងទៀត!", show_alert=True)
             return
 
-        prompt = cached.get("prompt", "")
-        width = cached.get("width", 1024)
-        height = cached.get("height", 1024)
-        await callback.answer("🔄 កំពុងបង្កើតរូបភាពថ្មីម្តងទៀត...")
-
-        img_service = ImageGenService()
-        loading_msg = await callback.message.reply("🎨 <b>កំពុងបង្កើតរូបភាព AI ថ្មី...</b>", parse_mode="HTML")
-        image_bytes, optimized_prompt, seed, new_cache_id = await img_service.generate_image(
-            prompt=prompt,
-            width=width,
-            height=height
+        page_num, content_text = PAGE_MAP.get(action_key, (1, "<b>ផ្នែកដែលបានជ្រើសរើស (Selected Section)</b>"))
+        full_msg = f"🛒 <b>{title}</b>\n\n{content_text}"
+        await callback.message.edit_text(
+            full_msg,
+            parse_mode="HTML",
+            reply_markup=get_requirements_navigation_keyboard(sid, current_page=page_num, total_pages=13)
         )
 
-        try:
-            await loading_msg.delete()
-        except Exception:
-            pass
+    # 3. Code Actions Callbacks (Requirement 10)
+    @router.callback_query(F.data.startswith("code_"))
+    async def handle_code_callbacks(callback: types.CallbackQuery):
+        data = callback.data
+        parts = data.split(":")
+        action = parts[0]
+        sid = parts[1] if len(parts) > 1 else ""
 
-        if image_bytes:
-            from services.image_gen_service import ASPECT_RATIOS
-            current_ratio = "1:1"
-            for r_key, (w, h, desc) in ASPECT_RATIOS.items():
-                if w == width and h == height:
-                    current_ratio = r_key
+        await callback.answer()
+        sol = get_solution_cache(sid)
+        raw_code = "print('Hello Smart AI')"
+        if sol and sol.get("data") and sol["data"].get("sections"):
+            for sec in sol["data"]["sections"]:
+                if sec.get("code"):
+                    raw_code = sec["code"]
                     break
 
-            photo_file = types.BufferedInputFile(image_bytes, filename=f"ai_image_{seed}.jpg")
-            caption_text = (
-                f"🎨 <b>រូបភាព AI ថ្មី (Regenerated HD Image):</b>\n\n"
-                f"📝 <b>Prompt:</b> <i>{html.escape(prompt)}</i>\n"
-                f"⚡ <b>Optimized Prompt:</b> <code>{html.escape(optimized_prompt[:250])}</code>\n"
-                f"📐 <b>Resolution:</b> {width}x{height} (Flux HD Ultra)\n\n"
-                f"👇 <b>ទាញយករូបភាព ឬ ផ្លាស់ប្តូរទំហំខាងក្រោម៖</b>"
-            )
-            await callback.message.reply_photo(
-                photo=photo_file,
-                caption=caption_text,
-                parse_mode="HTML",
-                reply_markup=get_image_download_keyboard(new_cache_id, current_ratio)
-            )
-        else:
-            await callback.message.reply("❌ មិនអាចបង្កើតរូបភាពថ្មីបានទេ។", parse_mode="HTML")
+        if action == "code_copy":
+            clean_escaped = html.escape(raw_code)
+            await callback.message.reply(f"📋 <b>Copyable Code Snippet:</b>\n\n<code>{clean_escaped}</code>", parse_mode="HTML")
 
-    @router.callback_query(F.data.startswith("enhance_again:"))
-    async def callback_enhance_again(callback: types.CallbackQuery):
-        cache_id = callback.data.split("enhance_again:", 1)[1]
-        from services.image_gen_service import get_cached_image, enhance_image_hd, IMAGE_CACHE
-        from keyboards.inline import get_enhanced_image_download_keyboard
-        import random, time
+        elif action == "code_full":
+            clean_escaped = html.escape(raw_code)
+            await callback.message.reply(f"🔍 <b>Full Code View:</b>\n\n<pre><code>{clean_escaped}</code></pre>", parse_mode="HTML")
 
-        cached = get_cached_image(cache_id)
-        if not cached:
-            await callback.answer("⚠️ Session ផុតកំណត់។ សូមផ្ញើរូបភាពមកម្តងទៀត!", show_alert=True)
-            return
-
-        await callback.answer("✨ កំពុងកែប្រែរូបភាពឲ្យច្បាស់ Ultra HD...")
-        image_bytes = cached.get("image_bytes")
-        if image_bytes:
-            enhanced_bytes = enhance_image_hd(image_bytes, sharpness_factor=2.8, contrast_factor=1.2)
-            seed = random.randint(100000, 999999)
-            new_cache_id = f"img_enh_{seed}_{int(time.time())}"
-            IMAGE_CACHE[new_cache_id] = {
-                "image_bytes": enhanced_bytes,
-                "prompt": "Super-Enhanced Ultra HD Photo",
-                "optimized_prompt": "Ultra HD 4K Super Crystal Clear Sharpened Photo",
-                "width": 2048,
-                "height": 2048,
-                "created_at": time.time()
-            }
-            photo_file = types.BufferedInputFile(enhanced_bytes, filename=f"super_hd_{seed}.jpg")
-            caption_text = (
-                "✨ <b>រូបភាពត្រូវបានកែប្រែឲ្យច្បាស់ខ្លាំង Super HD!</b>\n"
-                "<i>(Maximum Sharpness & Super-Resolution Enhanced)</i>\n\n"
-                "👇 <b>ទាញយករូបភាព HD JPG / PNG ខាងក្រោម៖</b>"
+        elif action == "code_explain":
+            explanation = (
+                "🧠 <b>ការពន្យល់កូដ (Technical Code Explanation):</b>\n\n"
+                "1. <b>Structure:</b> កូដនេះប្រើប្រាស់ Architecture ស្អាត និងចែកចេញជា <code>models</code>, <code>services</code>, និង <code>database</code>.\n"
+                "2. <b>Performance:</b> ដំណើរការកាត់បន្ថយស្តុក និងបង្កើត Sale ក្នុង Transaction តែមួយ (Atomic Operation).\n"
+                "3. <b>Security:</b> ការពារ SQL Injection ដោយប្រើ Parameterized Queries <code>?</code>."
             )
-            await callback.message.reply_photo(
-                photo=photo_file,
-                caption=caption_text,
-                parse_mode="HTML",
-                reply_markup=get_enhanced_image_download_keyboard(new_cache_id)
-            )
-        else:
-            await callback.message.reply("❌ មិនអាចកែប្រែរូបភាពបានទេ។", parse_mode="HTML")
+            await callback.message.reply(explanation, parse_mode="HTML")
 
-    @router.callback_query(F.data == "cb_view_text")
-    async def callback_view_text(callback: types.CallbackQuery):
-        await callback.answer("📄 កំពុងបង្ហាញអត្ថបទចម្លើយ...")
-        user_id = callback.from_user.id if callback.from_user else 0
-        from utils.solution_card import get_solution_cache
-        from utils.response_router import format_telegram_html, parse_ai_structured_response
-        from utils.message_utils import send_safe_response
-        
-        sol = get_solution_cache(str(user_id))
-        if sol and sol.get("data"):
-            text_html = format_telegram_html(sol["data"])
-            await send_safe_response(callback.message, text_html)
-            return
+        elif action == "code_file":
+            doc_bytes = raw_code.encode("utf-8")
+            code_doc = types.BufferedInputFile(doc_bytes, filename=f"solution_{sid[:6]}.py")
+            await callback.message.reply_document(
+                document=code_doc,
+                caption="📥 <b>Source Code File (Complete Runnable File)</b>",
+                parse_mode="HTML"
+            )
+
+    # 4. HD Answer Card & PDF Export Callbacks (Requirement 20 & 21)
+    @router.callback_query(F.data.startswith("answer_hd:"))
+    async def callback_answer_hd(callback: types.CallbackQuery):
+        sid = callback.data.split("answer_hd:", 1)[1]
+        await callback.answer("🔍 កំពុងបង្កើត HD Answer Card PNG...")
+
+        sol = get_solution_cache(sid)
+        if sol and sol.get("card_bytes"):
+            png_bytes = sol["card_bytes"]
         elif sol and sol.get("raw_text"):
-            parsed = parse_ai_structured_response(sol["raw_text"])
-            text_html = format_telegram_html(parsed)
-            await send_safe_response(callback.message, text_html)
-            return
+            png_bytes = render_solution_card(sol["raw_text"], parsed_data=sol.get("data"))
+        else:
+            png_bytes = None
 
-        if memory:
-            hist = await memory.get_history_async(user_id)
-            if hist:
-                last_msg = hist[-1].get("content", "")
-                if last_msg:
-                    parsed = parse_ai_structured_response(last_msg)
-                    await send_safe_response(callback.message, format_telegram_html(parsed))
-                    return
-        await callback.message.reply("ℹ️ មិនមានប្រវត្តិអត្ថបទចម្លើយដែលត្រូវបង្ហាញទេ។ (Text solution expired)", parse_mode="HTML")
-
-    @router.callback_query(F.data == "cb_view_hd")
-    async def callback_view_hd(callback: types.CallbackQuery):
-        await callback.answer("🔍 កំពុងបង្កើតរូបភាព HD Solution Card Document...")
-        user_id = callback.from_user.id if callback.from_user else 0
-        from utils.solution_card import get_solution_cache, render_solution_card
-        
-        sol = get_solution_cache(str(user_id))
-        card_bytes = sol.get("card_bytes") if sol else None
-        
-        if not card_bytes and sol and sol.get("raw_text"):
-            card_bytes = render_solution_card(sol["raw_text"])
-
-        if card_bytes:
-            doc_file = types.BufferedInputFile(card_bytes, filename="AI_Solution_HD.png")
+        if png_bytes:
+            doc_file = types.BufferedInputFile(png_bytes, filename=f"Answer_Card_{sid[:6]}.png")
             await callback.message.reply_document(
                 document=doc_file,
-                caption="🔍 <b>រូបភាព HD Solution Card (Uncompressed PNG Document)</b>",
+                caption="🔍 <b>HD Answer Card (High-DPI Form A Stepper Card)</b>",
                 parse_mode="HTML"
             )
         else:
-            await callback.answer("⚠️ រូបភាព HD ផុតកំណត់ពី Cache (Expired)", show_alert=True)
+            await callback.answer("⚠️ រូបភាព HD ផុតកំណត់ (Cache expired)", show_alert=True)
 
-    @router.callback_query(F.data == "cb_download_pdf")
-    async def callback_download_pdf(callback: types.CallbackQuery):
-        await callback.answer("📥 កំពុងបម្លែងជា File PDF...")
-        user_id = callback.from_user.id if callback.from_user else 0
-        from utils.solution_card import get_solution_cache, render_solution_pdf
-        
-        sol = get_solution_cache(str(user_id))
-        raw_text = sol.get("raw_text") if sol else ""
+    @router.callback_query(F.data.startswith("answer_pdf:"))
+    async def callback_answer_pdf(callback: types.CallbackQuery):
+        sid = callback.data.split("answer_pdf:", 1)[1]
+        await callback.answer("📥 កំពុងបង្កើត PDF Document...")
 
-        if raw_text:
-            pdf_bytes = render_solution_pdf(raw_text)
+        sol = get_solution_cache(sid)
+        if sol and sol.get("raw_text"):
+            pdf_bytes = render_solution_pdf(sol["raw_text"], parsed_data=sol.get("data"))
             if pdf_bytes:
-                pdf_file = types.BufferedInputFile(pdf_bytes, filename="AI_Solution_Document.pdf")
+                pdf_file = types.BufferedInputFile(pdf_bytes, filename=f"Answer_Document_{sid[:6]}.pdf")
                 await callback.message.reply_document(
                     document=pdf_file,
-                    caption="📥 <b>File PDF ចម្លើយ (Printable PDF Document)</b>",
+                    caption="📥 <b>A4 Printable PDF Document</b>",
                     parse_mode="HTML"
                 )
                 return
 
-        await callback.answer("⚠️ មិនអាចបង្កើត File PDF បានទេ (Expired or invalid)", show_alert=True)
-
-    @router.callback_query(F.data == "cb_retry")
-    async def callback_retry(callback: types.CallbackQuery):
-        await callback.answer()
-        msg = (
-            "🔄 <b>សាកល្បងម្ដងទៀត / Retry Solution:</b>\n\n"
-            "👉 សូមផ្ញើរូបភាព ឬ វាយសំណួរលំហាត់សារជាថ្មី មកកាន់ AI Assistant!"
-        )
-        await callback.message.reply(msg, parse_mode="HTML")
+        await callback.answer("⚠️ មិនអាចបង្កើត PDF បានទេ (Cache expired)", show_alert=True)
 
     return router

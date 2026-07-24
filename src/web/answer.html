@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart AI Assistant — Interactive Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #3b82f6;
+      --accent: #06b6d4;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    body.tg-theme {
+      background-color: var(--tg-theme-bg-color, var(--bg));
+      color: var(--tg-theme-text-color, var(--text));
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 22px; color: var(--primary); }
+    .header p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    
+    /* FORM B INTERACTIVE VERTICAL STEPPER */
+    .stepper { display: flex; flex-direction: column; gap: 16px; }
+    .step-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .step-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .step-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      margin-right: 12px;
+    }
+    .step-title-group { display: flex; align-items: center; }
+    .step-content {
+      padding: 0 20px 20px 20px;
+      display: none;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .step-item.active .step-content { display: block; }
+    .step-item.active { border-color: var(--primary); }
+
+    .code-box {
+      background: #090d16;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      margin-top: 10px;
+      color: #a7f3d0;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="tg-theme">
+  <div class="header">
+    <h1 id="solution-title">Smart AI Assistant</h1>
+    <p id="solution-subtitle">Interactive Requirements & Prototype</p>
+  </div>
+
+  <div class="stepper" id="stepper-container">
+    <div class="step-item active">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-title-group">
+          <div class="step-badge">1</div>
+          <span>ទិដ្ឋភាពទូទៅ (Overview)</span>
+        </div>
+        <span>▼</span>
+      </div>
+      <div class="step-content">
+        <p id="summary-text">កំពុងផ្ទុកទិន្នន័យ...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn" onclick="Telegram.WebApp.close()">Close App</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    function toggleStep(el) {
+      const parent = el.parentElement;
+      parent.classList.toggle('active');
+    }
+
+    function copyCode(text) {
+      navigator.clipboard.writeText(text);
+      if (tg) tg.showAlert("✅ Code copied to clipboard!");
+      else alert("✅ Code copied!");
+    }
+
+    // Parse Solution ID from URL path or query params
+    const pathParts = window.location.pathname.split('/');
+    const solutionId = pathParts[pathParts.length - 1] || new URLSearchParams(window.location.search).get('id');
+
+    if (solutionId) {
+      fetch('/api/solution/' + solutionId)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.title) {
+            document.getElementById('solution-title').innerText = data.title;
+            document.getElementById('solution-subtitle').innerText = data.subtitle || data.response_type;
+            
+            const container = document.getElementById('stepper-container');
+            container.innerHTML = '';
+
+            let stepNum = 1;
+
+            // Render Sections into Interactive Stepper
+            if (data.sections && data.sections.length > 0) {
+              data.sections.forEach((sec, idx) => {
+                const item = document.createElement('div');
+                item.className = 'step-item' + (idx === 0 ? ' active' : '');
+                
+                let contentHtml = `<p>${(sec.content_km || sec.content || '').replace(/\n/g, '<br/>')}</p>`;
+                if (sec.code) {
+                  contentHtml += `
+                    <div class="code-box">
+                      <button class="copy-btn" onclick="copyCode(\`${sec.code.replace(/`/g, '\\`')}\`)">Copy</button>
+                      <pre><code>${sec.code}</code></pre>
+                    </div>
+                  `;
+                }
+
+                item.innerHTML = `
+                  <div class="step-header" onclick="toggleStep(this)">
+                    <div class="step-title-group">
+                      <div class="step-badge">${sec.step_number || stepNum++}</div>
+                      <span>${sec.heading_km || sec.heading || 'Section'}</span>
+                    </div>
+                    <span>▼</span>
+                  </div>
+                  <div class="step-content">
+                    ${contentHtml}
+                  </div>
+                `;
+                container.appendChild(item);
+              });
+            }
+          }
+        })
+        .catch(err => console.error("Error fetching solution:", err));
+    }
+  </script>
+</body>
+</html>

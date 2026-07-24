@@ -2,12 +2,26 @@ import json
 import re
 import html
 import logging
+import unicodedata
 from typing import Dict, Any, List, Optional, Tuple
 
 RESPONSE_TYPES = [
+    "general_answer",
+    "code_answer",
+    "technical_explanation",
+    "software_requirements",
+    "project_prototype",
+    "system_architecture",
+    "database_design",
+    "api_design",
     "mathematics",
-    "chemistry",
     "physics",
+    "chemistry",
+    "email_analysis",
+    "document_analysis",
+    "table_analysis",
+    "general_image_analysis",
+    # Aliases
     "email",
     "document",
     "table",
@@ -39,70 +53,63 @@ def contains_broken_characters(text: str) -> bool:
 def clean_broken_characters(text: str) -> str:
     """
     Sanitizes broken characters and replaces bullet boxes with clean bullet points or removes replacement glyphs.
+    Normalizes string to Unicode NFC.
     """
     if not text:
         return ""
-    # Normalize unicode to NFC
-    import unicodedata
     text = unicodedata.normalize("NFC", text)
-
-    # Replace broken box symbols with clean bullet points or spaces
     text = re.sub(r'[\u25A1\u25A0\u25A2\u25A3\u25A4\u25A5]', '•', text)
     text = text.replace('\ufffd', '')
-
-    # Fix repetitive bullet markers
     text = re.sub(r'•\s*•+', '•', text)
     return text.strip()
 
 
 def detect_response_type_from_text(text: str, user_prompt: str = "") -> str:
     """
-    Fall-back rule-based classifier if AI returns free-form text instead of JSON.
+    Intelligent classifier to assign query/response to one of the 15 ResponseType categories.
+    Prioritizes specific technical sub-domains (Database, API, Architecture, Code) before broad requirement types.
     """
     combined = (text + " " + user_prompt).lower()
 
-    # Email / Payment detection
-    email_keywords = [
-        "email", "e-mail", "stripe", "payment", "invoice", "unsuccessful", "charged",
-        "visa ending", "card ending", "subscription", "sender", "recipient", "subject",
-        "អ៊ីមែល", "ការបង់ប្រាក់", "បង់ប្រាក់", "ប្រធានបទ", "អ្នកផ្ញើ"
-    ]
-    if any(k in combined for k in email_keywords):
-        return "email"
+    # Specific Technical Sub-domain Detection (Priority 1)
+    if any(k in combined for k in ["database", "schema", "tables", "primary key", "foreign key", "sql", "ដាតាបេស"]):
+        return "database_design"
+    if any(k in combined for k in ["api endpoint", "rest api", "json endpoint", "http route", "api design"]):
+        return "api_design"
+    if any(k in combined for k in ["architecture", "microservice", "system design", "component diagram"]):
+        return "system_architecture"
+    if any(k in combined for k in ["prototype", "build prototype", "បង្កើត prototype", "project zip"]):
+        return "project_prototype"
+    if any(k in combined for k in ["write code", "c++ loop", "python script", "code block", "#include", "def ", "function "]):
+        return "code_answer"
 
-    # Math / Scientific detection
-    math_keywords = [
-        "\\frac", "\\sqrt", "equation", "solve", "proof", "∫", "∑", "lim",
-        "លំហាត់", "សមីការ", "គណនា", "ស្រាយបញ្ជាក់", "រកតម្លៃ", "តម្លៃនៃ", "អនុគមន៍", "ដេរីវេ"
-    ]
-    if any(k in combined for k in math_keywords) or re.search(r'\\[a-zA-Z]+|\$\$?.*?\$\$?', text):
+    # General Requirements (Priority 2)
+    if any(k in combined for k in ["requirements", "functional requirements", "system requirements", "mart system", "pos system", "feature list", "តម្រូវការ"]):
+        return "software_requirements"
+
+    # Science / Math
+    if any(k in combined for k in ["h2o", "co2", "reaction", "chemical", "គីមី"]):
+        return "chemistry"
+    if any(k in combined for k in ["velocity", "force", "acceleration", "joule", "watt", "ល្បឿន", "កម្លាំង", "រូបវិទ្យា"]):
+        return "physics"
+    math_kw = ["\\frac", "\\sqrt", "equation", "solve", "proof", "∫", "∑", "lim", "លំហាត់", "សមីការ", "គណនា"]
+    if any(k in combined for k in math_kw) or re.search(r'\\[a-zA-Z]+|\$\$?.*?\$\$?', text):
         return "mathematics"
 
-    # Chemistry detection
-    chem_keywords = ["h2o", "co2", "reaction", "molecule", "chemical", "ប្រតិកម្ម", "គីមី"]
-    if any(k in combined for k in chem_keywords):
-        return "chemistry"
-
-    # Physics detection
-    physics_keywords = ["velocity", "force", "acceleration", "joule", "watt", "ល្បឿន", "កម្លាំង", "រូបវិទ្យា"]
-    if any(k in combined for k in physics_keywords):
-        return "physics"
-
-    # Table detection
+    # Image / Analysis
+    if any(k in combined for k in ["email", "e-mail", "stripe", "payment", "invoice", "visa ending", "card ending", "subscription", "sender"]):
+        return "email_analysis"
     if "<table>" in combined or ("|" in text and text.count("|") > 4):
-        return "table"
+        return "table_analysis"
+    if any(k in combined for k in ["document", "pdf", "page", "article", "សៀវភៅ", "ឯកសារ"]):
+        return "document_analysis"
 
-    # Document / PDF text
-    doc_keywords = ["document", "pdf", "page", "article", "សៀវភៅ", "ឯកសារ", "អត្ថបទ"]
-    if any(k in combined for k in doc_keywords):
-        return "document"
-
-    return "general_image"
+    return "general_answer"
 
 
 def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dict[str, Any]:
     """
-    Parses raw AI response into structured JSON schema.
+    Parses raw AI response into structured JSON schema matching Zod requirements.
     If raw AI response is valid JSON, extracts fields.
     Otherwise, builds structured dictionary using intelligent extraction.
     """
@@ -119,31 +126,35 @@ def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dic
         except Exception:
             parsed = None
 
-    if parsed and isinstance(parsed, dict) and "sections" in parsed:
-        res_type = parsed.get("response_type", "general_image")
+    if parsed and isinstance(parsed, dict) and ("sections" in parsed or "title" in parsed):
+        res_type = parsed.get("response_type", "general_answer")
         if res_type not in RESPONSE_TYPES:
             res_type = detect_response_type_from_text(cleaned_raw, default_prompt)
         parsed["response_type"] = res_type
+        if "title" not in parsed or not parsed["title"]:
+            parsed["title"] = "ចម្លើយ Smart AI"
+        if "sections" not in parsed:
+            parsed["sections"] = []
         return parsed
 
-    # Fallback: Extract title, summary, sections manually
+    # Fallback: Rule-based extraction from unstructured text
     res_type = detect_response_type_from_text(cleaned_raw, default_prompt)
     lines = [l.strip() for l in cleaned_raw.split("\n") if l.strip()]
 
-    title = lines[0] if lines else "ការវិភាគរូបភាព (Image Analysis)"
-    if len(title) > 80:
-        title = title[:80] + "..."
+    title = lines[0] if lines else "Smart AI Assistant Response"
+    if len(title) > 90:
+        title = title[:90] + "..."
 
     summary = ""
     sections = []
     key_values = []
     warnings = []
     recommendations = []
-    current_heading = "ព័ត៌មានលម្អិត"
+    current_heading = "ទិដ្ឋភាពទូទៅ (Overview)"
     current_content_lines = []
+    step_num = 1
 
     for line in lines[1:]:
-        # Key value detection (e.g. "Key: Value" or "• Key: Value")
         kv_match = re.match(r'^(?:[•\-*]\s*)?([^:\n]{2,35}):\s*(.+)$', line)
         if kv_match:
             lbl = kv_match.group(1).strip()
@@ -156,12 +167,17 @@ def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dic
                 key_values.append({"label": lbl, "value": val})
             continue
 
-        if line.startswith(("#", "==", "**", "1.", "2.", "3.", "---")):
+        if line.startswith(("#", "==", "**", "1.", "2.", "3.", "---", "4.", "5.", "6.")):
             if current_content_lines:
                 sections.append({
+                    "id": f"sec_{step_num}",
+                    "step_number": step_num,
                     "heading": current_heading,
-                    "content": "\n".join(current_content_lines)
+                    "heading_km": current_heading,
+                    "content": "\n".join(current_content_lines),
+                    "content_km": "\n".join(current_content_lines)
                 })
+                step_num += 1
                 current_content_lines = []
             current_heading = re.sub(r'[*_#=\-]', '', line).strip()
         else:
@@ -172,90 +188,107 @@ def parse_ai_structured_response(raw_text: str, default_prompt: str = "") -> Dic
 
     if current_content_lines:
         sections.append({
+            "id": f"sec_{step_num}",
+            "step_number": step_num,
             "heading": current_heading,
-            "content": "\n".join(current_content_lines)
+            "heading_km": current_heading,
+            "content": "\n".join(current_content_lines),
+            "content_km": "\n".join(current_content_lines)
         })
 
     if not sections and not key_values:
         sections.append({
-            "heading": "ខ្លឹមសារ",
-            "content": cleaned_raw
+            "id": "sec_1",
+            "step_number": 1,
+            "heading": "ខ្លឹមសារ (Content)",
+            "heading_km": "ខ្លឹមសារ",
+            "content": cleaned_raw,
+            "content_km": cleaned_raw
         })
 
     return {
         "response_type": res_type,
         "language": "km",
         "title": title,
+        "subtitle": "Smart AI Response",
         "summary": summary or title,
+        "summary_km": summary or title,
+        "tags": ["AI", "SmartAssistant"],
         "sections": sections,
         "key_values": key_values,
         "warnings": warnings,
         "recommendations": recommendations,
-        "math_expressions": []
+        "math_expressions": [],
+        "suggested_actions": ["view_overview", "view_details"]
     }
 
 
 def format_telegram_html(data: Dict[str, Any]) -> str:
     """
-    Formats structured solution response into clean, safe Telegram HTML text message.
-    Escapes HTML entities to avoid parse errors.
+    Formats structured response into Telegram-Native Premium HTML message (Layer 1).
+    Requirement 4: Clean native summary response.
     """
-    res_type = data.get("response_type", "general_image")
+    res_type = data.get("response_type", "general_answer")
     title = html.escape(clean_broken_characters(data.get("title", "")))
-    summary = html.escape(clean_broken_characters(data.get("summary", "")))
+    subtitle = html.escape(clean_broken_characters(data.get("subtitle", "")))
+    summary = html.escape(clean_broken_characters(data.get("summary_km") or data.get("summary") or ""))
 
     header_icons = {
-        "email": "📧 <b>ការវិភាគអ៊ីមែល / Email Analysis</b>",
-        "document": "📄 <b>ការវិភាគឯកសារ / Document Analysis</b>",
-        "table": "📊 <b>ការវិភាគតារាង / Table Extraction</b>",
-        "mathematics": "🎓 <b>ចម្លើយលំហាត់គណិតវិទ្យា / Math Solution</b>",
-        "chemistry": "🧪 <b>ការវិភាគគីមីវិទ្យា / Chemistry Solution</b>",
-        "physics": "⚡ <b>ការវិភាគរូបវិទ្យា / Physics Solution</b>",
-        "general_image": "🖼 <b>ការវិភាគរូបភាព / Image Analysis</b>"
+        "software_requirements": "🛒 <b>SMART BUSINESS SYSTEM</b>\nAdvanced Functional Requirements",
+        "project_prototype": "📦 <b>PROJECT PROTOTYPE</b>\nSystem Implementation",
+        "code_answer": "💻 <b>CODE SOLUTION</b>\nTechnical Implementation",
+        "technical_explanation": "🧠 <b>TECHNICAL EXPLANATION</b>\nSystem Deep-Dive",
+        "system_architecture": "🏛 <b>SYSTEM ARCHITECTURE</b>\nHigh-Level Architecture Design",
+        "database_design": "🗄 <b>DATABASE DESIGN</b>\nRelational Schema & Models",
+        "api_design": "🔌 <b>API SPECIFICATION</b>\nREST & JSON Endpoints",
+        "mathematics": "🎓 <b>MATHEMATICS SOLUTION</b>\nStep-by-Step Explanation",
+        "chemistry": "🧪 <b>CHEMISTRY ANALYSIS</b>\nChemical Formula & Reaction",
+        "physics": "⚡ <b>PHYSICS SOLUTION</b>\nPhysics Principles & Calculation",
+        "email_analysis": "📧 <b>EMAIL ANALYSIS</b>\nEmail Verification & Security",
+        "email": "📧 <b>EMAIL ANALYSIS</b>\nEmail Verification & Security",
+        "document_analysis": "📄 <b>DOCUMENT ANALYSIS</b>\nDocument Extraction",
+        "document": "📄 <b>DOCUMENT ANALYSIS</b>\nDocument Extraction",
+        "table_analysis": "📊 <b>TABLE EXTRACTION</b>\nData Summary",
+        "table": "📊 <b>TABLE EXTRACTION</b>\nData Summary",
+        "general_image_analysis": "🖼 <b>IMAGE ANALYSIS</b>\nAI Visual Inspection",
+        "general_image": "🖼 <b>IMAGE ANALYSIS</b>\nAI Visual Inspection",
+        "general_answer": "🤖 <b>SMART AI ASSISTANT</b>\nTechnical Response"
     }
 
-    header_str = header_icons.get(res_type, "🖼 <b>ការវិភាគរូបភាព (Image Analysis)</b>")
-    parts = [header_str]
+    parts = ["━━━━━━━━━━━━━━━━━━", header_icons.get(res_type, "🤖 <b>SMART AI ASSISTANT</b>"), "━━━━━━━━━━━━━━━━━━"]
 
     if title:
-        parts.append(f"\n<b>📌 {title}</b>")
+        parts.append(f"\n📌 <b>{title}</b>")
+    if subtitle:
+        parts.append(f"<i>{subtitle}</i>")
 
     if summary:
-        parts.append(f"\n<b>សេចក្តីសង្ខេប</b>\n{summary}")
+        parts.append(f"\n{summary}")
 
-    key_values = data.get("key_values", [])
-    if key_values:
-        kv_lines = ["\n<b>ព័ត៌មានសំខាន់ (Key Info)</b>"]
-        for kv in key_values:
-            lbl = html.escape(clean_broken_characters(kv.get("label", "")))
-            val = html.escape(clean_broken_characters(kv.get("value", "")))
-            if lbl and val:
-                kv_lines.append(f"• <b>{lbl}៖</b> {val}")
-        parts.append("\n".join(kv_lines))
+    tags = data.get("tags", [])
+    if tags:
+        clean_tags = " · ".join([html.escape(t) for t in tags])
+        parts.append(f"\n🏷 <b>Tags:</b> {clean_tags}")
 
+    # Sections summary overview (first 5 sections)
     sections = data.get("sections", [])
-    for sec in sections:
-        heading = html.escape(clean_broken_characters(sec.get("heading", "")))
-        content = html.escape(clean_broken_characters(sec.get("content", "")))
-        if content:
-            if heading:
-                parts.append(f"\n<b>{heading}</b>\n{content}")
+    if sections:
+        parts.append("")
+        for sec in sections[:5]:
+            step_num = sec.get("step_number", 1)
+            num_emoji = f"{step_num}️⃣" if step_num <= 10 else f"[{step_num}]"
+            heading = html.escape(clean_broken_characters(sec.get("heading_km") or sec.get("heading") or ""))
+            content_snippet = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
+            if content_snippet:
+                snippet = content_snippet.split("\n")[0]
+                if len(snippet) > 80:
+                    snippet = snippet[:80] + "..."
+                parts.append(f"{num_emoji} <b>{heading}</b>\n{html.escape(snippet)}")
             else:
-                parts.append(f"\n{content}")
+                parts.append(f"{num_emoji} <b>{heading}</b>")
 
-    warnings = data.get("warnings", [])
-    if warnings:
-        warn_lines = ["\n⚠️ <b>ការប្រុងប្រយ័ត្ន (Security Warning)</b>"]
-        for w in warnings:
-            warn_lines.append(f"• {html.escape(clean_broken_characters(w))}")
-        parts.append("\n".join(warn_lines))
-
-    recommendations = data.get("recommendations", [])
-    if recommendations:
-        rec_lines = ["\n💡 <b>អនុសាសន៍ (Recommendation)</b>"]
-        for r in recommendations:
-            rec_lines.append(f"• {html.escape(clean_broken_characters(r))}")
-        parts.append("\n".join(rec_lines))
+    parts.append("\n━━━━━━━━━━━━━━━━━━")
+    parts.append("👇 <b>សូមជ្រើសរើសផ្នែកខាងក្រោម ដើម្បីមើលព័ត៌មានលម្អិត</b>")
 
     full_text = "\n".join(parts)
     return clean_broken_characters(full_text)

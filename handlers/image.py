@@ -1,6 +1,7 @@
 import logging
 import uuid
 import html
+import os
 from aiogram import Router, types, F
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
@@ -12,9 +13,12 @@ from utils.response_router import (
     format_telegram_html,
     clean_broken_characters
 )
-from utils.solution_card import render_solution_card, save_solution_cache
-from keyboards.inline import get_solution_inline_keyboard
-from config import MAX_IMAGE_SIZE_MB
+from utils.solution_card import render_solution_card, save_solution_cache, generate_short_solution_id
+from keyboards.inline import (
+    get_math_answer_keyboard,
+    get_requirements_navigation_keyboard
+)
+from config import MAX_IMAGE_SIZE_MB, RENDER_EXTERNAL_URL
 
 DEFAULT_IMAGE_PROMPT = (
     "សូមពិពណ៌នា និងវិភាគរូបភាពនេះឱ្យបានច្បាស់។ ប្រសិនបើមានអត្ថបទ សូមអាន និងពន្យល់អត្ថបទសំខាន់ៗផង។"
@@ -24,6 +28,7 @@ DEFAULT_IMAGE_PROMPT = (
 def get_image_router(gemini_service: GeminiService, memory: ConversationMemory = None, db_service: DatabaseService = None) -> Router:
     """
     Construct image vision router with injected GeminiService and DatabaseService.
+    Supports Response Type Routing, Vision OCR, Email Analysis, and Math Solution Cards.
     """
     router = Router(name="image_router")
 
@@ -108,21 +113,27 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
 
                 # Response Type Routing & Classification
                 parsed_data = parse_ai_structured_response(vision_response, prompt)
-                res_type = parsed_data.get("response_type", "general_image")
-                solution_id = str(user_id)
+                res_type = parsed_data.get("response_type", "general_image_analysis")
+
+                solution_id = generate_short_solution_id()
+                card_bytes = render_solution_card(vision_response, parsed_data=parsed_data)
+                save_solution_cache(solution_id, vision_response, parsed_data, user_id, message.chat.id, card_bytes=card_bytes)
+
+                mini_app_url = ""
+                if RENDER_EXTERNAL_URL:
+                    base_url = RENDER_EXTERNAL_URL.rstrip('/')
+                    mini_app_url = f"{base_url}/answer/{solution_id}"
 
                 # Output Strategy Decision
                 if res_type in ["mathematics", "chemistry", "physics"]:
-                    # Visual Solution Card is primary for math / formulas
-                    card_bytes = render_solution_card(vision_response)
-                    save_solution_cache(solution_id, vision_response, parsed_data, card_bytes)
+                    keyboard = get_math_answer_keyboard(solution_id, mini_app_url)
                     if card_bytes and len(card_bytes) > 500:
-                        photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
+                        photo_card = types.BufferedInputFile(card_bytes, filename=f"solution_{solution_id}.png")
                         try:
                             await message.reply_photo(
                                 photo=photo_card,
                                 caption="🎓 <b>ចម្លើយលំហាត់រួចរាល់ !</b>",
-                                reply_markup=get_solution_inline_keyboard(),
+                                reply_markup=keyboard,
                                 parse_mode="HTML"
                             )
                             return
@@ -130,9 +141,9 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                             logging.warning(f"Could not reply with solution card photo, falling back to text: {e}")
 
                 # For Email, Document, Table, General Image -> Telegram HTML Text is primary!
-                save_solution_cache(solution_id, vision_response, parsed_data, None)
                 formatted_html = format_telegram_html(parsed_data)
-                await send_safe_response(message, formatted_html, reply_markup=get_solution_inline_keyboard())
+                keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
+                await send_safe_response(message, formatted_html, reply_markup=keyboard)
 
         except ValueError as ve:
             logging.warning(f"Image validation warning for user {user_id}: {ve}")

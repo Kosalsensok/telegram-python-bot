@@ -1,4 +1,5 @@
-from aiogram.types import InlineKeyboardMarkup
+import os
+from aiogram.types import InlineKeyboardMarkup, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from prompts.mode_prompts import MODE_DESCRIPTIONS
 
@@ -6,18 +7,20 @@ def get_welcome_inline_keyboard() -> InlineKeyboardMarkup:
     """
     Build main welcome inline keyboard.
     Row 1: [ 💬 Ask AI ] [ 🖼 Analyze Image ]
-    Row 2: [ 🎯 AI Operating Modes ] [ 🌐 Language ]
-    Row 3: [ ℹ️ Help ] [ 👤 About Bot ] [ 🔒 Privacy ]
+    Row 2: [ 🎯 AI Operating Modes ] [ 🌐 Telegram Mini App ]
+    Row 3: [ 🌐 Language ] [ ℹ️ Help ]
+    Row 4: [ 👤 About Bot ] [ 🔒 Privacy ]
     """
     builder = InlineKeyboardBuilder()
     builder.button(text="💬 Ask AI", callback_data="cb_ask_ai")
     builder.button(text="🖼 Analyze Image", callback_data="cb_analyze_image")
     builder.button(text="🎯 AI Modes (/mode)", callback_data="cb_mode_menu")
+    builder.button(text="🌐 Mini App (/miniapp)", callback_data="cb_miniapp")
     builder.button(text="🌐 Language", callback_data="cb_language")
     builder.button(text="ℹ️ Help", callback_data="cb_help")
     builder.button(text="👤 About Bot", callback_data="cb_about")
     builder.button(text="🔒 Privacy", callback_data="cb_privacy")
-    builder.adjust(2, 2, 3)
+    builder.adjust(2, 2, 2, 2)
     return builder.as_markup()
 
 
@@ -58,6 +61,7 @@ def get_language_inline_keyboard() -> InlineKeyboardMarkup:
     builder.adjust(2, 1, 1)
     return builder.as_markup()
 
+
 def get_admin_inline_keyboard() -> InlineKeyboardMarkup:
     """
     Build admin panel inline keyboard.
@@ -70,6 +74,7 @@ def get_admin_inline_keyboard() -> InlineKeyboardMarkup:
     builder.button(text="⬅️ Exit Admin", callback_data="cb_back_main")
     builder.adjust(2, 2, 1)
     return builder.as_markup()
+
 
 def get_model_selection_keyboard(current_model: str) -> InlineKeyboardMarkup:
     """
@@ -92,61 +97,111 @@ def get_model_selection_keyboard(current_model: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_image_gen_inline_keyboard() -> InlineKeyboardMarkup:
+def get_requirements_navigation_keyboard(
+    solution_id: str,
+    current_page: int = 1,
+    total_pages: int = 13,
+    mini_app_url: str = ""
+) -> InlineKeyboardMarkup:
     """
-    Build inline keyboard for generated AI image options.
+    Requirement 5: Interactive Page Navigation inline keyboard for System Requirements.
     """
     builder = InlineKeyboardBuilder()
-    builder.button(text="🎨 បង្កើតរូបភាពផ្សេងទៀត (Generate Image)", callback_data="cb_prompt_draw")
-    builder.button(text="⬅️ Back to Main", callback_data="cb_back_main")
-    builder.adjust(1, 1)
+    sid = solution_id[:16]
+
+    builder.button(text="📋 Overview", callback_data=f"req_overview:{sid}")
+    builder.button(text="💎 Features", callback_data=f"req_features:{sid}")
+
+    builder.button(text="👥 Roles", callback_data=f"req_roles:{sid}")
+    builder.button(text="🔁 User Flows", callback_data=f"req_flows:{sid}")
+
+    builder.button(text="🗄 Database", callback_data=f"req_database:{sid}")
+    builder.button(text="🔌 API", callback_data=f"req_api:{sid}")
+
+    builder.button(text="🎨 UI Screens", callback_data=f"req_ui:{sid}")
+    builder.button(text="💻 Code", callback_data=f"req_code:{sid}")
+
+    builder.button(text="🧪 Testing", callback_data=f"req_tests:{sid}")
+    builder.button(text="🚀 Deployment", callback_data=f"req_deploy:{sid}")
+
+    # Pagination controls
+    prev_page = max(1, current_page - 1)
+    next_page = min(total_pages, current_page + 1)
+    builder.button(text="◀ Prev", callback_data=f"req_page:{prev_page}:{sid}")
+    builder.button(text=f"📌 {current_page} / {total_pages}", callback_data=f"req_page:{current_page}:{sid}")
+    builder.button(text="Next ▶", callback_data=f"req_page:{next_page}:{sid}")
+
+    # Download & HD Card actions
+    builder.button(text="🔍 HD Card", callback_data=f"answer_hd:{sid}")
+    builder.button(text="📄 PDF", callback_data=f"answer_pdf:{sid}")
+    builder.button(text="📦 ZIP Prototype", callback_data=f"req_download:{sid}")
+
+    if mini_app_url:
+        builder.button(text="🌐 Telegram Mini App", web_app=WebAppInfo(url=mini_app_url))
+
+    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+
+    if mini_app_url:
+        builder.adjust(2, 2, 2, 2, 2, 3, 3, 1, 1)
+    else:
+        builder.adjust(2, 2, 2, 2, 2, 3, 3, 1)
     return builder.as_markup()
 
 
-def get_image_download_keyboard(cache_id: str, current_ratio: str = "1:1") -> InlineKeyboardMarkup:
+def get_code_answer_keyboard(solution_id: str, mini_app_url: str = "") -> InlineKeyboardMarkup:
     """
-    Build rich inline action keyboard for generated HD AI image:
-    Row 1: [ 📥 Download JPG ] [ 🖼 Download PNG ]
-    Row 2: [ 📐 1:1 ] [ 🖼 16:9 ] [ 📱 9:16 ] [ 🖥 4:3 ]
-    Row 3: [ 🔄 Regenerate ] [ 🎨 New Image ]
+    Requirement 10: Interactive Keyboard for Programming Code Answers.
     """
     builder = InlineKeyboardBuilder()
-    builder.button(text="📥 Download HD JPG", callback_data=f"dl_jpg:{cache_id}")
-    builder.button(text="🖼 Download HD PNG", callback_data=f"dl_png:{cache_id}")
+    sid = solution_id[:16]
 
-    ratios = [("1:1", "1:1"), ("16:9", "16:9"), ("9:16", "9:16"), ("4:3", "4:3")]
-    for ratio_key, ratio_label in ratios:
-        prefix = "✅ " if ratio_key == current_ratio else ""
-        builder.button(text=f"{prefix}{ratio_label}", callback_data=f"img_ratio:{ratio_key}:{cache_id}")
+    builder.button(text="📋 Copy Code", callback_data=f"code_copy:{sid}")
+    builder.button(text="🔍 Full Code", callback_data=f"code_full:{sid}")
 
-    builder.button(text="🔄 បង្កើតឡើងវិញ (Regenerate)", callback_data=f"img_regen:{cache_id}")
-    builder.button(text="🎨 បង្កើតរូបភាពថ្មី (New Image)", callback_data="cb_prompt_draw")
+    builder.button(text="🧠 Explain Code", callback_data=f"code_explain:{sid}")
+    builder.button(text="🎓 Beginner Ver.", callback_data=f"code_beginner:{sid}")
 
-    builder.adjust(2, 4, 1, 1)
+    builder.button(text="📥 Download File", callback_data=f"code_file:{sid}")
+    builder.button(text="📄 Download PDF", callback_data=f"answer_pdf:{sid}")
+
+    builder.button(text="🔍 HD View", callback_data=f"answer_hd:{sid}")
+    if mini_app_url:
+        builder.button(text="🌐 Mini App", web_app=WebAppInfo(url=mini_app_url))
+    else:
+        builder.button(text="🔄 Regenerate", callback_data=f"answer_retry:{sid}")
+
+    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+
+    builder.adjust(2, 2, 2, 2, 1)
     return builder.as_markup()
 
 
-def get_enhanced_image_download_keyboard(cache_id: str) -> InlineKeyboardMarkup:
+def get_math_answer_keyboard(solution_id: str, mini_app_url: str = "") -> InlineKeyboardMarkup:
     """
-    Build inline action keyboard for enhanced Ultra HD image:
-    Row 1: [ 📥 Download Ultra HD JPG ] [ 🖼 Download Ultra HD PNG ]
-    Row 2: [ ✨ កែឲ្យច្បាស់បន្ថែមទៀត ] [ 🎨 បង្កើតរូបភាព AI ]
+    Requirement 14: Interactive Keyboard for Mathematics / Science solutions.
     """
     builder = InlineKeyboardBuilder()
-    builder.button(text="📥 Download HD JPG", callback_data=f"dl_jpg:{cache_id}")
-    builder.button(text="🖼 Download HD PNG", callback_data=f"dl_png:{cache_id}")
-    builder.button(text="✨ កែឲ្យច្បាស់បន្ថែម (Re-Enhance)", callback_data=f"enhance_again:{cache_id}")
-    builder.button(text="🎨 បង្កើតរូបភាព AI (New Image)", callback_data="cb_prompt_draw")
-    builder.adjust(2, 1, 1)
+    sid = solution_id[:16]
+
+    builder.button(text="📄 Text", callback_data=f"math_text:{sid}")
+    builder.button(text="🔍 HD Card", callback_data=f"answer_hd:{sid}")
+    builder.button(text="📥 PDF", callback_data=f"answer_pdf:{sid}")
+    builder.button(text="🔄 Solve Again", callback_data=f"answer_retry:{sid}")
+    
+    if mini_app_url:
+        builder.button(text="🌐 Mini App", web_app=WebAppInfo(url=mini_app_url))
+    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+
+    if mini_app_url:
+        builder.adjust(2, 2, 1, 1)
+    else:
+        builder.adjust(2, 2, 1)
     return builder.as_markup()
 
 
 def get_solution_inline_keyboard() -> InlineKeyboardMarkup:
     """
-    Build inline action keyboard for rendered Math PNG Solution Cards:
-    Row 1: [ 📄 មើលជាអត្ថបទ ] [ 🔍 រូបភាព HD ]
-    Row 2: [ 📥 ទាញយក PDF ] [ 🔄 សាកល្បងម្តងទៀត ]
-    Row 3: [ 🏠 Menu ]
+    Legacy solution keyboard compatibility wrapper.
     """
     builder = InlineKeyboardBuilder()
     builder.button(text="📄 មើលជាអត្ថបទ", callback_data="cb_view_text")

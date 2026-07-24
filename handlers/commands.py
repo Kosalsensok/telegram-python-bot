@@ -6,6 +6,7 @@ import time
 from html import escape
 from aiogram import Router, types, F
 from aiogram.filters import CommandStart, Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from services.bot_profile_service import update_bot_profile
@@ -24,12 +25,14 @@ from config import (
     BOT_DISPLAY_NAME,
     GEMINI_MODEL,
     STATS_PUBLIC,
-    ADMIN_USER_IDS
+    ADMIN_USER_IDS,
+    RENDER_EXTERNAL_URL
 )
 
 def get_command_router(memory: ConversationMemory, db_service: DatabaseService = None, gemini_service: GeminiService = None) -> Router:
     """
     Construct command router with injected conversation memory instance and database service.
+    Includes /miniapp command for Telegram Mini App.
     """
     router = Router(name="commands_router")
 
@@ -70,6 +73,7 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "<b>✨ ខ្ញុំអាចជួយអ្នកបាន៖</b>\n\n"
             "💬 សួរសំណួរទូទៅ (Text Chat)\n"
             "🖼 វិភាគរូបភាព (Vision AI)\n"
+            "🌐 <b>Telegram Mini App (/miniapp):</b> អន្តរកម្មតាម Interactive Stepper\n"
             "🎙️ វិភាគ និងបកប្រែសារសំឡេង (Voice Notes AI)\n"
             "📄 វិភាគ និងទាញយកអត្ថបទពី PDF & Code Files\n"
             "🎯 7 Specialized AI Operating Modes (/mode)\n"
@@ -88,11 +92,37 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             reply_markup=get_welcome_inline_keyboard()
         )
 
+    @router.message(Command("miniapp"))
+    @router.message(F.text.contains("Mini App"))
+    async def cmd_miniapp(message: types.Message):
+        """
+        Handle /miniapp command to launch the Telegram Mini App experience.
+        """
+        if message.from_user:
+            await _register_user(message.from_user)
+
+        base_url = (RENDER_EXTERNAL_URL or "http://localhost:8080").rstrip('/')
+        mini_app_url = f"{base_url}/answer/demo"
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="🌐 បើក Telegram Mini App (Launch)", web_app=types.WebAppInfo(url=mini_app_url))
+        builder.button(text="🏠 Menu", callback_data="cb_back_main")
+        builder.adjust(1, 1)
+
+        msg_text = (
+            "🌐 <b>TELEGRAM MINI APP INTERACTIVE EXPERIENCE</b>\n\n"
+            "លោកអ្នកអាចបើកមើល <b>Smart AI Assistant Mini App</b> ដោយផ្ទាល់ក្នុង Telegram ជាមួយនឹង៖\n"
+            "• <b>Vertical Stepper Navigation:</b> ចុចមើលតាម Step & Section\n"
+            "• <b>Copy Code Buttons:</b> ចម្លងកូដដោយត្រង់\n"
+            "• <b>Telegram Dark/Light Theme:</b> សមស្របតាមម៉ូដទូរស័ព្ទ\n\n"
+            "👇 <b>ចុចប៊ូតុងខាងក្រោមដើម្បីបើក Mini App៖</b>"
+        )
+        await message.answer(msg_text, parse_mode="HTML", reply_markup=builder.as_markup())
+
     @router.message(F.new_chat_members)
     async def handle_new_chat_members(message: types.Message):
         """
         Handle new members joining a group or channel chat.
-        Registers joining members in MySQL database and sends welcome greeting.
         """
         if message.new_chat_members:
             for new_member in message.new_chat_members:
@@ -188,11 +218,13 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "<b>1. 💬 សួរសំណួរជាអក្សរ (Text Chat):</b>\n"
             "• វាយសំណួរជាភាសាខ្មែរ ឬអង់គ្លេស រួចផ្ញើចេញ.\n"
             "• ឧទាហរណ៍៖ <i>\"តើអ្វីទៅជា Python Asyncio?\"</i>\n\n"
-            "<b>2. 🖼 ផ្ញើរូបភាពវិភាគ (Vision AI):</b>\n"
+            "<b>2. 🌐 Telegram Mini App (/miniapp):</b>\n"
+            "• វាយ /miniapp ដើម្បីបើកការបង្ហាញជា Interactive Mini App.\n\n"
+            "<b>3. 🖼 ផ្ញើរូបភាពវិភាគ (Vision AI):</b>\n"
             "• ផ្ញើរូបភាព (Photo) ហើយសរសេរសំណួរនៅក្នុង <b>Caption</b>.\n\n"
-            "<b>3. 🧹 បង្កើតការសន្ទនាថ្មី (/new ឬ /clear):</b>\n"
+            "<b>4. 🧹 បង្កើតការសន្ទនាថ្មី (/new ឬ /clear):</b>\n"
             "• វាយ /new ឬ /clear ដើម្បីលុប Context នៃការសន្ទនាយកសំណួរថ្មី.\n\n"
-            "<b>4. 📊 ពិនិត្យស្ថិតិ (/stats):</b>\n"
+            "<b>5. 📊 ពិនិត្យស្ថិតិ (/stats):</b>\n"
             "• វាយ /stats ដើម្បីមើលស្ថិតិអ្នកប្រើប្រាស់នៅក្នុងប្រព័ន្ធ."
         )
         await message.answer(help_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
@@ -244,6 +276,7 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             f"👥 <b>Total Registered Users:</b> {total_users} ({formatted} users)\n"
             "🛠 <b>Framework:</b> Python 3.11+ & Aiogram 3.x\n"
             "🗄 <b>Database:</b> MySQL (aiomysql)\n"
+            "🌐 <b>Telegram Mini App:</b> Supported (/miniapp)\n"
             "🔒 <b>Privacy:</b> Secure, in-memory image vision pipeline."
         )
         await message.answer(about_text, parse_mode="HTML")
@@ -287,7 +320,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         if message.from_user:
             await _register_user(message.from_user)
 
-        # Check permission if not public and user is not admin
         if not STATS_PUBLIC and ADMIN_USER_IDS and user_id not in ADMIN_USER_IDS:
             await message.answer("⚠️ <b>អ្នកមិនមានសិទ្ធិមើលស្ថិតិនេះទេ។ / Access restricted.</b>", parse_mode="HTML")
             return
@@ -335,8 +367,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             await _register_user(message.from_user)
 
         raw_text = message.text.strip() if message.text else ""
-        
-        import re
         parts = raw_text.split(maxsplit=1)
         if len(parts) < 2 or not parts[1].strip():
             usage_msg = (
@@ -434,10 +464,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
     @router.message(Command("draw"))
     @router.message(F.text.contains("បង្កើតរូបភាព"))
     async def cmd_image(message: types.Message):
-        """
-        Handle HD AI Image Generation command (/image, /imagine, /draw).
-        Generates unlimited high definition images using Pollinations AI (Flux HD).
-        """
         if message.from_user:
             await _register_user(message.from_user)
 
@@ -510,10 +536,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
     @router.message(Command("unblur"))
     @router.message(Command("hd"))
     async def cmd_enhance(message: types.Message):
-        """
-        Handle Image Enhancement / Unblur command (/enhance, /unblur, /hd).
-        Turns blurry or low resolution photos into crystal clear Ultra HD quality.
-        """
         if message.from_user:
             await _register_user(message.from_user)
 

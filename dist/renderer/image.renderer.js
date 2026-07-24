@@ -43,27 +43,39 @@ function escapeHtml(unsafe) {
 function buildSolutionHtml(data, botName = 'Smart AI Assistant', botUsername = '@mysmart_v2_2026_bot') {
     const templatePath = path_1.default.join(__dirname, 'templates', 'solution.template.html');
     let templateHtml = fs_1.default.readFileSync(templatePath, 'utf8');
-    const resType = data.response_type || 'general_image';
+    const resType = data.response_type || 'general_answer';
     const typeLabels = {
-        email: '📧 ការវិភាគអ៊ីមែល',
-        document: '📄 ការវិភាគឯកសារ',
-        table: '📊 ការវិភាគតារាង',
-        mathematics: '🎓 គណិតវិទ្យា',
-        chemistry: '🧪 គីមីវិទ្យា',
-        physics: '⚡ រូបវិទ្យា',
-        general_image: '🖼 ការវិភាគរូបភាព',
+        general_answer: '🤖 General AI Answer',
+        code_answer: '💻 Code Solution',
+        technical_explanation: '🧠 Technical Explanation',
+        software_requirements: '🛒 System Requirements',
+        project_prototype: '📦 Project Prototype',
+        system_architecture: '🏛 Architecture Design',
+        database_design: '🗄 Database Schema',
+        api_design: '🔌 API Specification',
+        mathematics: '🎓 Math Solution',
+        chemistry: '🧪 Chemistry Analysis',
+        physics: '⚡ Physics Solution',
+        email_analysis: '📧 Email Analysis',
+        email: '📧 Email Analysis',
+        document_analysis: '📄 Document Analysis',
+        document: '📄 Document Analysis',
+        table_analysis: '📊 Table Extraction',
+        table: '📊 Table Extraction',
+        general_image_analysis: '🖼 Image Analysis',
+        general_image: '🖼 Image Analysis',
     };
-    let mainContentHtml = '';
-    // 1. Summary Section
-    if (data.summary) {
-        mainContentHtml += `
-      <section class="summary-card">
-        <h2>សេចក្តីសង្ខេប (Summary)</h2>
-        <p>${escapeHtml(data.summary)}</p>
-      </section>
-    `;
+    // Build Tags HTML
+    let tagsHtml = '';
+    if (data.tags && Array.isArray(data.tags)) {
+        data.tags.forEach((tag) => {
+            tagsHtml += `<span>${escapeHtml(tag)}</span>`;
+        });
     }
-    // 2. Key Values Grid
+    // Build Stepper Rows (Form A CSS Stepper)
+    let stepperRowsHtml = '';
+    let stepNumber = 1;
+    // Key Values Grid as Step 1 if available
     if (data.key_values && data.key_values.length > 0) {
         let rowsHtml = '';
         data.key_values.forEach((kv) => {
@@ -74,14 +86,62 @@ function buildSolutionHtml(data, botName = 'Smart AI Assistant', botUsername = '
         </div>
       `;
         });
-        mainContentHtml += `
-      <section class="data-grid">
-        <h2>ព័ត៌មានសំខាន់ (Key Information)</h2>
-        ${rowsHtml}
-      </section>
+        stepperRowsHtml += `
+      <div class="step-row">
+        <div class="step-rail">
+          <div class="step-marker">${stepNumber++}</div>
+          <div class="step-line"></div>
+        </div>
+        <section class="step-content">
+          <div class="step-card">
+            <h2>📌 ព័ត៌មានសំខាន់ (Key Information)</h2>
+            <div class="data-grid">${rowsHtml}</div>
+          </div>
+        </section>
+      </div>
     `;
     }
-    // 3. Structured Sections / Math Questions
+    // Structured Sections as Stepper Steps
+    if (data.sections && Array.isArray(data.sections)) {
+        data.sections.forEach((sec) => {
+            const heading = escapeHtml(sec.heading_km || sec.heading || `ផ្នែកទី ${stepNumber}`);
+            let bodyHtml = '';
+            if (sec.content_km || sec.content) {
+                const textContent = sec.content_km || sec.content;
+                bodyHtml += `<div class="step-text">${escapeHtml(textContent).replace(/\n/g, '<br/>')}</div>`;
+            }
+            if (sec.code) {
+                bodyHtml += `<pre class="code-block"><code>${escapeHtml(sec.code)}</code></pre>`;
+            }
+            if (sec.items && Array.isArray(sec.items)) {
+                sec.items.forEach((item) => {
+                    if (typeof item === 'string') {
+                        bodyHtml += `<div class="step-text">• ${escapeHtml(item)}</div>`;
+                    }
+                    else if (typeof item === 'object' && item !== null) {
+                        const itemTitle = item.title ? `<b>${escapeHtml(item.title)}</b>: ` : '';
+                        const itemDesc = item.description_km || item.description || JSON.stringify(item);
+                        bodyHtml += `<div class="step-text">• ${itemTitle}${escapeHtml(itemDesc)}</div>`;
+                    }
+                });
+            }
+            stepperRowsHtml += `
+        <div class="step-row">
+          <div class="step-rail">
+            <div class="step-marker">${sec.step_number || stepNumber++}</div>
+            <div class="step-line"></div>
+          </div>
+          <section class="step-content">
+            <div class="step-card">
+              <h2>${heading}</h2>
+              ${bodyHtml}
+            </div>
+          </section>
+        </div>
+      `;
+        });
+    }
+    // Math questions step
     if (data.questions && Array.isArray(data.questions)) {
         data.questions.forEach((q) => {
             const qLatex = (0, latex_validator_1.validateAndSanitizeLaTeX)(q.question_latex || '').renderedHtml;
@@ -98,62 +158,79 @@ function buildSolutionHtml(data, botName = 'Smart AI Assistant', botUsername = '
                 });
             }
             const finalLatex = (0, latex_validator_1.validateAndSanitizeLaTeX)(q.final_answer_latex || '').renderedHtml;
-            mainContentHtml += `
-        <div class="question-block">
-          <div class="question-title">សំណួរទី ${q.number || 1}</div>
-          <div class="math-display">${qLatex}</div>
-          <div class="steps-container">${stepsHtml}</div>
-          <div class="final-answer-box">
-            <div class="label">ចម្លើយចុងក្រោយ / Final Answer</div>
-            <div class="math-display">${finalLatex}</div>
+            stepperRowsHtml += `
+        <div class="step-row">
+          <div class="step-rail">
+            <div class="step-marker">${stepNumber++}</div>
+            <div class="step-line"></div>
           </div>
+          <section class="step-content">
+            <div class="step-card">
+              <h2>សំណួរទី ${q.number || stepNumber}</h2>
+              <div class="math-display">${qLatex}</div>
+              <div class="steps-container">${stepsHtml}</div>
+              <div class="final-answer-box">
+                <div class="label">ចម្លើយចុងក្រោយ / Final Answer</div>
+                <div class="math-display">${finalLatex}</div>
+              </div>
+            </div>
+          </section>
         </div>
       `;
         });
     }
-    else if (data.sections && Array.isArray(data.sections)) {
-        data.sections.forEach((sec) => {
-            mainContentHtml += `
-        <section class="section-card">
-          <h2>${escapeHtml(sec.heading || 'ព័ត៌មាន')}</h2>
-          <div class="content-text">${escapeHtml(sec.content || '').replace(/\n/g, '<br/>')}</div>
-        </section>
-      `;
-        });
-    }
-    // 4. Warnings
+    // Warnings step
     if (data.warnings && data.warnings.length > 0) {
         let warnHtml = '';
         data.warnings.forEach((w) => {
-            warnHtml += `<div class="bullet-item"><span class="bullet-text">${escapeHtml(w)}</span></div>`;
+            warnHtml += `<div class="step-text">• ${escapeHtml(w)}</div>`;
         });
-        mainContentHtml += `
-      <section class="warning-card">
-        <h2>⚠️ ការប្រុងប្រយ័ត្ន (Warnings)</h2>
-        ${warnHtml}
-      </section>
+        stepperRowsHtml += `
+      <div class="step-row">
+        <div class="step-rail">
+          <div class="step-marker">⚠️</div>
+          <div class="step-line"></div>
+        </div>
+        <section class="step-content">
+          <div class="warning-box">
+            <h3>⚠️ ការប្រុងប្រយ័ត្ន (Security Warning)</h3>
+            ${warnHtml}
+          </div>
+        </section>
+      </div>
     `;
     }
-    // 5. Recommendations
+    // Recommendations step
     if (data.recommendations && data.recommendations.length > 0) {
         let recHtml = '';
         data.recommendations.forEach((r) => {
-            recHtml += `<div class="bullet-item"><span class="bullet-text">${escapeHtml(r)}</span></div>`;
+            recHtml += `<div class="step-text">• ${escapeHtml(r)}</div>`;
         });
-        mainContentHtml += `
-      <section class="recommendation-card">
-        <h2>💡 អនុសាសន៍ (Recommendations)</h2>
-        ${recHtml}
-      </section>
+        stepperRowsHtml += `
+      <div class="step-row">
+        <div class="step-rail">
+          <div class="step-marker">💡</div>
+          <div class="step-line"></div>
+        </div>
+        <section class="step-content">
+          <div class="recommendation-box">
+            <h3>💡 អនុសាសន៍ (Recommendation)</h3>
+            ${recHtml}
+          </div>
+        </section>
+      </div>
     `;
     }
     const nowStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Phnom_Penh' });
+    const summaryText = data.summary_km || data.summary || data.title || '';
     templateHtml = templateHtml
-        .replace('{{TITLE}}', escapeHtml(data.title || 'Solution Card'))
+        .replace('{{TITLE}}', escapeHtml(data.title || 'Smart AI Assistant'))
+        .replace('{{SUMMARY}}', escapeHtml(summaryText))
+        .replace('{{TAGS_HTML}}', tagsHtml)
+        .replace('{{STEPPER_HTML}}', stepperRowsHtml)
         .replace(/\{\{BOT_NAME\}\}/g, escapeHtml(botName))
         .replace(/\{\{BOT_USERNAME\}\}/g, escapeHtml(botUsername))
-        .replace('{{RESPONSE_TYPE_LABEL}}', typeLabels[resType] || '🖼 ការវិភាគ')
-        .replace('{{MAIN_CONTENT}}', mainContentHtml)
+        .replace('{{RESPONSE_TYPE_LABEL}}', typeLabels[resType] || '🤖 AI Response')
         .replace('{{GENERATED_AT}}', nowStr);
     return templateHtml;
 }

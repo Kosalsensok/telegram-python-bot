@@ -1,5 +1,6 @@
 import logging
 from html import escape
+import os
 from aiogram import Router, types, F
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
@@ -9,8 +10,9 @@ from utils.response_router import (
     parse_ai_structured_response,
     format_telegram_html
 )
-from utils.solution_card import save_solution_cache
-from keyboards.inline import get_solution_inline_keyboard
+from utils.solution_card import save_solution_cache, generate_short_solution_id
+from keyboards.inline import get_requirements_navigation_keyboard
+from config import RENDER_EXTERNAL_URL
 
 SUPPORTED_EXTENSIONS = {
     ".txt", ".py", ".json", ".csv", ".md", ".js", ".html", 
@@ -105,10 +107,18 @@ def get_document_router(gemini_service: GeminiService, memory: ConversationMemor
                     await memory.add_assistant_message_async(user_id, ai_response)
 
                 parsed_data = parse_ai_structured_response(ai_response, f"Document: {file_name}")
-                save_solution_cache(str(user_id), ai_response, parsed_data, None)
-                formatted_html = format_telegram_html(parsed_data)
+                solution_id = generate_short_solution_id()
+                save_solution_cache(solution_id, ai_response, parsed_data, user_id, message.chat.id)
 
-            await send_safe_response(message, formatted_html, reply_markup=get_solution_inline_keyboard())
+                mini_app_url = ""
+                if RENDER_EXTERNAL_URL:
+                    base_url = RENDER_EXTERNAL_URL.rstrip('/')
+                    mini_app_url = f"{base_url}/answer/{solution_id}"
+
+                formatted_html = format_telegram_html(parsed_data)
+                keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
+
+            await send_safe_response(message, formatted_html, reply_markup=keyboard)
 
         except Exception as e:
             logging.error(f"Error processing document {file_name} for user {user_id}: {e}", exc_info=True)

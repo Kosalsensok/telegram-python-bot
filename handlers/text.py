@@ -1,14 +1,25 @@
 import logging
+import os
 from html import escape
 from aiogram import Router, types, F
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
+from utils.response_router import parse_ai_structured_response, format_telegram_html
+from utils.solution_card import save_solution_cache, generate_short_solution_id
+from keyboards.inline import (
+    get_mode_inline_keyboard,
+    get_requirements_navigation_keyboard,
+    get_code_answer_keyboard,
+    get_math_answer_keyboard
+)
+from config import RENDER_EXTERNAL_URL
 
 def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, db_service: DatabaseService = None) -> Router:
     """
     Construct text chat router with injected Gemini service, memory, and database service.
+    Implements Response Type Router, structured AI parsing, short solution caching, and Layer 1 summary message.
     """
     router = Router(name="text_router")
 
@@ -36,7 +47,6 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
 
         # Reply Keyboard Fast Action Intercepts
         if "ជ្រើសរើស Mode" in user_text:
-            from keyboards.inline import get_mode_inline_keyboard
             current_mode = "general"
             if db_service:
                 current_mode = await db_service.get_user_mode(user_id)
@@ -136,25 +146,38 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 await memory.add_user_message_async(user_id, user_text)
                 await memory.add_assistant_message_async(user_id, ai_response)
 
-                if active_mode in ["khmer_math", "standard"] or any(kw in user_text for kw in ["លំហាត់", "គណនា", "សមីការ", "ស្រាយ"]):
-                    from utils.solution_card import render_solution_card, save_solution_cache
-                    from keyboards.inline import get_solution_inline_keyboard
-                    card_bytes = render_solution_card(ai_response)
-                    if card_bytes and len(card_bytes) > 500:
-                        save_solution_cache(user_id, ai_response, card_bytes)
-                        photo_card = types.BufferedInputFile(card_bytes, filename="math_solution_card.png")
-                        try:
-                            await message.reply_photo(
-                                photo=photo_card,
-                                caption="🎓 <b>លំហាត់រួចរាល់ !</b>",
-                                reply_markup=get_solution_inline_keyboard(),
-                                parse_mode="HTML"
-                            )
-                            return
-                        except Exception as e:
-                            logging.warning(f"Could not reply with solution card photo in text handler: {e}")
+                # Parse AI response into structured JSON schema
+                parsed_data = parse_ai_structured_response(ai_response, user_prompt=user_text)
+                response_type = parsed_data.get("response_type", "general_answer")
 
-            await send_safe_response(message, ai_response)
+                # Generate short solution ID and cache in memory with TTL
+                solution_id = generate_short_solution_id()
+                save_solution_cache(
+                    solution_id=solution_id,
+                    raw_text=ai_response,
+                    parsed_data=parsed_data,
+                    telegram_user_id=user_id,
+                    chat_id=message.chat.id
+                )
+
+                # Build Mini App URL if configured
+                mini_app_url = ""
+                if RENDER_EXTERNAL_URL:
+                    base_url = RENDER_EXTERNAL_URL.rstrip('/')
+                    mini_app_url = f"{base_url}/answer/{solution_id}"
+
+                # Format Layer 1 Telegram Native summary response
+                summary_html = format_telegram_html(parsed_data)
+
+                # Attach keyboard matching response type
+                if response_type == "code_answer":
+                    keyboard = get_code_answer_keyboard(solution_id, mini_app_url)
+                elif response_type in ["mathematics", "chemistry", "physics"]:
+                    keyboard = get_math_answer_keyboard(solution_id, mini_app_url)
+                else:
+                    keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
+
+                await message.reply(summary_html, parse_mode="HTML", reply_markup=keyboard)
 
         except Exception as e:
             logging.error(f"Error in text handler for user {user_id}: {e}", exc_info=True)

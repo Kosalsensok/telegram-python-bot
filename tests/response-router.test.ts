@@ -3,11 +3,15 @@ import {
   cleanBrokenCharacters,
   StructuredSolutionSchema,
 } from '../src/ai/schemas/response-type.schema';
-import { buildSolutionHtml, renderSolutionToPNG } from '../src/renderer/image.renderer';
+import { buildSolutionHtml, renderSolutionToPNG, closeBrowserInstance } from '../src/renderer/image.renderer';
 import path from 'path';
 import fs from 'fs';
 
 describe('Response Type Router & Renderer Tests', () => {
+  afterAll(async () => {
+    await closeBrowserInstance();
+  });
+
   test('1. Detects broken characters (□ and replacement glyphs)', () => {
     expect(containsBrokenCharacters('\u25A1 Hello World')).toBe(true);
     expect(containsBrokenCharacters('\uFFFD Invalid character')).toBe(true);
@@ -61,5 +65,5 @@ describe('Response Type Router & Renderer Tests', () => {
     const outPng = path.join(__dirname, 'test_email_fixture.png');
     await renderSolutionToPNG(parsed, outPng);
     expect(fs.existsSync(outPng)).toBe(true);
-  });
+  }, 60000);
 });

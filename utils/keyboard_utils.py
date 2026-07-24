@@ -8,19 +8,23 @@ from aiogram.types import (
 def get_main_reply_keyboard() -> ReplyKeyboardMarkup:
     """
     Build persistent main menu reply keyboard at the bottom of the Telegram screen.
+    Includes persistent 🌐 Telegram Mini App (/miniapp) button.
     """
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="🎯 ជ្រើសរើស Mode (/mode)"),
-                KeyboardButton(text="🎨 បង្កើតរូបភាព (/image)")
+                KeyboardButton(text="🌐 Telegram Mini App (/miniapp)"),
+                KeyboardButton(text="🎯 ជ្រើសរើស Mode (/mode)")
             ],
             [
-                KeyboardButton(text="🖼️ វិភាគរូបភាព (Vision)"),
-                KeyboardButton(text="💬 របៀបសួរសំណួរ (Help)")
+                KeyboardButton(text="🎨 បង្កើតរូបភាព (/image)"),
+                KeyboardButton(text="🖼️ វិភាគរូបភាព (Vision)")
             ],
             [
-                KeyboardButton(text="📊 ស្ថិតិ (Stats)"),
+                KeyboardButton(text="💬 របៀបសួរសំណួរ (Help)"),
+                KeyboardButton(text="📊 ស្ថិតិ (Stats)")
+            ],
+            [
                 KeyboardButton(text="🧹 លុប History (Clear)")
             ]
         ],
@@ -28,7 +32,6 @@ def get_main_reply_keyboard() -> ReplyKeyboardMarkup:
         persistent=True
     )
     return keyboard
-
 
 
 def get_start_inline_keyboard() -> InlineKeyboardMarkup:

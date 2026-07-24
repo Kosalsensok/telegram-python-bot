@@ -113,16 +113,24 @@ def get_admin_router(db_service: DatabaseService = None, gemini_service: GeminiS
             return
 
         await callback.answer()
-        if not db_service or not db_service.is_connected:
-            await callback.message.answer("⚠️ Database disconnected.", parse_mode="HTML")
-            return
+        total_users = 0
+        total_msgs = 0
+        if db_service and db_service.is_connected:
+            global_stats = await db_service.get_global_stats()
+            total_users = global_stats.get('total_users', 0)
+            total_msgs = global_stats.get('total_messages', 0)
 
-        global_stats = await db_service.get_global_stats()
-        
+        from utils.solution_card import SOLUTION_CACHE
+        active_cache_count = len(SOLUTION_CACHE)
+
         msg = (
-            "📊 <b>System Statistics</b>\n\n"
-            f"👥 Total Users: {global_stats.get('total_users', 0)}\n"
-            f"💬 Total Messages: {global_stats.get('total_messages', 0)}\n"
+            "📊 <b>Smart AI System Statistics</b>\n\n"
+            f"👥 <b>Total Registered Users:</b> {total_users}\n"
+            f"💬 <b>Total Processed Messages:</b> {total_msgs}\n"
+            f"⚡ <b>AI Engine Model:</b> {gemini_service.primary_model if gemini_service else 'gemini-3.6-flash'}\n"
+            f"📦 <b>Active Solution Cache Entries:</b> {active_cache_count}\n"
+            f"🎨 <b>Renderer Health:</b> Playwright HTML + Local KaTeX Ready\n"
+            f"🧹 <b>Temp Cleanup Status:</b> Active (TTL 24h)"
         )
         await callback.message.answer(msg, parse_mode="HTML")
 

@@ -65,8 +65,28 @@ async def handle_health_check(request):
     }, status=200)
 
 
+async def handle_mini_app(request):
+    """Serves Telegram Mini App interactive interface."""
+    html_path = os.path.join(os.path.dirname(__file__), "src", "web", "answer.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return web.Response(text=content, content_type="text/html")
+    return web.Response(text="Mini App HTML not found", status=404)
+
+
+async def handle_solution_api(request):
+    """API endpoint returning structured solution data for Telegram Mini App."""
+    solution_id = request.match_info.get("solution_id", "")
+    from utils.solution_card import get_solution_cache
+    sol = get_solution_cache(solution_id)
+    if sol and sol.get("data"):
+        return web.json_response(sol["data"], status=200)
+    return web.json_response({"error": "Solution not found or expired"}, status=404)
+
+
 async def start_health_server():
-    """Starts a lightweight web server for Render Free Web Service deployment."""
+    """Starts a lightweight web server for Render Free Web Service deployment and Telegram Mini App."""
     port_str = os.getenv("PORT", "8080").strip()
     try:
         port = int(port_str)
@@ -80,12 +100,16 @@ async def start_health_server():
     app.router.add_head("/", handle_health_check)
     app.router.add_head("/health", handle_health_check)
     app.router.add_head("/ping", handle_health_check)
+    
+    # Mini App routes
+    app.router.add_get("/answer/{solution_id}", handle_mini_app)
+    app.router.add_get("/api/solution/{solution_id}", handle_solution_api)
 
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    logging.info(f"Health check HTTP web server started on 0.0.0.0:{port}")
+    logging.info(f"Health check & Mini App HTTP server started on 0.0.0.0:{port}")
     return runner
 
 
@@ -208,6 +232,7 @@ async def main():
     # 7. Set Bot Commands Menu
     commands = [
         BotCommand(command="start", description="🚀 ចាប់ផ្តើមប្រើប្រាស់ (Start)"),
+        BotCommand(command="miniapp", description="🌐 បើក Telegram Mini App (Open Mini App)"),
         BotCommand(command="image", description="🎨 បង្កើតរូបភាព AI កម្រិត HD (Generate AI Image)"),
         BotCommand(command="imagine", description="🎨 បង្កើតរូបភាព AI (Imagine Image)"),
         BotCommand(command="mode", description="🎯 ជ្រើសរើស AI Mode (Change Mode)"),
