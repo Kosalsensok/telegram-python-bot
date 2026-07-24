@@ -566,12 +566,16 @@
       document.getElementById('stat-warnings').innerText = data.summary.warnings;
       document.getElementById('stat-autofix').innerText = data.summary.autoFixable;
 
+      const aiTag = data.aiAssisted 
+        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-semibold border border-blue-400/30">⚡ Gemini AI</span>`
+        : ``;
+
       const badgeSpan = document.getElementById('summary-badge');
       if (data.summary.totalIssues === 0) {
-        badgeSpan.innerHTML = `<span class="text-emerald-400">✅ មិនបានរកឃើញកំហុសច្បាស់លាស់ទេ</span>`;
+        badgeSpan.innerHTML = `<span class="text-emerald-400">✅ មិនបានរកឃើញកំហុសច្បាស់លាស់ទេ</span> ${aiTag}`;
         resultEditorContainer.classList.add('hidden');
       } else {
-        badgeSpan.innerHTML = `<span class="text-amber-400">⚠️ បានរកឃើញ ${data.summary.totalIssues} បញ្ហា</span>`;
+        badgeSpan.innerHTML = `<span class="text-amber-400">⚠️ បានរកឃើញ ${data.summary.totalIssues} បញ្ហា</span> ${aiTag}`;
         resultEditorContainer.classList.remove('hidden');
       }
 
