@@ -124,8 +124,8 @@ async def handle_spell_check_api(request):
     mode = data.get("mode", "standard")
     custom_dictionary = data.get("customDictionary", [])
 
-    from utils.khmer_spell_checker import check_khmer_spelling
-    result = check_khmer_spelling(text, language=language, mode=mode, custom_dictionary=custom_dictionary)
+    from utils.khmer_spell_checker import check_khmer_spelling_ai
+    result = await check_khmer_spelling_ai(text, language=language, mode=mode, custom_dictionary=custom_dictionary)
     return web.json_response(result, status=200)
 
 

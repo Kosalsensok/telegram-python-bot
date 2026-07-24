@@ -222,5 +222,112 @@ def check_khmer_spelling(
         "originalText": text,
         "correctedText": corrected_text,
         "summary": summary,
-        "issues": issues
+        "issues": issues,
+        "aiAssisted": False
     }
+
+
+async def check_khmer_spelling_ai(
+    text: str,
+    gemini_service=None,
+    language: str = "km",
+    mode: str = "standard",
+    custom_dictionary: List[str] = None
+) -> Dict[str, Any]:
+    """
+    AI-Enhanced Khmer Spell Checking & Writing Assistant.
+    Combines rule-based checks with Google Gemini AI for contextual grammar,
+    subscript misalignments, and phrasing improvements.
+    """
+    # Baseline rule-based results
+    base_result = check_khmer_spelling(text, language=language, mode=mode, custom_dictionary=custom_dictionary)
+    
+    if not text or not text.strip():
+        return base_result
+
+    # Try Gemini AI Integration
+    try:
+        if not gemini_service:
+            from config import GEMINI_API_KEY
+            if GEMINI_API_KEY:
+                from services import GeminiService
+                gemini_service = GeminiService(api_key=GEMINI_API_KEY)
+
+        if gemini_service:
+            import json
+            ai_prompt = f"""
+You are an expert Khmer Lexicographer and AI Writing Assistant.
+Analyze the following Khmer text for spelling errors, subscript misalignments, spacing mistakes, and phrasing improvements.
+Custom dictionary words to ignore: {custom_dictionary or []}
+
+Text:
+"{text}"
+
+Output strictly a JSON object matching this schema:
+{{
+  "correctedText": "full corrected text here",
+  "issues": [
+    {{
+      "original": "misspelled word",
+      "replacement": "correct word",
+      "explanation": "Explanation in natural Khmer",
+      "severity": "error"
+    }}
+  ]
+}}
+"""
+            raw_ai_response = await gemini_service.generate_text_chat(ai_prompt, mode="general")
+            
+            # Clean JSON markdown fences if present
+            clean_json = raw_ai_response.strip()
+            if clean_json.startswith("```"):
+                clean_json = re.sub(r'^```[a-zA-Z]*\n', '', clean_json)
+                clean_json = re.sub(r'\n```$', '', clean_json).strip()
+
+            ai_data = json.loads(clean_json)
+            
+            if isinstance(ai_data, dict) and "correctedText" in ai_data:
+                ai_corrected = ai_data.get("correctedText", base_result["correctedText"])
+                ai_issues = ai_data.get("issues", [])
+                
+                existing_originals = set(i["original"] for i in base_result["issues"])
+                merged_issues = list(base_result["issues"])
+                issue_counter = len(merged_issues) + 1
+
+                for ai_issue in ai_issues:
+                    orig = ai_issue.get("original", "").strip()
+                    repl = ai_issue.get("replacement", "").strip()
+                    if orig and orig not in existing_originals and orig in text:
+                        pos = text.find(orig)
+                        merged_issues.append({
+                            "id": f"issue_ai_{issue_counter}",
+                            "original": orig,
+                            "suggestions": [repl] if repl else [],
+                            "replacement": repl,
+                            "type": "ai_grammar",
+                            "severity": ai_issue.get("severity", "suggestion"),
+                            "confidence": 0.95,
+                            "start": pos if pos != -1 else 0,
+                            "end": pos + len(orig) if pos != -1 else len(orig),
+                            "explanation": ai_issue.get("explanation", "AI Recommended Adjustment"),
+                            "autoFixable": True
+                        })
+                        issue_counter += 1
+
+                merged_issues.sort(key=lambda x: x["start"])
+
+                base_result["correctedText"] = ai_corrected
+                base_result["issues"] = merged_issues
+                base_result["summary"] = {
+                    "totalIssues": len(merged_issues),
+                    "errors": sum(1 for i in merged_issues if i["severity"] == "error"),
+                    "warnings": sum(1 for i in merged_issues if i["severity"] == "warning"),
+                    "suggestions": sum(1 for i in merged_issues if i["severity"] == "suggestion"),
+                    "autoFixable": sum(1 for i in merged_issues if i["autoFixable"])
+                }
+                base_result["aiAssisted"] = True
+
+    except Exception as err:
+        logging.warning(f"AI Spell Check Fallback to Rule-Based: {err}")
+
+    return base_result
