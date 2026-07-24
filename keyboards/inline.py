@@ -171,29 +171,50 @@ def get_requirements_navigation_keyboard(
 
 def get_code_answer_keyboard(solution_id: str, mini_app_url: str = "") -> InlineKeyboardMarkup:
     """
-    Requirement 10: Interactive Keyboard for Programming Code Answers.
+    Phase 9 Primary Keyboard for Programming Code Answers.
+    Row 1: [ 📋 Copy Code ] [ 🧠 Explain ]
+    Row 2: [ 📥 Download ]  [ 🔍 More Options ]
+    Row 3: [ 🏠 Menu ]
     """
     builder = InlineKeyboardBuilder()
     sid = solution_id[:16]
 
     builder.button(text="📋 Copy Code", callback_data=f"code_copy:{sid}")
-    builder.button(text="🔍 Full Code", callback_data=f"code_full:{sid}")
+    builder.button(text="🧠 Explain", callback_data=f"code_explain:{sid}")
 
-    builder.button(text="🧠 Explain Code", callback_data=f"code_explain:{sid}")
-    builder.button(text="🎓 Beginner Ver.", callback_data=f"code_beginner:{sid}")
-
-    builder.button(text="📥 Download File", callback_data=f"code_file:{sid}")
-    builder.button(text="📄 Download PDF", callback_data=f"answer_pdf:{sid}")
-
-    builder.button(text="🔍 HD View", callback_data=f"answer_hd:{sid}")
-    if mini_app_url:
-        builder.button(text="🌐 Mini App", web_app=WebAppInfo(url=mini_app_url))
-    else:
-        builder.button(text="🔄 Regenerate", callback_data=f"answer_retry:{sid}")
+    builder.button(text="📥 Download", callback_data=f"code_file:{sid}")
+    builder.button(text="🔍 More Options", callback_data=f"code_more:{sid}")
 
     builder.button(text="🏠 Menu", callback_data="cb_back_main")
 
-    builder.adjust(2, 2, 2, 2, 1)
+    builder.adjust(2, 2, 1)
+    return builder.as_markup()
+
+
+def get_code_secondary_keyboard(solution_id: str, mini_app_url: str = "") -> InlineKeyboardMarkup:
+    """
+    Phase 9 Secondary Keyboard for Code Actions (opened via More Options).
+    Row 1: [ 🔎 Full Code ] [ 🎓 Beginner ]
+    Row 2: [ 📄 PDF ]       [ 🖼 HD View ]
+    Row 3: [ 🌐 Mini App ]   [ ◀ Back ]
+    """
+    builder = InlineKeyboardBuilder()
+    sid = solution_id[:16]
+
+    builder.button(text="🔎 Full Code", callback_data=f"code_full:{sid}")
+    builder.button(text="🎓 Beginner", callback_data=f"code_beginner:{sid}")
+
+    builder.button(text="📄 PDF", callback_data=f"answer_pdf:{sid}")
+    builder.button(text="🖼 HD View", callback_data=f"answer_hd:{sid}")
+
+    if mini_app_url:
+        builder.button(text="🌐 Mini App", web_app=WebAppInfo(url=mini_app_url))
+    else:
+        builder.button(text="🔄 Solve Again", callback_data=f"answer_retry:{sid}")
+
+    builder.button(text="◀ Back", callback_data=f"code_back:{sid}")
+
+    builder.adjust(2, 2, 2)
     return builder.as_markup()
 
 

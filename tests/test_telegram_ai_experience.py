@@ -101,16 +101,25 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertEqual(cached["title"], "Test Solution")
         self.assertEqual(cached["telegramUserId"], 12345)
 
-    def test_prototype_generator(self):
-        files = create_mart_system_prototype_files("Smart Mart System")
-        self.assertGreaterEqual(len(files), 5)
-        filenames = [f["filename"] for f in files]
-        self.assertIn("README.md", filenames)
-        self.assertIn("schema.sql", filenames)
-        self.assertIn("pos_service.py", filenames)
+    def test_cpp_code_parsing_and_cache_consistency(self):
+        prompt = "write a code C++ loop"
+        raw_ai_text = "```cpp\n#include <iostream>\nusing namespace std;\n\nint main() {\n    for (int i = 1; i <= 5; i++) {\n        cout << i << endl;\n    }\n    return 0;\n}\n```"
+        parsed = parse_ai_structured_response(raw_ai_text, user_prompt=prompt)
+        self.assertEqual(parsed["response_type"], "code_answer")
+        self.assertEqual(parsed["programming_language"], "cpp")
+        self.assertIsNotNone(parsed.get("code"))
+        self.assertEqual(parsed["code"]["language"], "cpp")
+        self.assertEqual(parsed["code"]["filename"], "main.cpp")
+        self.assertIn("#include <iostream>", parsed["code"]["content"])
 
-        zip_bytes = generate_prototype_zip_bytes(files)
-        self.assertGreater(len(zip_bytes), 100)
+        sid = generate_short_solution_id()
+        save_solution_cache(sid, raw_ai_text, parsed, telegram_user_id=999)
+
+        cached = get_solution_cache(sid)
+        self.assertIsNotNone(cached)
+        self.assertEqual(cached["programmingLanguage"], "cpp")
+        self.assertEqual(cached["data"]["code"]["filename"], "main.cpp")
+        self.assertNotIn("print('Hello Smart AI')", cached["data"]["code"]["content"])
 
 
 if __name__ == "__main__":

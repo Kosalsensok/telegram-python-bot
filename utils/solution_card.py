@@ -39,6 +39,7 @@ def save_solution_cache(
     Prevents callback_data overflow (Telegram 64-byte limit).
     """
     now = time.time()
+    code_obj = parsed_data.get("code") or {}
     SOLUTION_CACHE[solution_id] = {
         "solutionId": solution_id,
         "telegramUserId": telegram_user_id,
@@ -46,6 +47,8 @@ def save_solution_cache(
         "raw_text": raw_text,
         "data": parsed_data,
         "responseType": parsed_data.get("response_type", "general_answer"),
+        "programmingLanguage": parsed_data.get("programming_language", "cpp"),
+        "codeObj": code_obj,
         "title": parsed_data.get("title", "Smart AI Solution"),
         "code_files": code_files or [],
         "card_bytes": card_bytes,
@@ -69,6 +72,17 @@ def get_solution_cache(solution_id: str) -> Optional[Dict[str, Any]]:
         SOLUTION_CACHE.pop(clean_id, None)
         return None
     return record
+
+
+def validate_solution_owner(solution_id: str, telegram_user_id: int) -> bool:
+    """Validates if requesting Telegram user owns the solution ID."""
+    sol = get_solution_cache(solution_id)
+    if not sol:
+        return False
+    owner_id = sol.get("telegramUserId")
+    if owner_id and owner_id != telegram_user_id:
+        return False
+    return True
 
 
 def cleanup_expired_solution_cache():

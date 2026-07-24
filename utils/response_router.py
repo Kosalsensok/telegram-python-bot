@@ -124,6 +124,55 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
     prompt = user_prompt or default_prompt
     cleaned_raw = clean_broken_characters(raw_text)
 
+    # Detect code block & language
+    extracted_code = ""
+    detected_lang = "cpp" if ("c++" in prompt.lower() or "cpp" in prompt.lower()) else "python"
+    
+    if any(k in prompt.lower() or k in cleaned_raw.lower() for k in ["#include", "std::", "cout", "c++", "cpp", "int main"]):
+        detected_lang = "cpp"
+    elif any(k in prompt.lower() or k in cleaned_raw.lower() for k in ["python", "def ", "import ", "print("]):
+        detected_lang = "python"
+    elif any(k in prompt.lower() or k in cleaned_raw.lower() for k in ["javascript", "console.log", "function ", "const ", "let "]):
+        detected_lang = "javascript"
+    elif any(k in prompt.lower() or k in cleaned_raw.lower() for k in ["java", "public static void", "System.out"]):
+        detected_lang = "java"
+    elif any(k in prompt.lower() or k in cleaned_raw.lower() for k in ["sql", "select ", "create table"]):
+        detected_lang = "sql"
+
+    code_match = re.search(r'```(?:([\w#+-]+))?\s*\n?(.*?)```', cleaned_raw, re.DOTALL)
+    if code_match:
+        lang_hint = code_match.group(1)
+        if lang_hint:
+            clean_hint = lang_hint.lower().strip()
+            if clean_hint in ["cpp", "c++"]:
+                detected_lang = "cpp"
+            elif clean_hint in ["py", "python"]:
+                detected_lang = "python"
+            elif clean_hint in ["js", "javascript"]:
+                detected_lang = "javascript"
+            elif clean_hint in ["ts", "typescript"]:
+                detected_lang = "typescript"
+            elif clean_hint in ["java"]:
+                detected_lang = "java"
+            elif clean_hint in ["c"]:
+                detected_lang = "c"
+            elif clean_hint in ["sql"]:
+                detected_lang = "sql"
+        extracted_code = code_match.group(2).strip()
+
+    if not extracted_code:
+        html_code_match = re.search(r'<pre(?: [^>]*)?>(?:<code(?: [^>]*)?>)?(.*?)(?:</code>)?</pre>', cleaned_raw, re.DOTALL | re.IGNORECASE)
+        if html_code_match:
+            extracted_code = html.unescape(html_code_match.group(1).strip())
+
+    LANG_TO_EXT = {
+        "cpp": ".cpp", "c": ".c", "python": ".py", "javascript": ".js",
+        "typescript": ".ts", "java": ".java", "php": ".php", "html": ".html",
+        "css": ".css", "sql": ".sql", "json": ".json", "go": ".go", "rust": ".rs"
+    }
+    ext = LANG_TO_EXT.get(detected_lang, ".txt")
+    filename = f"main{ext}"
+
     # Try JSON extraction
     json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', cleaned_raw, re.DOTALL)
     json_str = json_match.group(1) if json_match else cleaned_raw.strip()
@@ -140,6 +189,9 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
         if res_type not in RESPONSE_TYPES:
             res_type = detect_response_type_from_text(cleaned_raw, prompt)
         parsed["response_type"] = res_type
+        parsed["programming_language"] = detected_lang
+        if extracted_code and "code" not in parsed:
+            parsed["code"] = {"language": detected_lang, "filename": filename, "content": extracted_code}
         if "title" not in parsed or not parsed["title"]:
             parsed["title"] = "ចម្លើយ Smart AI"
         if "sections" not in parsed:
@@ -178,14 +230,17 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
 
         if line.startswith(("#", "==", "**", "1.", "2.", "3.", "---", "4.", "5.", "6.")):
             if current_content_lines:
-                sections.append({
+                sec_dict = {
                     "id": f"sec_{step_num}",
                     "step_number": step_num,
                     "heading": current_heading,
                     "heading_km": current_heading,
                     "content": "\n".join(current_content_lines),
                     "content_km": "\n".join(current_content_lines)
-                })
+                }
+                if extracted_code and step_num == 1:
+                    sec_dict["code"] = extracted_code
+                sections.append(sec_dict)
                 step_num += 1
                 current_content_lines = []
             current_heading = re.sub(r'[*_#=\-]', '', line).strip()
@@ -196,27 +251,34 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
                 current_content_lines.append(line)
 
     if current_content_lines:
-        sections.append({
+        sec_dict = {
             "id": f"sec_{step_num}",
             "step_number": step_num,
             "heading": current_heading,
             "heading_km": current_heading,
             "content": "\n".join(current_content_lines),
             "content_km": "\n".join(current_content_lines)
-        })
+        }
+        if extracted_code and step_num == 1:
+            sec_dict["code"] = extracted_code
+        sections.append(sec_dict)
 
     if not sections and not key_values:
-        sections.append({
+        sec_dict = {
             "id": "sec_1",
             "step_number": 1,
             "heading": "ខ្លឹមសារ (Content)",
             "heading_km": "ខ្លឹមសារ",
             "content": cleaned_raw,
             "content_km": cleaned_raw
-        })
+        }
+        if extracted_code:
+            sec_dict["code"] = extracted_code
+        sections.append(sec_dict)
 
-    return {
+    result_dict = {
         "response_type": res_type,
+        "programming_language": detected_lang,
         "language": "km",
         "title": title,
         "subtitle": "Smart AI Response",
@@ -230,6 +292,13 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
         "math_expressions": [],
         "suggested_actions": ["view_overview", "view_details"]
     }
+    if extracted_code:
+        result_dict["code"] = {
+            "language": detected_lang,
+            "filename": filename,
+            "content": extracted_code
+        }
+    return result_dict
 
 
 def format_greeting_telegram(data: Dict[str, Any]) -> str:

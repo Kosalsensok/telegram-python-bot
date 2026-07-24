@@ -9,8 +9,15 @@ from keyboards.inline import (
     get_image_download_keyboard,
     get_requirements_navigation_keyboard,
     get_code_answer_keyboard,
+    get_code_secondary_keyboard,
     get_math_answer_keyboard
 )
+
+LANG_TO_EXT = {
+    "cpp": ".cpp", "c": ".c", "python": ".py", "javascript": ".js",
+    "typescript": ".ts", "java": ".java", "php": ".php", "html": ".html",
+    "css": ".css", "sql": ".sql", "json": ".json", "go": ".go", "rust": ".rs"
+}
 from services.db_service import DatabaseService
 from utils.user_count import format_user_count
 from config import BOT_DISPLAY_NAME, GEMINI_MODEL
@@ -171,7 +178,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             reply_markup=get_requirements_navigation_keyboard(sid, current_page=page_num, total_pages=13)
         )
 
-    # 3. Code Actions Callbacks (Requirement 10)
+    # 3. Code Actions Callbacks (Phase 4-9)
     @router.callback_query(F.data.startswith("code_"))
     async def handle_code_callbacks(callback: types.CallbackQuery):
         data = callback.data
@@ -179,39 +186,105 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         action = parts[0]
         sid = parts[1] if len(parts) > 1 else ""
 
-        await callback.answer()
+        # Retrieve stored solution record from cache
         sol = get_solution_cache(sid)
-        raw_code = "print('Hello Smart AI')"
-        if sol and sol.get("data") and sol["data"].get("sections"):
-            for sec in sol["data"]["sections"]:
+        if not sol:
+            await callback.answer("⚠️ ចម្លើយនេះផុតកំណត់ហើយ (Expired Solution)\nសូមផ្ញើសំណួរដើម្បីបង្កើតកូដម្តងទៀត។", show_alert=True)
+            return
+
+        user_id = callback.from_user.id if callback.from_user else 0
+        owner_id = sol.get("telegramUserId")
+        if owner_id and owner_id != user_id:
+            await callback.answer("⚠️ នេះជាចម្លើយរបស់អ្នកប្រើប្រាស់ផ្សេង (Access Denied)", show_alert=True)
+            return
+
+        await callback.answer()
+
+        # Extract stored code and metadata from structuredResult
+        parsed_data = sol.get("data") or {}
+        code_obj = parsed_data.get("code") or sol.get("codeObj") or {}
+        
+        raw_code = code_obj.get("content", "")
+        if not raw_code and parsed_data.get("sections"):
+            for sec in parsed_data["sections"]:
                 if sec.get("code"):
                     raw_code = sec["code"]
                     break
 
+        if not raw_code and sol.get("raw_text"):
+            code_match = re.search(r'```(?:[\w#+-]+)?\s*\n?(.*?)```', sol["raw_text"], re.DOTALL)
+            if code_match:
+                raw_code = code_match.group(1).strip()
+            else:
+                raw_code = sol["raw_text"]
+
+        lang = parsed_data.get("programming_language") or code_obj.get("language") or sol.get("programmingLanguage") or "cpp"
+        ext = LANG_TO_EXT.get(lang, ".cpp" if lang == "cpp" else ".txt")
+        filename = code_obj.get("filename") or f"main{ext}"
+        title = parsed_data.get("title", f"{lang.upper()} Solution")
+
+        from config import RENDER_EXTERNAL_URL
+        base_url = (RENDER_EXTERNAL_URL or "").rstrip('/')
+        mini_app_url = f"{base_url}/answer/{sid}" if base_url else ""
+
         if action == "code_copy":
             clean_escaped = html.escape(raw_code)
-            await callback.message.reply(f"📋 <b>Copyable Code Snippet:</b>\n\n<code>{clean_escaped}</code>", parse_mode="HTML")
+            await callback.message.reply(
+                f"📋 <b>{lang.upper()} Code</b>\n\n<pre><code class=\"language-{lang}\">{clean_escaped}</code></pre>",
+                parse_mode="HTML"
+            )
 
         elif action == "code_full":
             clean_escaped = html.escape(raw_code)
-            await callback.message.reply(f"🔍 <b>Full Code View:</b>\n\n<pre><code>{clean_escaped}</code></pre>", parse_mode="HTML")
+            await callback.message.reply(
+                f"🔍 <b>Full {lang.upper()} Code</b>\nFile: <code>{filename}</code>\n\n<pre><code class=\"language-{lang}\">{clean_escaped}</code></pre>",
+                parse_mode="HTML"
+            )
 
         elif action == "code_explain":
-            explanation = (
-                "🧠 <b>ការពន្យល់កូដ (Technical Code Explanation):</b>\n\n"
-                "1. <b>Structure:</b> កូដនេះប្រើប្រាស់ Architecture ស្អាត និងចែកចេញជា <code>models</code>, <code>services</code>, និង <code>database</code>.\n"
-                "2. <b>Performance:</b> ដំណើរការកាត់បន្ថយស្តុក និងបង្កើត Sale ក្នុង Transaction តែមួយ (Atomic Operation).\n"
-                "3. <b>Security:</b> ការពារ SQL Injection ដោយប្រើ Parameterized Queries <code>?</code>."
+            explanation_parts = [f"🧠 <b>{title} — Technical Explanation</b>\n"]
+            sections = parsed_data.get("sections", [])
+            for sec in sections:
+                heading = sec.get("heading_km") or sec.get("heading") or ""
+                content = sec.get("content_km") or sec.get("content") or ""
+                if heading and content and not sec.get("code"):
+                    explanation_parts.append(f"<b>• {heading}:</b>\n{content}\n")
+
+            if len(explanation_parts) == 1:
+                explanation_parts.append(
+                    f"• <b>Language:</b> {lang.upper()}\n"
+                    f"• <b>Structure:</b> កូដនេះត្រូវបានសរសេរតាម standard នៃ {lang.upper()}\n"
+                    f"• <b>Execution:</b> អាចរត់ និង Compile បាន 100% មួយដឹងមកយកការបាន។"
+                )
+
+            await callback.message.reply("\n".join(explanation_parts), parse_mode="HTML")
+
+        elif action == "code_beginner":
+            beginner_text = (
+                f"🎓 <b>{title} — Beginner Guide</b>\n\n"
+                f"• <b>1. គោលបំណង:</b> កូដនេះសម្រាប់ដោះស្រាយ {title}\n"
+                f"• <b>2. របៀបដំណើរការ:</b> ប្រើប្រាស់ {lang.upper()} Syntax មូលដ្ឋាន\n"
+                f"• <b>3. អនុសាសន៍:</b> ពិនិត្យមើលលក្ខខណ្ឌ និង variable នីមួយៗឱ្យបានច្បាស់លាស់។"
             )
-            await callback.message.reply(explanation, parse_mode="HTML")
+            await callback.message.reply(beginner_text, parse_mode="HTML")
 
         elif action == "code_file":
             doc_bytes = raw_code.encode("utf-8")
-            code_doc = types.BufferedInputFile(doc_bytes, filename=f"solution_{sid[:6]}.py")
+            code_doc = types.BufferedInputFile(doc_bytes, filename=filename)
             await callback.message.reply_document(
                 document=code_doc,
-                caption="📥 <b>Source Code File (Complete Runnable File)</b>",
+                caption=f"📥 <b>{filename} ({lang.upper()} Source File)</b>",
                 parse_mode="HTML"
+            )
+
+        elif action == "code_more":
+            await callback.message.edit_reply_markup(
+                reply_markup=get_code_secondary_keyboard(sid, mini_app_url)
+            )
+
+        elif action == "code_back":
+            await callback.message.edit_reply_markup(
+                reply_markup=get_code_answer_keyboard(sid, mini_app_url)
             )
 
     # 4. HD Answer Card & PDF Export Callbacks (Requirement 20 & 21)
