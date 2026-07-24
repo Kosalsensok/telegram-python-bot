@@ -109,11 +109,11 @@
     }
   </style>
 </head>
-<body class="bg-darknavy min-h-screen text-textprimary p-4 max-w-3xl mx-auto font-kantumruy">
+<body class="bg-darknavy min-h-screen text-textprimary p-4 pb-20 max-w-3xl mx-auto font-kantumruy">
 
   <!-- HEADER -->
-  <header class="text-center py-5 border-b border-borderdark mb-6">
-    <h1 class="font-moul-heading text-xl sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+  <header class="text-center py-4 border-b border-borderdark mb-5">
+    <h1 class="font-moul-heading text-lg sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
       Smart AI Assistant Mini App
     </h1>
     <p class="text-xs sm:text-sm text-textsecondary mt-1 font-kantumruy">
@@ -128,12 +128,12 @@
     <div class="bg-darkcard border border-primaryblue/50 rounded-2xl overflow-hidden shadow-xl transition-all duration-200">
       
       <!-- ACCORDION HEADER -->
-      <div class="px-5 py-4 bg-cardsecondary/50 flex items-center justify-between cursor-pointer select-none border-b border-borderdark" onclick="toggleAccordion()">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md">
+      <div class="px-4 sm:px-5 py-3.5 bg-cardsecondary/50 flex items-center justify-between cursor-pointer select-none border-b border-borderdark" onclick="toggleAccordion()">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
             ✍️
           </div>
-          <span class="font-moul text-sm sm:text-base text-blue-300">
+          <span class="font-moul text-xs sm:text-base text-blue-300">
             ១. ពិនិត្យអក្ខរាវិរុទ្ធ (Khmer Spelling)
           </span>
         </div>
@@ -144,19 +144,19 @@
       <div id="accordion-body" class="p-4 sm:p-6 space-y-5">
         
         <!-- INFO BOX -->
-        <div class="bg-cardsecondary border border-borderdark rounded-xl p-4 space-y-3">
-          <h3 class="font-bold text-base text-white flex items-center gap-2">
+        <div class="bg-cardsecondary border border-borderdark rounded-xl p-3.5 sm:p-4 space-y-2.5">
+          <h3 class="font-bold text-sm sm:text-base text-white flex items-center gap-2">
             ✍️ ពិនិត្យ និងកែអក្ខរាវិរុទ្ធ
           </h3>
           <p class="text-xs sm:text-sm text-textsecondary leading-relaxed">
             សរសេរ ឬបិទភ្ជាប់អត្ថបទខ្មែររបស់អ្នក ដើម្បីពិនិត្យពាក្យដែលអាចសរសេរខុស ការប្រើចន្លោះ សញ្ញាវណ្ណយុត្ត និងរចនាសម្ព័ន្ធប្រយោគ។
           </p>
-          <div class="flex flex-wrap gap-2 pt-1">
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">🇰🇭 ភាសាខ្មែរ</span>
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">⚡ AI Assisted</span>
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🔒 ឯកជនភាព</span>
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="text-[11px] sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">🇰🇭 ភាសាខ្មែរ</span>
+            <span class="text-[11px] sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">⚡ AI Assisted</span>
+            <span class="text-[11px] sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🔒 ឯកជនភាព</span>
           </div>
-          <div class="text-xs text-textsecondary/80 flex items-center gap-1.5 pt-1">
+          <div class="text-[11px] sm:text-xs text-textsecondary/80 flex items-center gap-1.5 pt-0.5">
             <span>🔒</span>
             <span>អត្ថបទរបស់អ្នកមិនត្រូវបានរក្សាទុកជាអចិន្ត្រៃយ៍ទេ។</span>
           </div>
@@ -167,7 +167,7 @@
           <div class="relative bg-darknavy border-2 border-borderdark focus-within:border-primaryblue rounded-xl p-3 transition-colors duration-200">
             <textarea
               id="spell-textarea"
-              rows="6"
+              rows="5"
               class="w-full bg-transparent text-textprimary placeholder-textsecondary/60 text-sm sm:text-base outline-none resize-y leading-relaxed font-kantumruy"
               placeholder="សូមសរសេរ ឬបិទភ្ជាប់អត្ថបទដែលអ្នកចង់ពិនិត្យនៅទីនេះ..."
               oninput="updateCounters()"
@@ -187,7 +187,7 @@
             id="btn-check"
             onclick="runSpellCheck()"
             disabled
-            class="w-full min-h-[50px] rounded-xl font-bold text-base text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 transition-all duration-200 flex items-center justify-center space-x-2"
+            class="w-full min-h-[48px] rounded-xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 transition-all duration-200 flex items-center justify-center space-x-2"
           >
             <span id="btn-spinner" class="hidden animate-spin">⌛</span>
             <span>🔍 ពិនិត្យឥឡូវនេះ</span>
@@ -195,64 +195,64 @@
         </div>
 
         <!-- ACTION BUTTONS GRID (6 TOOLS) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <button id="btn-autofix" onclick="confirmAutoCorrect()" disabled class="min-h-[44px] px-3 py-2 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs sm:text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-            ✨ កែដោយស្វ័យប្រវត្តិ
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button id="btn-autofix" onclick="confirmAutoCorrect()" disabled class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
+            ✨ កែស្វ័យប្រវត្តិ
           </button>
-          <button id="btn-clear" onclick="clearTextarea()" class="min-h-[44px] px-3 py-2 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
+          <button id="btn-clear" onclick="clearTextarea()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
             🧹 សម្អាត
           </button>
-          <button id="btn-undo" onclick="undoLastAction()" disabled class="min-h-[44px] px-3 py-2 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs sm:text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+          <button id="btn-undo" onclick="undoLastAction()" disabled class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
             ↩️ មិនធ្វើវិញ
           </button>
-          <button id="btn-restore" onclick="confirmRestoreOriginal()" class="min-h-[44px] px-3 py-2 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
-            🔄 ត្រឡប់ទៅអត្ថបទដើម
+          <button id="btn-restore" onclick="confirmRestoreOriginal()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+            🔄 អត្ថបទដើម
           </button>
-          <button id="btn-copy" onclick="copyCorrectedText()" class="min-h-[44px] px-3 py-2 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
-            📋 ចម្លងអត្ថបទដែលបានកែ
+          <button id="btn-copy" onclick="copyCorrectedText()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+            📋 ចម្លងអត្ថបទ
           </button>
-          <button onclick="openDictModal()" class="min-h-[44px] px-3 py-2 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
-            📖 វចនានុក្រមរបស់ខ្ញុំ
+          <button onclick="openDictModal()" class="min-h-[42px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 text-textprimary text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+            📖 វចនានុក្រម
           </button>
         </div>
 
         <!-- SUMMARY STATS CARD -->
-        <div id="summary-card" class="hidden bg-cardsecondary border border-borderdark rounded-xl p-4 space-y-3">
-          <div class="flex items-center justify-between text-sm font-bold text-white">
+        <div id="summary-card" class="hidden bg-cardsecondary border border-borderdark rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-white">
             <span>📊 លទ្ធផលនៃការពិនិត្យ</span>
-            <span id="summary-badge" class="text-xs font-normal"></span>
+            <span id="summary-badge" class="text-[11px] font-normal"></span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-            <div class="bg-darknavy/60 rounded-lg p-2.5">
-              <div id="stat-total" class="text-lg font-bold text-blue-400">0</div>
-              <div class="text-[11px] text-textsecondary">បញ្ហាទាំងអស់</div>
+            <div class="bg-darknavy/60 rounded-lg p-2">
+              <div id="stat-total" class="text-base sm:text-lg font-bold text-blue-400">0</div>
+              <div class="text-[10px] text-textsecondary">បញ្ហាទាំងអស់</div>
             </div>
-            <div class="bg-darknavy/60 rounded-lg p-2.5">
-              <div id="stat-errors" class="text-lg font-bold text-red-400">0</div>
-              <div class="text-[11px] text-textsecondary">កំហុស</div>
+            <div class="bg-darknavy/60 rounded-lg p-2">
+              <div id="stat-errors" class="text-base sm:text-lg font-bold text-red-400">0</div>
+              <div class="text-[10px] text-textsecondary">កំហុស</div>
             </div>
-            <div class="bg-darknavy/60 rounded-lg p-2.5">
-              <div id="stat-warnings" class="text-lg font-bold text-amber-400">0</div>
-              <div class="text-[11px] text-textsecondary">ការព្រមាន</div>
+            <div class="bg-darknavy/60 rounded-lg p-2">
+              <div id="stat-warnings" class="text-base sm:text-lg font-bold text-amber-400">0</div>
+              <div class="text-[10px] text-textsecondary">ការព្រមាន</div>
             </div>
-            <div class="bg-darknavy/60 rounded-lg p-2.5">
-              <div id="stat-autofix" class="text-lg font-bold text-emerald-400">0</div>
-              <div class="text-[11px] text-textsecondary">អាចកែស្វ័យប្រវត្តិ</div>
+            <div class="bg-darknavy/60 rounded-lg p-2">
+              <div id="stat-autofix" class="text-base sm:text-lg font-bold text-emerald-400">0</div>
+              <div class="text-[10px] text-textsecondary">អាចកែស្វ័យប្រវត្តិ</div>
             </div>
           </div>
         </div>
 
         <!-- HIGHLIGHTED RESULT DISPLAY -->
-        <div id="result-editor" class="hidden bg-darknavy border border-borderdark rounded-xl p-4 min-h-[140px] text-sm sm:text-base leading-relaxed text-textprimary whitespace-pre-wrap"></div>
+        <div id="result-editor" class="hidden bg-darknavy border border-borderdark rounded-xl p-3.5 min-h-[120px] text-sm sm:text-base leading-relaxed text-textprimary whitespace-pre-wrap"></div>
 
         <!-- BEFORE & AFTER COMPARISON -->
-        <div id="comparison-container" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+        <div id="comparison-container" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
           <div class="bg-darknavy border border-borderdark rounded-xl p-3 text-xs sm:text-sm space-y-1">
-            <div class="font-bold text-textsecondary uppercase tracking-wider text-[11px]">អត្ថបទដើម (Original)</div>
+            <div class="font-bold text-textsecondary uppercase tracking-wider text-[10px]">អត្ថបទដើម (Original)</div>
             <div id="comp-original" class="whitespace-pre-wrap text-textsecondary"></div>
           </div>
           <div class="bg-darknavy border border-borderdark rounded-xl p-3 text-xs sm:text-sm space-y-1">
-            <div class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">អត្ថបទដែលបានកែ (Corrected)</div>
+            <div class="font-bold text-emerald-400 uppercase tracking-wider text-[10px]">អត្ថបទដែលបានកែ (Corrected)</div>
             <div id="comp-corrected" class="whitespace-pre-wrap text-emerald-300"></div>
           </div>
         </div>
@@ -265,7 +265,7 @@
   <footer class="mt-6 pt-4 border-t border-borderdark/50">
     <button
       onclick="if(window.Telegram?.WebApp) Telegram.WebApp.close();"
-      class="w-full min-h-[46px] rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 font-bold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
+      class="w-full min-h-[44px] rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 font-bold text-xs sm:text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
     >
       <span>✕ បិទ App (Close)</span>
     </button>
@@ -583,6 +583,11 @@
       compContainer.classList.remove('hidden');
       document.getElementById('comp-original').innerText = data.originalText;
       document.getElementById('comp-corrected').innerText = data.correctedText;
+
+      // Smooth scroll into view on mobile
+      setTimeout(() => {
+        summaryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     }
 
     function escapeHtml(str) {
