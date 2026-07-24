@@ -19,6 +19,8 @@ from config import MAX_IMAGE_SIZE_MB
 
 DEFAULT_IMAGE_PROMPT = "សូមពិពណ៌នា និងវិភាគរូបភាពនេះឱ្យបានច្បាស់។ ប្រសិនបើមានអត្ថបទ ឬរូបមន្ត សូមអាន និងពន្យល់ផង។"
 
+from utils.thinking_animation import DynamicThinkingAnimation, VISION_THINKING_STEPS
+
 def get_image_router(gemini_service: GeminiService, memory: ConversationMemory = None, db_service: DatabaseService = None) -> Router:
     """
     Construct image vision router with fast loading message edit and structured image analysis output.
@@ -49,8 +51,9 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
         except Exception as e:
             logging.warning(f"Could not send chat action: {e}")
 
-        # Step 2: Immediately send loading status message
-        loading_msg = await message.answer("🔍 កំពុងវិភាគរូបភាព...\nសូមរង់ចាំបន្តិច។", parse_mode="HTML")
+        # Step 2: Immediately send dynamic loading status message
+        anim = DynamicThinkingAnimation(message, VISION_THINKING_STEPS, interval=0.9)
+        loading_msg = await anim.start()
 
         try:
             # Step 3: Download and validate photo
@@ -71,6 +74,8 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
                 gemini_service.generate_vision_chat(image=pil_image, prompt=prompt, mode=active_mode),
                 timeout=55.0
             )
+
+            await anim.stop()
 
             if memory:
                 await memory.add_user_message_async(user_id, prompt, message_type="image")

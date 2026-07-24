@@ -17,6 +17,8 @@ from keyboards.inline import (
     get_error_retry_keyboard
 )
 
+from utils.thinking_animation import DynamicThinkingAnimation, TEXT_THINKING_STEPS
+
 def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, db_service: DatabaseService = None) -> Router:
     """
     Construct text chat router with Fast AI Request Workflow and Loading State Editing.
@@ -95,8 +97,9 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
         except Exception as e:
             logging.warning(f"Could not send typing action: {e}")
 
-        # Step B: Immediately send one loading message
-        loading_msg = await message.answer("✨ កំពុងរៀបចំចម្លើយ...", parse_mode="HTML")
+        # Step B: Immediately start animated loading status message
+        anim = DynamicThinkingAnimation(message, TEXT_THINKING_STEPS, interval=0.9)
+        loading_msg = await anim.start()
 
         # Step C: Start AI request asynchronously with strict timeout
         try:
@@ -117,6 +120,8 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 ),
                 timeout=45.0
             )
+
+            await anim.stop()
 
             if memory:
                 await memory.add_user_message_async(user_id, user_text)
@@ -156,6 +161,7 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 except Exception as edit_err:
                     logging.warning(f"edit_text failed for user {user_id}, falling back to send_safe_response: {edit_err}")
                     await send_safe_response(message, formatted_result, reply_markup=keyboard)
+
 
 
         except asyncio.TimeoutError:
