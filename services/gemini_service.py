@@ -29,7 +29,7 @@ class GeminiService:
         prompt_instruction = get_prompt_for_mode(mode)
         config = genai_types.GenerateContentConfig(
             system_instruction=prompt_instruction
-        )
+        ) if prompt_instruction else None
         
         try:
             response = self.client.models.generate_content(

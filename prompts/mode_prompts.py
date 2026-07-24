@@ -108,6 +108,7 @@ MODE_PROMPTS = {
     "tikz": SYSTEM_INSTRUCTION + "\n\n" + TIKZ_MODE_PROMPT,
     "pdf_to_text": SYSTEM_INSTRUCTION + "\n\n" + PDF_TO_TEXT_PROMPT,
     "handwrite": SYSTEM_INSTRUCTION + "\n\n" + HANDWRITE_MODE_PROMPT,
+    "raw": ""
 }
 
 

@@ -199,7 +199,7 @@ class ImageGenService:
             enhanced = await asyncio.wait_for(
                 self.gemini_service.generate_text_chat(
                     user_prompt=f"{enhancement_instruction}\n\nUser Prompt: {clean_raw}",
-                    mode="general"
+                    mode="raw"
                 ),
                 timeout=10.0
             )
