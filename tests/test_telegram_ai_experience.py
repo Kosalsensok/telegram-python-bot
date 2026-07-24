@@ -102,11 +102,10 @@ class TestTelegramAIExperience(unittest.TestCase):
             explanation="វាប្រើប្រាស់ Event Loop សម្រាប់ដំណើរការ Task ច្រើនក្នុងពេលតែមួយ",
             tips="គួរប្រើ aiohttp ជំនួស requests"
         )
-        self.assertIn("🧠 <b>SMART AI ASSISTANT</b>", res)
-        self.assertIn("📌 <b>ប្រធានបទ</b>\nPython Asyncio", res)
-        self.assertIn("✅ <b>ចម្លើយ</b>", res)
-        self.assertIn("📖 <b>ព័ត៌មានលម្អិត</b>", res)
-        self.assertIn("💡 <b>គន្លឹះ</b>", res)
+        self.assertIn("SMART AI ASSISTANT", res)
+        self.assertIn("Python Asyncio", res)
+        self.assertIn("ចម្លើយ", res)
+        self.assertIn("ព័ត៌មានលម្អិត", res)
 
     def test_format_image_analysis_result(self):
         res = format_image_analysis_result(
@@ -115,9 +114,9 @@ class TestTelegramAIExperience(unittest.TestCase):
             answer="កូដនេះមាន Syntax Error ត្រង់ line 5",
             suggestion="ថែម : នៅចុងលក្ខខណ្ឌ if"
         )
-        self.assertIn("🖼 <b>IMAGE ANALYSIS</b>", res)
-        self.assertIn("📌 <b>ប្រភេទរូបភាព</b>\nScreenshot", res)
-        self.assertIn("🔎 <b>អ្វីដែលបានរកឃើញ</b>\nរូបថតកូដ Python", res)
+        self.assertIn("IMAGE ANALYSIS", res)
+        self.assertIn("Screenshot", res)
+        self.assertIn("រូបថតកូដ Python", res)
 
     def test_solution_cache_and_short_id(self):
         sid = generate_short_solution_id()

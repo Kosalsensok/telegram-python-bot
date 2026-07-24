@@ -5,7 +5,7 @@ from aiogram import Router, types, F
 from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
-from utils.message_utils import send_safe_response
+from utils.message_utils import send_safe_response, markdown_to_telegram_html, split_html_message
 from utils.response_router import parse_ai_structured_response, format_telegram_html, detect_response_type_from_text
 from utils.solution_card import save_solution_cache, generate_short_solution_id
 from utils.localization import format_ai_result, get_str
@@ -143,11 +143,20 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
 
             keyboard = get_ai_result_contextual_keyboard(solution_id)
 
+            clean_html = markdown_to_telegram_html(formatted_result)
+            chunks = split_html_message(clean_html, max_length=3800)
+
             # Step D: Edit the same loading message into the result
-            try:
-                await loading_msg.edit_text(formatted_result, parse_mode="HTML", reply_markup=keyboard)
-            except Exception:
-                await send_safe_response(message, formatted_result, reply_markup=keyboard)
+            if chunks:
+                try:
+                    await loading_msg.edit_text(chunks[0], parse_mode="HTML", reply_markup=keyboard if len(chunks) == 1 else None)
+                    for chunk in chunks[1:]:
+                        current_markup = keyboard if chunk == chunks[-1] else None
+                        await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup)
+                except Exception as edit_err:
+                    logging.warning(f"edit_text failed for user {user_id}, falling back to send_safe_response: {edit_err}")
+                    await send_safe_response(message, formatted_result, reply_markup=keyboard)
+
 
         except asyncio.TimeoutError:
             error_msg = (

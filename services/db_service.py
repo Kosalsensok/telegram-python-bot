@@ -86,12 +86,21 @@ class DatabaseService:
 
                     # Ensure columns exist for pre-existing tables created with different ORM/schema
                     alter_queries = [
+                        "ALTER TABLE users ADD COLUMN telegramId BIGINT UNIQUE NULL;",
                         "ALTER TABLE users ADD COLUMN telegram_id BIGINT UNIQUE NULL;",
                         "ALTER TABLE users ADD COLUMN username VARCHAR(255) NULL;",
+                        "ALTER TABLE users ADD COLUMN firstName VARCHAR(255) NULL;",
                         "ALTER TABLE users ADD COLUMN first_name VARCHAR(255) NULL;",
+                        "ALTER TABLE users ADD COLUMN lastName VARCHAR(255) NULL;",
                         "ALTER TABLE users ADD COLUMN last_name VARCHAR(255) NULL;",
-                        "ALTER TABLE users ADD COLUMN language_code VARCHAR(50) DEFAULT 'en';",
+                        "ALTER TABLE users ADD COLUMN language VARCHAR(50) DEFAULT 'km';",
+                        "ALTER TABLE users ADD COLUMN language_code VARCHAR(50) DEFAULT 'km';",
+                        "ALTER TABLE users ADD COLUMN selectedMode VARCHAR(50) DEFAULT 'standard';",
                         "ALTER TABLE users ADD COLUMN active_mode VARCHAR(50) DEFAULT 'general';",
+                        "ALTER TABLE users ADD COLUMN totalRequests INT DEFAULT 0;",
+                        "ALTER TABLE users ADD COLUMN createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+                        "ALTER TABLE users ADD COLUMN updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+                        "ALTER TABLE users ADD COLUMN lastActiveAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
                         "ALTER TABLE users ADD COLUMN last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
                     ]
                     for alter_sql in alter_queries:
@@ -100,11 +109,20 @@ class DatabaseService:
                         except Exception:
                             pass
 
-                    # Sync columns from Prisma schema if pre-populated
+                    # Sync columns between Prisma camelCase schema and Python snake_case schema
                     sync_queries = [
-                        "UPDATE users SET telegram_id = telegramId WHERE telegram_id IS NULL AND telegramId IS NOT NULL;",
+                        "UPDATE users SET telegram_id = telegramId WHERE (telegram_id IS NULL OR telegram_id = 0) AND telegramId IS NOT NULL AND telegramId != 0;",
+                        "UPDATE users SET telegramId = telegram_id WHERE (telegramId IS NULL OR telegramId = 0) AND telegram_id IS NOT NULL AND telegram_id != 0;",
                         "UPDATE users SET first_name = firstName WHERE first_name IS NULL AND firstName IS NOT NULL;",
-                        "UPDATE users SET last_name = lastName WHERE last_name IS NULL AND lastName IS NOT NULL;"
+                        "UPDATE users SET firstName = first_name WHERE firstName IS NULL AND first_name IS NOT NULL;",
+                        "UPDATE users SET last_name = lastName WHERE last_name IS NULL AND lastName IS NOT NULL;",
+                        "UPDATE users SET lastName = last_name WHERE lastName IS NULL AND last_name IS NOT NULL;",
+                        "UPDATE users SET language_code = language WHERE language_code IS NULL AND language IS NOT NULL;",
+                        "UPDATE users SET language = language_code WHERE language IS NULL AND language_code IS NOT NULL;",
+                        "UPDATE users SET active_mode = selectedMode WHERE active_mode IS NULL AND selectedMode IS NOT NULL;",
+                        "UPDATE users SET selectedMode = active_mode WHERE selectedMode IS NULL AND active_mode IS NOT NULL;",
+                        "UPDATE users SET updatedAt = NOW() WHERE updatedAt IS NULL OR updatedAt = '0000-00-00 00:00:00';",
+                        "UPDATE users SET createdAt = NOW() WHERE createdAt IS NULL OR createdAt = '0000-00-00 00:00:00';"
                     ]
                     for sync_sql in sync_queries:
                         try:
@@ -144,33 +162,65 @@ class DatabaseService:
         username: Optional[str] = None, 
         first_name: Optional[str] = None, 
         last_name: Optional[str] = None, 
-        language_code: str = "en"
+        language_code: str = "km"
     ) -> None:
         """
         Saves new user or updates existing user profile in MySQL and in-memory cache.
+        Populates both Prisma (camelCase) and Python (snake_case) column schemas.
         """
-        if telegram_id:
-            self.in_memory_users.add(telegram_id)
+        if not telegram_id or telegram_id == 0:
+            return
+        self.in_memory_users.add(telegram_id)
 
         if not self.is_connected or not self.pool:
             return
 
         try:
             sql = """
-                INSERT INTO users (telegram_id, username, first_name, last_name, language_code)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO users (
+                    telegramId, telegram_id, username, firstName, first_name, 
+                    lastName, last_name, language, language_code, updatedAt, lastActiveAt, last_active
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), NOW())
                 ON DUPLICATE KEY UPDATE
+                    telegramId = IF(telegramId IS NULL OR telegramId = 0, VALUES(telegramId), telegramId),
+                    telegram_id = IF(telegram_id IS NULL OR telegram_id = 0, VALUES(telegram_id), telegram_id),
                     username = VALUES(username),
+                    firstName = VALUES(firstName),
                     first_name = VALUES(first_name),
+                    lastName = VALUES(lastName),
                     last_name = VALUES(last_name),
+                    language = VALUES(language),
                     language_code = VALUES(language_code),
-                    last_active = CURRENT_TIMESTAMP;
+                    updatedAt = NOW(),
+                    lastActiveAt = NOW(),
+                    last_active = NOW();
             """
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(sql, (telegram_id, username, first_name, last_name, language_code))
+                    await cur.execute(sql, (
+                        telegram_id, telegram_id,
+                        username,
+                        first_name, first_name,
+                        last_name, last_name,
+                        language_code, language_code
+                    ))
         except Exception as e:
-            logging.error(f"Error updating user {telegram_id} in MySQL: {e}")
+            try:
+                sql_fb = """
+                    INSERT INTO users (telegram_id, username, first_name, last_name, language_code)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                        username = VALUES(username),
+                        first_name = VALUES(first_name),
+                        last_name = VALUES(last_name),
+                        language_code = VALUES(language_code);
+                """
+                async with self.pool.acquire() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(sql_fb, (telegram_id, username, first_name, last_name, language_code))
+            except Exception as e_fb:
+                logging.error(f"Error updating user {telegram_id} in MySQL: {e_fb}")
 
     async def save_message(
         self, 
@@ -219,13 +269,13 @@ class DatabaseService:
             sql = """
                 SELECT role, content FROM (
                     SELECT role, content, id FROM messages 
-                    WHERE telegram_id = %s 
+                    WHERE telegram_id = %s OR telegram_id = %s
                     ORDER BY id DESC LIMIT %s
                 ) sub ORDER BY id ASC;
             """
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(sql, (telegram_id, limit))
+                    await cur.execute(sql, (telegram_id, telegram_id, limit))
                     rows = await cur.fetchall()
                     return [{"role": r[0], "content": r[1]} for r in rows]
         except Exception as e:
@@ -310,7 +360,6 @@ class DatabaseService:
             logging.error(f"Error fetching global stats from MySQL: {e}")
         return {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
 
-
     async def close(self) -> None:
         """
         Closes MySQL database pool gracefully.
@@ -329,7 +378,7 @@ class DatabaseService:
             return []
             
         try:
-            sql = "SELECT telegram_id FROM users;"
+            sql = "SELECT COALESCE(telegram_id, telegramId) FROM users WHERE COALESCE(telegram_id, telegramId) IS NOT NULL AND COALESCE(telegram_id, telegramId) != 0;"
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
                     await cur.execute(sql)
@@ -347,7 +396,7 @@ class DatabaseService:
             return []
             
         try:
-            sql = "SELECT telegram_id, first_name, username, last_active FROM users ORDER BY last_active DESC LIMIT %s;"
+            sql = "SELECT COALESCE(telegram_id, telegramId), COALESCE(first_name, firstName), username, COALESCE(last_active, lastActiveAt) FROM users ORDER BY id DESC LIMIT %s;"
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
                     await cur.execute(sql, (limit,))
@@ -373,10 +422,10 @@ class DatabaseService:
             return
 
         try:
-            sql = "UPDATE users SET active_mode = %s WHERE telegram_id = %s;"
+            sql = "UPDATE users SET active_mode = %s, selectedMode = %s WHERE telegram_id = %s OR telegramId = %s;"
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(sql, (mode, telegram_id))
+                    await cur.execute(sql, (mode, mode, telegram_id, telegram_id))
         except Exception as e:
             logging.error(f"Error updating active_mode for user {telegram_id} in MySQL: {e}")
 
@@ -391,10 +440,10 @@ class DatabaseService:
             return "general"
 
         try:
-            sql = "SELECT active_mode FROM users WHERE telegram_id = %s;"
+            sql = "SELECT COALESCE(active_mode, selectedMode) FROM users WHERE telegram_id = %s OR telegramId = %s LIMIT 1;"
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(sql, (telegram_id,))
+                    await cur.execute(sql, (telegram_id, telegram_id))
                     row = await cur.fetchone()
                     if row and row[0]:
                         self.user_modes[telegram_id] = row[0]
@@ -413,10 +462,10 @@ class DatabaseService:
             return
 
         try:
-            sql = "UPDATE users SET language_code = %s WHERE telegram_id = %s;"
+            sql = "UPDATE users SET language_code = %s, language = %s WHERE telegram_id = %s OR telegramId = %s;"
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(sql, (lang, telegram_id))
+                    await cur.execute(sql, (lang, lang, telegram_id, telegram_id))
         except Exception as e:
             logging.error(f"Error updating language_code for user {telegram_id} in MySQL: {e}")
 
@@ -431,10 +480,10 @@ class DatabaseService:
             return "km"
 
         try:
-            sql = "SELECT language_code FROM users WHERE telegram_id = %s;"
+            sql = "SELECT COALESCE(language_code, language) FROM users WHERE telegram_id = %s OR telegramId = %s LIMIT 1;"
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(sql, (telegram_id,))
+                    await cur.execute(sql, (telegram_id, telegram_id))
                     row = await cur.fetchone()
                     if row and row[0]:
                         self.user_languages[telegram_id] = row[0]
@@ -443,4 +492,5 @@ class DatabaseService:
             logging.error(f"Error fetching language_code for user {telegram_id} from MySQL: {e}")
 
         return "km"
+
 

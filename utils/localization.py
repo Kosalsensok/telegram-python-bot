@@ -134,30 +134,25 @@ def format_ai_result(
 ) -> str:
     """
     Format standard AI text response cleanly per Telegram spec:
-    
-    🧠 SMART AI ASSISTANT
-    ━━━━━━━━━━━━━━━━━━
-
-    📌 ប្រធានបទ
-    [Short detected title]
-
-    ✅ ចម្លើយ
-    [Direct and useful answer]
-
-    📖 ព័ត៌មានលម្អិត
-    [Structured explanation]
-
-    💡 គន្លឹះ
-    [Optional recommendation]
+    Avoids duplicating header if answer already starts with standard header.
     """
-    res = f"🧠 <b>{header_title.upper()}</b>\n━━━━━━━━━━━━━━━━━━\n\n"
+    ans_strip = answer.strip()
+    if "SMART AI ASSISTANT" in ans_strip or "SMART AI" in ans_strip or "━━━━━━━━━━━━━━━━━━" in ans_strip:
+        res = ans_strip
+        if explanation and "ព័ត៌មានលម្អិត" not in res:
+            res += f"\n\n📖 **ព័ត៌មានលម្អិត:**\n{explanation.strip()}"
+        if tips and "គន្លឹះ" not in res and "ចំណុចសំខាន់" not in res:
+            res += f"\n\n💡 **ចំណុចសំខាន់ / ព័ត៌មានបន្ថែម:**\n{tips.strip()}"
+        return res.strip()
+
+    res = f"🧠 **{header_title.upper()}**\n━━━━━━━━━━━━━━━━━━━\n\n"
     if title:
-        res += f"📌 <b>ប្រធានបទ</b>\n{escape(title.strip())}\n\n"
-    res += f"✅ <b>ចម្លើយ</b>\n{answer.strip()}\n"
+        res += f"• 📌 **ប្រធានបទ:** {title.strip()}\n"
+    res += f"• ✅ **ចម្លើយ:**\n{ans_strip}\n"
     if explanation:
-        res += f"\n📖 <b>ព័ត៌មានលម្អិត</b>\n{explanation.strip()}\n"
+        res += f"\n📖 **ព័ត៌មានលម្អិត:**\n{explanation.strip()}\n"
     if tips:
-        res += f"\n💡 <b>គន្លឹះ</b>\n{tips.strip()}\n"
+        res += f"\n• 💡 **ចំណុចសំខាន់ / ព័ត៌មានបន្ថែម:**\n{tips.strip()}\n"
     return res.strip()
 
 def format_image_analysis_result(
@@ -168,27 +163,17 @@ def format_image_analysis_result(
 ) -> str:
     """
     Format image analysis result cleanly per Telegram spec:
-    
-    🖼 IMAGE ANALYSIS
-    ━━━━━━━━━━━━━━━━━━
-
-    📌 ប្រភេទរូបភាព
-    [Detected type]
-
-    🔎 អ្វីដែលបានរកឃើញ
-    [Concise observation]
-
-    ✅ ចម្លើយ
-    [Direct result]
-
-    💡 សំណើ
-    [Useful next step]
     """
-    res = "🖼 <b>IMAGE ANALYSIS</b>\n━━━━━━━━━━━━━━━━━━\n\n"
-    res += f"📌 <b>ប្រភេទរូបភាព</b>\n{escape(detected_type.strip())}\n\n"
+    ans_strip = answer.strip()
+    if "IMAGE ANALYSIS" in ans_strip or "━━━━━━━━━━━━━━━━━━" in ans_strip:
+        return ans_strip
+
+    res = "🖼 **IMAGE ANALYSIS**\n━━━━━━━━━━━━━━━━━━━\n\n"
+    res += f"• 📌 **ប្រភេទរូបភាព:** {detected_type.strip()}\n"
     if observation:
-        res += f"🔎 <b>អ្វីដែលបានរកឃើញ</b>\n{escape(observation.strip())}\n\n"
-    res += f"✅ <b>ចម្លើយ</b>\n{answer.strip()}\n"
+        res += f"• 🔎 **អ្វីដែលបានរកឃើញ:** {observation.strip()}\n"
+    res += f"• ✅ **ចម្លើយ:**\n{ans_strip}\n"
     if suggestion:
-        res += f"\n💡 <b>សំណើ</b>\n{suggestion.strip()}\n"
+        res += f"\n• 💡 **សំណើ / ព័ត៌មានបន្ថែម:**\n{suggestion.strip()}\n"
     return res.strip()
+

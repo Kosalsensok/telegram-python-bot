@@ -6,6 +6,7 @@ from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.image_utils import process_image_bytes
 from utils.memory import ConversationMemory
+from utils.message_utils import send_safe_response, markdown_to_telegram_html, split_html_message
 from utils.response_router import parse_ai_structured_response
 from utils.solution_card import save_solution_cache, generate_short_solution_id
 from utils.localization import format_image_analysis_result
@@ -95,11 +96,19 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
 
             keyboard = get_image_result_contextual_keyboard(solution_id)
 
+            clean_html = markdown_to_telegram_html(formatted_result)
+            chunks = split_html_message(clean_html, max_length=3800)
+
             # Step 6: Edit the same status message into final result
-            try:
-                await loading_msg.edit_text(formatted_result, parse_mode="HTML", reply_markup=keyboard)
-            except Exception:
-                await message.reply(formatted_result, parse_mode="HTML", reply_markup=keyboard)
+            if chunks:
+                try:
+                    await loading_msg.edit_text(chunks[0], parse_mode="HTML", reply_markup=keyboard if len(chunks) == 1 else None)
+                    for chunk in chunks[1:]:
+                        current_markup = keyboard if chunk == chunks[-1] else None
+                        await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup)
+                except Exception as edit_err:
+                    logging.warning(f"edit_text failed for user {user_id}, falling back to send_safe_response: {edit_err}")
+                    await send_safe_response(message, formatted_result, reply_markup=keyboard)
 
         except asyncio.TimeoutError:
             error_msg = (
