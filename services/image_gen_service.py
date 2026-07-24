@@ -179,29 +179,36 @@ class ImageGenService:
         """
         Translates Khmer prompts and enhances raw prompts into vivid, detailed English image generation prompts.
         """
-        if not raw_prompt or not raw_prompt.strip():
+        clean_raw = raw_prompt.strip() if raw_prompt else ""
+        if not clean_raw:
             return "stunning ultra-sharp masterpiece, 8k resolution, cinematic studio lighting, photorealistic, 4k ultra-hd"
 
         if not self.gemini_service:
-            return f"{raw_prompt.strip()}, 8k resolution, ultra-sharp focus, masterpiece, photorealistic, intricate detail"
+            return f"{clean_raw}, 8k resolution, ultra-sharp focus, masterpiece, photorealistic"
 
         enhancement_instruction = (
             "You are an expert AI prompt engineer for ultra high quality image generation.\n"
             "Translate any Khmer or foreign text into vivid, detailed English.\n"
-            "Enhance the description with high quality keywords (e.g. 8k resolution, ultra-sharp focus, cinematic lighting, masterpiece, hyper-realistic, 4k ultra-hd, professional photography, highly detailed texture).\n"
+            "Enhance the description with high quality keywords (e.g. 8k resolution, ultra-sharp focus, cinematic lighting, masterpiece, hyper-realistic, professional photography).\n"
+            "Keep the response under 200 characters.\n"
             "Output ONLY the final English prompt string, nothing else. No markdown, no quotes."
         )
 
         try:
-            enhanced = await self.gemini_service.generate_text_chat(
-                user_prompt=f"{enhancement_instruction}\n\nUser Prompt: {raw_prompt}",
-                mode="general"
+            enhanced = await asyncio.wait_for(
+                self.gemini_service.generate_text_chat(
+                    user_prompt=f"{enhancement_instruction}\n\nUser Prompt: {clean_raw}",
+                    mode="general"
+                ),
+                timeout=10.0
             )
             clean_prompt = enhanced.strip().strip('"\'`')
-            return clean_prompt if clean_prompt else f"{raw_prompt.strip()}, 8k resolution, ultra-sharp focus, masterpiece"
+            if clean_prompt:
+                return clean_prompt[:250]
         except Exception as e:
-            logging.warning(f"Failed to optimize prompt with Gemini: {e}")
-            return f"{raw_prompt.strip()}, 8k resolution, ultra-sharp focus, masterpiece"
+            logging.warning(f"Failed to optimize prompt with Gemini ({e}), falling back to direct prompt.")
+        
+        return f"{clean_raw}, 8k resolution, ultra-sharp focus, masterpiece"[:250]
 
     async def generate_image(
         self, 
@@ -211,40 +218,44 @@ class ImageGenService:
         model: str = "flux"
     ) -> Tuple[Optional[bytes], str, int, str]:
         """
-        Fetches generated HD image bytes from Pollinations AI.
+        Fetches generated HD image bytes from Pollinations AI using robust multi-candidate fallback logic.
         Returns: (image_bytes, optimized_prompt, seed, cache_id)
         """
         optimized_prompt = await self.optimize_prompt(prompt)
         seed = random.randint(1, 2147483647)
-        encoded_prompt = urllib.parse.quote(optimized_prompt)
+        
+        encoded_optimized = urllib.parse.quote(optimized_prompt[:250])
+        encoded_raw = urllib.parse.quote(prompt.strip()[:200])
 
-        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&seed={seed}&model={model}&nologo=true"
+        # Candidate fallback URLs in priority order
+        urls_to_try = [
+            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&nologo=true",
+            f"https://image.pollinations.ai/prompt/{encoded_optimized}?width={width}&height={height}&seed={seed}&model=flux&nologo=true",
+            f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&nologo=true",
+            f"https://image.pollinations.ai/prompt/{encoded_raw}?width={width}&height={height}&seed={seed}&model=turbo&nologo=true"
+        ]
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
         image_bytes = None
-        try:
-            async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(url, timeout=45) as resp:
-                    if resp.status == 200:
-                        data = await resp.read()
-                        if len(data) > 5000:
-                            image_bytes = data
-                    else:
-                        logging.warning(f"Pollinations primary model '{model}' returned status {resp.status}. Trying fallback model...")
-
-            if not image_bytes:
-                fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&seed={seed}&model=turbo&nologo=true"
-                async with aiohttp.ClientSession(headers=headers) as session:
-                    async with session.get(fallback_url, timeout=30) as resp:
+        for candidate_url in urls_to_try:
+            try:
+                timeout_cfg = aiohttp.ClientTimeout(total=20, connect=8)
+                async with aiohttp.ClientSession(headers=headers, timeout=timeout_cfg) as session:
+                    async with session.get(candidate_url) as resp:
                         if resp.status == 200:
                             data = await resp.read()
-                            if len(data) > 5000:
+                            if len(data) > 3000:
                                 image_bytes = data
-        except Exception as e:
-            logging.error(f"Error fetching generated image from Pollinations AI: {e}")
+                                logging.info(f"Image generated successfully from {candidate_url[:60]}...")
+                                break
+                        else:
+                            logging.warning(f"Pollinations AI candidate URL status {resp.status}: {candidate_url[:60]}")
+            except Exception as err:
+                logging.warning(f"Pollinations AI candidate fetch failed ({err}): {candidate_url[:60]}")
+                continue
 
         cache_id = f"img_{seed}_{int(time.time())}"
         if image_bytes:
