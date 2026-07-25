@@ -342,22 +342,29 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
         logging.info(f"Donation notification already processed for tran_id={tran_id}")
         return True
 
+    from html import escape
+    from services.aba_payway import pending_donations, completed_donations
+
+    user_info = pending_donations.get(tran_id, {})
+    first_name_val = escape(user_info.get("first_name", "KOSAL SENSOK"))
+    username_val = user_info.get("username", "kosalsensokpk")
+    username_str = f"(@{username_val})" if username_val else ""
+
     thank_you_message = (
-        "🎉 <b>សូមថ្លែងអំណរគុណយ៉ាងជ្រាលជ្រៅ!</b> 🙏❤️\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        f"ការបរិច្ចាគចំនួន <b>${amount}</b> របស់លោកអ្នកបានជោគជ័យហើយ! (ID: <code>{tran_id}</code>)\n"
-        "ថវិកានេះនឹងត្រូវយកទៅប្រើប្រាស់សម្រាប់អភិវឌ្ឍន៍ប្រព័ន្ធ <b>Smart AI Assistant</b> "
-        "ឱ្យកាន់តែឆ្លាតវៃ និងមានសមត្ថភាពខ្ពស់បន្ថែមទៀតសម្រាប់ឆ្នាំបន្ទាប់។\n\n"
+        "🎉 <b>សូមថ្លែងអំណរគុណយ៉ាងជ្រាលជ្រៅ!</b> 🙏❤️\n\n"
+        f"ការបរិច្ចាគចំនួន <b>$0.50</b> របស់លោកអ្នកបានជោគជ័យហើយ! (ID: <code>{tran_id}</code>)\n"
+        "ថវិកានេះ នឹងត្រូវយកទៅប្រើប្រាស់សម្រាប់អភិវឌ្ឍន៍ប្រព័ន្ធ <b>Smart AI Assistant</b> សម្រាប់ឆ្នាំបន្ទាប់។\n\n"
         "✨ <i>សូមជូនពរឱ្យលោកអ្នកជួបប្រទះតែសេចក្ដីសុខ សុភមង្គល និងជោគជ័យគ្រប់ភារកិច្ច!</i> 🚀"
     )
 
     admin_notification = (
-        "🔔 <b>[ADMIN ALERT] ទទួលបានការបរិច្ចាគថ្មី!</b> 💰\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>Donor Chat ID:</b> <code>{chat_id}</code>\n"
-        f"💵 <b>ចំនួនថវិកា Amount:</b> ${amount} USD\n"
-        f"🧾 <b>Transaction ID:</b> <code>{tran_id}</code>\n"
-        f"⏰ <b>ម៉ោងប្រតិបត្តិការ:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        "💰 <b>មានការបរិច្ចាគ $0.50 ថ្មី!</b>\n\n"
+        f"👤 <b>អ្នកបរិច្ចាគ:</b> {first_name_val} {username_str}\n"
+        f"🆔 <b>Telegram ID របស់គេ:</b> <code>{chat_id}</code>\n"
+        f"💵 <b>ចំនួន:</b> $0.50\n"
+        f"🧾 <b>Tran ID:</b> <code>{tran_id}</code>\n"
+        f"⏰ <b>ម៉ោង:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        "✅ ប្រព័ន្ធបានផ្ញើសារជូនពរទៅកាន់គាត់រួចរាល់ហើយ!"
     )
 
     try:
@@ -366,7 +373,7 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
         completed_donations.add(tran_id)
         logging.info(f"✅ Successfully sent Telegram donation thank-you to chat_id={chat_id} for tran_id={tran_id}")
 
-        # 2. Also send notification to Admin / Owner (ID: 5496354981 and ADMIN_USER_IDS)
+        # 2. Also send notification alert to Admin / Owner (ID: 5496354981 and ADMIN_USER_IDS)
         from config import ADMIN_USER_IDS
         admin_set = set(ADMIN_USER_IDS)
         admin_set.add(5496354981)

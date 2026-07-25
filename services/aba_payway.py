@@ -51,7 +51,9 @@ def create_donation_checkout_params(
     payway_url: str,
     server_url: str,
     amount: str = "2000",
-    payment_option: str = ""
+    payment_option: str = "",
+    first_name: str = "Donor",
+    username: str = ""
 ) -> Tuple[str, str, dict]:
     """
     Creates transaction ID, request timestamp, and parameters for ABA PayWay Checkout HTML form.
@@ -64,6 +66,8 @@ def create_donation_checkout_params(
     # Store pending transaction state
     pending_donations[tran_id] = {
         "chat_id": chat_id,
+        "first_name": first_name,
+        "username": username,
         "amount": amount,
         "time": req_time,
         "status": "pending",
@@ -107,7 +111,9 @@ async def request_aba_payway_purchase(
     public_key: str,
     payway_url: str,
     server_url: str,
-    amount: str = "2000"
+    amount: str = "2000",
+    first_name: str = "Donor",
+    username: str = ""
 ) -> dict:
     """
     Executes a direct server-side async HTTP POST to ABA PayWay purchase API endpoint.
@@ -119,7 +125,9 @@ async def request_aba_payway_purchase(
         public_key=public_key,
         payway_url=payway_url,
         server_url=server_url,
-        amount=amount
+        amount=amount,
+        first_name=first_name,
+        username=username
     )
 
     # Post data to ABA API

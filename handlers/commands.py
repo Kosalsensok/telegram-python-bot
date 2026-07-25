@@ -638,13 +638,18 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         except Exception:
             pass
 
+        first_name = message.from_user.first_name if message.from_user else "Donor"
+        username = message.from_user.username if message.from_user and message.from_user.username else ""
+
         res = await request_aba_payway_purchase(
             chat_id=chat_id,
             merchant_id=ABA_MERCHANT_ID,
             public_key=ABA_API_KEY,
             payway_url=ABA_PAYWAY_URL,
             server_url=SERVER_URL,
-            amount="2000"
+            amount="2000",
+            first_name=first_name,
+            username=username
         )
 
         tran_id = res.get("tran_id", "")
