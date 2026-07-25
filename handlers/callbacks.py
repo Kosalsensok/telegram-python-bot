@@ -402,19 +402,14 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         tran_id = res.get("tran_id", "")
         req_time = res.get("req_time", "")
         qr_image_b64 = res.get("qr_image", "")
-        deeplink = res.get("abapay_deeplink", "")
-
         checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=2000&req_time={req_time}&chat_id={chat_id}"
+        open_app_url = f"{SERVER_URL.rstrip('/')}/open_abapay?tran_id={tran_id}"
 
         builder = InlineKeyboardBuilder()
-        if deeplink:
-            builder.button(text="📲 បើក App ABA Bank ដើម្បីទូទាត់", url=deeplink)
+        builder.button(text="📲 បើក App ABA Bank ដើម្បីទូទាត់", url=open_app_url)
         builder.button(text="🌐 ទំព័រ Web Checkout", url=checkout_url)
         builder.button(text="🏠 Menu", callback_data="cb_back_main")
-        if deeplink:
-            builder.adjust(1, 1, 1)
-        else:
-            builder.adjust(1, 1)
+        builder.adjust(1, 1, 1)
 
         message_text = (
             "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"

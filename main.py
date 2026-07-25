@@ -264,6 +264,35 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
         logging.error(f"Failed to send Telegram donation thank-you to chat_id={chat_id}: {e}")
 
 
+async def handle_open_abapay(request):
+    """HTTP endpoint to safely launch ABA Mobile App deep link from Telegram inline button."""
+    from services.aba_payway import pending_donations
+    tran_id = request.query.get("tran_id", "")
+    donation = pending_donations.get(tran_id, {})
+    deeplink = donation.get("abapay_deeplink", "")
+
+    if not deeplink:
+        deeplink = "abamobilebank://ababank.com"
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Launching ABA Mobile App...</title>
+    <script>
+        window.location.href = "{deeplink}";
+    </script>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #0f172a; color: #fff;">
+    <h3>📲 កំពុងបើក App ABA Bank...</h3>
+    <p>ប្រសិនបើ App មិនទាន់បើកដោយស្វ័យប្រវត្តិទេ សូមចុចប៊ូតុងខាងក្រោម៖</p>
+    <a href="{deeplink}" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; text-decoration: none; border-radius: 10px; font-weight: bold; margin-top: 15px;">👉 ចុចទីនេះដើម្បីបើក ABA Mobile App</a>
+</body>
+</html>"""
+    return web.Response(text=html_content, content_type="text/html")
+
+
 def make_payment_success_handler(bot):
     async def handle_payment_success(request):
         from services.aba_payway import pending_donations
@@ -374,6 +403,7 @@ async def start_health_server(bot=None):
     # ABA PayWay Donation routes
     app.router.add_get("/donate_checkout", handle_donate_checkout)
     app.router.add_get("/aba_payment_status", handle_aba_payment_status)
+    app.router.add_get("/open_abapay", handle_open_abapay)
     if bot:
         app.router.add_get("/payment_success", make_payment_success_handler(bot))
         app.router.add_post("/aba_webhook", make_aba_webhook_handler(bot))
