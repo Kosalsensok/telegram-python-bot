@@ -136,6 +136,7 @@ async def handle_donate_checkout(request):
     from datetime import datetime
     import base64
 
+    raw_tran_id = request.query.get("tran_id", "").replace("_", "")
     raw_amount = request.query.get("amount", "2000")
     try:
         if float(raw_amount) < 100:
@@ -151,10 +152,12 @@ async def handle_donate_checkout(request):
     if not req_time:
         req_time = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    if not tran_id or len(tran_id) > 20:
+    if not raw_tran_id or len(raw_tran_id) > 20:
         chat_str = str(chat_id)[-6:] if chat_id else "100000"
         time_str = str(int(datetime.now().timestamp()))[-8:]
         tran_id = f"D{chat_str}{time_str}"
+    else:
+        tran_id = raw_tran_id
 
     if tran_id and chat_id:
         pending_donations[tran_id] = {
