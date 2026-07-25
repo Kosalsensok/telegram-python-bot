@@ -55,7 +55,9 @@ def create_donation_checkout_params(
     Creates transaction ID, request timestamp, and parameters for ABA PayWay Checkout HTML form.
     """
     req_time = datetime.now().strftime("%Y%m%d%H%M%S")
-    tran_id = f"DONATE_{chat_id}_{int(time.time())}"
+    chat_str = str(chat_id)[-6:]
+    time_str = str(int(time.time()))[-8:]
+    tran_id = f"D{chat_str}_{time_str}"  # Max 16 chars (ABA PayWay requires max 20 chars)
     
     # Store pending transaction state
     pending_donations[tran_id] = {

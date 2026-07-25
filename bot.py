@@ -240,7 +240,9 @@ else:
     async def donate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
         req_time = datetime.now().strftime("%Y%m%d%H%M%S")
-        tran_id = f"DONATE_{chat_id}_{int(time.time())}"
+        chat_str = str(chat_id)[-6:]
+        time_str = str(int(time.time()))[-8:]
+        tran_id = f"D{chat_str}_{time_str}"
         amount = "0.50"
         
         checkout_url = f"{YOUR_SERVER_URL}/donate_checkout?tran_id={tran_id}&amount={amount}&req_time={req_time}&chat_id={chat_id}"
