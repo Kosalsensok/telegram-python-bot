@@ -243,19 +243,19 @@ else:
         chat_str = str(chat_id)[-6:]
         time_str = str(int(time.time()))[-8:]
         tran_id = f"D{chat_str}{time_str}"
-        amount = "0.50"
+        amount = "1.00"
         
         checkout_url = f"{YOUR_SERVER_URL}/donate_checkout?tran_id={tran_id}&amount={amount}&req_time={req_time}&chat_id={chat_id}"
 
         message_text = (
             "🤖 **ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant** 🚀\n\n"
             "ដើម្បីជួយឱ្យប្រព័ន្ធ **Smart AI Assistant** អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
-            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន **$0.50** តាមរយៈ ABA Pay បាន។\n\n"
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន **$1.00** តាមរយៈ ABA Pay បាន។\n\n"
             "សូមចុចប៊ូតុងខាងក្រោមដើម្បីធ្វើការបរិច្ចាគ៖"
         )
 
         keyboard = [
-            [InlineKeyboardButton("💖 បរិច្ចាគ $0.50 តាម ABA Pay", url=checkout_url)]
+            [InlineKeyboardButton("💖 បរិច្ចាគ $1.00 តាម ABA Pay", url=checkout_url)]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 

@@ -335,19 +335,19 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             public_key=ABA_API_KEY,
             payway_url=ABA_PAYWAY_URL,
             server_url=SERVER_URL,
-            amount="0.50"
+            amount="1.00"
         )
 
-        checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=0.50&req_time={req_time}&chat_id={chat_id}"
+        checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=1.00&req_time={req_time}&chat_id={chat_id}"
 
         builder = InlineKeyboardBuilder()
-        builder.button(text="💖 បរិច្ចាគ $0.50 តាម ABA Pay", url=checkout_url)
+        builder.button(text="💖 បរិច្ចាគ $1.00 តាម ABA Pay", url=checkout_url)
 
         message_text = (
             "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
             "ដើម្បីជួយឱ្យប្រព័ន្ធ <b>Smart AI Assistant</b> អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
-            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>$0.50</b> តាមរយៈ ABA Pay បាន។\n\n"
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>$1.00</b> តាមរយៈ ABA Pay បាន។\n\n"
             "👇 <b>សូមចុចប៊ូតុងខាងក្រោមដើម្បីបរិច្ចាគ៖</b>"
         )
 

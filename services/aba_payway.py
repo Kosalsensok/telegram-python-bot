@@ -49,7 +49,7 @@ def create_donation_checkout_params(
     public_key: str,
     payway_url: str,
     server_url: str,
-    amount: str = "0.50"
+    amount: str = "1.00"
 ) -> Tuple[str, str, dict]:
     """
     Creates transaction ID, request timestamp, and parameters for ABA PayWay Checkout HTML form.
