@@ -1,10 +1,13 @@
 <div align="center">
 
-# 🤖 Smart AI Telegram Bot 24/7 (Omnimodal AI + ABA PayWay Integration)
+<!-- 3D Animated Glowing Header Banner -->
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,18,24,30,36&height=250&section=header&text=🤖%20Smart%20AI%20Telegram%20Bot%2024/7&fontSize=42&animation=twinkling&fontColor=ffffff&desc=Omnimodal%20AI%20Engine%20%E2%80%A2%20ABA%20PayWay%20Gateway%20%E2%80%A2%20Math%20PNG%20Card%20Renderer&descSize=18&descAlignY=75" width="100%" alt="3D Animated Banner" />
+
+<br>
 
 <p align="center">
   <a href="https://github.com/Kosalsensok/telegram-python-bot">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=2CAE67&center=true&vCenter=true&width=750&lines=24%2F7+Omnimodal+Telegram+AI+Bot;Gemini+1.5+Multimodal+AI+Engine;ABA+PayWay+Sandbox+Payment+Gateway;Math+%26+LaTeX+PNG+Solution+Card+Renderer;AI+Image+Enhancer+%26+Super-Resolution;Piston+Multi-Language+Code+Compiler" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=28&pause=1000&color=00F5D4&center=true&vCenter=true&width=800&lines=⚡+24%2F7+Omnimodal+Telegram+AI+Bot;🧠+Gemini+1.5+Multimodal+AI+Brain;💳+ABA+PayWay+Sandbox+Payment+Gateway;📐+Math+%26+LaTeX+PNG+Solution+Card+Renderer;✨+AI+Image+Enhancer+%26+Super-Resolution;💻+Piston+Multi-Language+Code+Compiler" alt="Typing SVG Animation" />
   </a>
 </p>
 
@@ -14,7 +17,7 @@
     <img src="https://img.shields.io/badge/Bot-@mysmart__v2__2026__bot-blueviolet?style=for-the-badge&logo=telegram" alt="Bot Demo" />
   </a>
   <img src="https://img.shields.io/badge/ABA_PayWay-Integrated-00A859?style=for-the-badge&logo=cashapp&logoColor=white" alt="ABA PayWay" />
-  <img src="https://img.shields.io/badge/Security-API_Keys_Masked-red?style=for-the-badge&logo=shield&logoColor=white" alt="Security Shield" />
+  <img src="https://img.shields.io/badge/Security-API_Keys_Protected-red?style=for-the-badge&logo=shield&logoColor=white" alt="Security Shield" />
 </p>
 
 <p align="center">
@@ -26,28 +29,60 @@
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License" />
 </p>
 
----
+<!-- 3D Glowing Animated Divider -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" alt="Glowing 3D Line" />
 
-<!-- Animated Live Preview Showcase Banner -->
+</div>
+
+<br>
+
+## 🌐 Multilingual Executive Summary / សេចក្តីសង្ខេបភាសា
+
+<table align="center" width="100%">
+<tr>
+<td width="50%" valign="top">
+<h3>🇬🇧 English Overview</h3>
+An ultra-modern, production-grade <b>24/7 Omnimodal Telegram AI Bot</b> powered by Gemini 1.5 Multimodal Engine & ABA PayWay Payment Gateway. 
+<br><br>
+<b>Key Capabilities:</b>
+<ul>
+  <li>🧠 Multi-turn Conversational AI & Long Memory</li>
+  <li>📐 Math Exercise Solution Renderer (PNG Solution Cards)</li>
+  <li>✨ AI Photo Unblur & Lanczos Super-Resolution HD</li>
+  <li>💳 Integrated ABA PayWay Sandbox KHQR & Test Cards</li>
+  <li>🔔 2-Way Instant Telegram Alerts to Owner (KOSAL SENSOK)</li>
+  <li>💻 Sandboxed Multi-Language Code Runner (Piston)</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<h3>🇰🇭 ភាសាខ្មែរ (Khmer Overview)</h3>
+ជំនួយការ <b>AI Bot ឆ្លាតវៃដំណើរការ 24/7 លើ Telegram</b> ជាមួយបច្ចេកវិទ្យាចុងក្រោយ Gemini 1.5 និង ABA PayWay Sandbox Payment Gateway។
+<br><br>
+<b>សមត្ថភាពពិសេសចម្បងៗ៖</b>
+<ul>
+  <li>🧠 ឆ្លើយសំណួរទូទៅ, ដោះស្រាយលំហាត់ស្មុគស្មាញ</li>
+  <li>📐 បង្កើតជារូបភាព PNG Card ចម្លើយច្បាស់ត្រជាក់ភ្នែក</li>
+  <li>✨ កែរូបភាពមិនច្បាស់ឲ្យច្បាស់ត្រជាក់ភ្នែក (AI Unblur HD)</li>
+  <li>💳 ប្រព័ន្ធទូទាត់ ABA KHQR & Test Credit Cards</li>
+  <li>🔔 បាញ់សារ Alert ជូនដំណឹងត្រង់ចូល Telegram (<b>KOSAL SENSOK - ID: 5496354981</b>)</li>
+  <li>💻 រត់ និង ពិនិត្យកូដ C++, Python, Java, JS ភ្លាមៗ 24/7</li>
+</ul>
+</td>
+</tr>
+</table>
+
+<!-- 3D Waving Section Divider -->
 <div align="center">
-  <a href="https://github.com/Kosalsensok/telegram-python-bot">
-    <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,18,24&height=220&section=header&text=🤖%20Smart%20AI%20Telegram%20Bot%2024/7&fontSize=38&animation=twinkling&fontColor=ffffff" alt="Animated Header Banner" width="100%" />
-  </a>
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&customColorList=18,24,30&height=30&section=header" width="100%" alt="Section Divider" />
 </div>
 
----
+<br>
 
-### 🌐 Multilingual Overview / សេចក្តីសង្ខេបភាសា
+## 💳 3D ABA PayWay Gateway & 2-Way Alert Flow (ប្រព័ន្ធទូទាត់ ABA PayWay)
 
-**English:** An ultra-modern, production-grade 24/7 Omnimodal Telegram AI Bot powered by Gemini 1.5 Multimodal Engine & ABA PayWay Payment Gateway. Features real-time conversational memory, Khmer & Standard LaTeX Math Solver, PNG Solution Card Rendering, AI Image Unblur & Super-Resolution, Piston Sandboxed Code Execution Engine, Voice Note Transcription, PDF OCR Document Analysis, and Dual-Message Payment Notifications (Donor Blessing + Admin Instant Alerts to KOSAL SENSOK `5496354981`).
-
-**ភាសាខ្មែរ (Khmer):** ជំនួយការ AI Bot ឆ្លាតវៃដំណើរការ 24/7 លើ Telegram ជាមួយបច្ចេកវិទ្យាចុងក្រោយ Gemini 1.5 និង ABA PayWay Sandbox Payment Gateway។ មានសមត្ថភាពខ្ពស់ក្នុងការឆ្លើយសំណួរទូទៅ, ដោះស្រាយលំហាត់គណិតវិទ្យា/វិទ្យាសាស្ត្រ (បង្កើតជារូបភាព PNG Card ចម្លើយច្បាស់ត្រជាក់ភ្នែក), កែរូបភាពមិនច្បាស់ឲ្យច្បាស់ (AI Unblur HD), បម្លែងសំឡេងជាអក្សរ, វិភាគឯកសារ PDF/រូបថត, ព្រមទាំងមានប្រព័ន្ធទូទាត់ ABA KHQR & Test Credit Cards បាញ់សារជូនពរទៅកាន់ User និងបាញ់សារ Alert ប្រកាសជូនដំណឹងទៅកាន់ Telegram ផ្ទាល់ខ្លួនរបស់អ្នក (**KOSAL SENSOK - ID: `5496354981`**) ភ្លាមៗ ២៤/៧! 🚀
-
----
-
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=soft&color=auto&height=120&section=header&text=💳%20ABA%20PayWay%202-Way%20Notification%20Architecture&fontSize=24&fontColor=ffffff" width="100%" alt="ABA PayWay 3D Architecture" />
 </div>
-
-## 💳 ABA PayWay Gateway & 2-Way Notification System (ប្រព័ន្ធទូទាត់ ABA PayWay)
 
 ```text
                ┌────────────────────────────────────────────────────────┐
@@ -56,7 +91,7 @@
                                    │
          ┌─────────────────────────┴─────────────────────────┐
          ▼                                                   ▼
-【 ផ្លូវទី ១ ៖ ផ្ញើទៅកាន់ User អ្នកបរិច្ចាគ 】               【 ផ្លូវទី ពីរ ៖ ផ្ញើទៅ Admin ផ្ទាល់ខ្លួន 】
+【 ផ្លូវទី ១ ៖ ផ្ញើទៅកាន់ User អ្នកបរិច្ចាគ 】               【 ផ្លូវទី ២ ៖ ផ្ញើទៅ Admin ផ្ទាល់ខ្លួន 】
 • ផ្ញើចូល Private Chat របស់ User នោះ                        • ផ្ញើចូល Private Chat របស់ KOSAL SENSOK
 • ខ្លឹមសារ៖ សារអរគុណ + សារជូនពរ                             (ID: 5496354981 / @kosalsensokpk)
                                                            • ខ្លឹមសារ៖ Alert ឈ្មោះ, Username, ID,
@@ -87,9 +122,16 @@ SERVER_URL=https://telegram-python-bot-yt64.onrender.com
 
 </details>
 
----
+<br>
 
-## 🎬 Live Telegram Execution Workflow (វីដេអូចលនាដំណើរការ)
+<!-- 3D Glowing Animated Divider -->
+<div align="center">
+  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" alt="Glowing 3D Line" />
+</div>
+
+<br>
+
+## 🎬 3D Live Telegram Execution Workflow (វីដេអូចលនាដំណើរការ)
 
 ```text
 [ Telegram User ]  ───►  📷 Photo of Math Problem Uploaded
@@ -111,9 +153,9 @@ SERVER_URL=https://telegram-python-bot-yt64.onrender.com
                          💬 Step-by-Step Clear Khmer Text Explanation
 ```
 
----
+<br>
 
-## 🏗️ System Architecture & Workflow (ស្ថាបត្យកម្មប្រព័ន្ធ)
+## 🏗️ 3D Interactive System Architecture (ស្ថាបត្យកម្មប្រព័ន្ធ)
 
 ```mermaid
 flowchart TD
@@ -160,7 +202,14 @@ flowchart TD
     UR -->|5-Min HTTP Ping| HS
 ```
 
----
+<br>
+
+<!-- 3D Waving Section Divider -->
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&customColorList=18,24,30&height=30&section=header" width="100%" alt="Section Divider" />
+</div>
+
+<br>
 
 ## ✨ Features & Capabilities Matrix (លក្ខណៈពិសេសចម្បងៗ)
 
@@ -176,7 +225,7 @@ flowchart TD
 | **🎬 Animation** | **In-Place Animated Steps** | Dynamic progress animation context manager updating progress steps live in Telegram messages. |
 | **⚡ Memory & Uptime** | **24/7 Keep-Alive System** | Automatic LRU cache cleanup, max 1920px image scaling, self-pinging keep-alive worker, and UptimeRobot monitoring. |
 
----
+<br>
 
 ## 📱 Telegram UI/UX Showcase & Response Examples
 
@@ -230,7 +279,7 @@ int main() {
 
 </details>
 
----
+<br>
 
 ## ⚡ Command Cheat Sheet (បញ្ជីពាក្យបញ្ជា)
 
@@ -250,7 +299,7 @@ int main() {
 /status      - 📊 ពិនិត្យស្ថានភាព Server និង Uptime (Check Health & Memory Status)
 ```
 
----
+<br>
 
 ## 🔑 Environment Variables Reference (ការកំណត់បរិស្ថាន)
 
@@ -264,7 +313,7 @@ int main() {
 | `SERVER_URL` | Yes | Render Public External URL | `https://telegram-python-bot-yt64.onrender.com` |
 | `PORT` | No | HTTP Health & Webhook Server Port | `8080` / `10000` |
 
----
+<br>
 
 ## 🛠️ Local Installation & Development (ការដំឡើងលើម៉ាស៊ីន)
 
@@ -283,7 +332,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
----
+<br>
 
 ## 🚀 24/7 Render Deployment Guide (ការដំឡើង Render 24/7)
 
@@ -294,14 +343,19 @@ python main.py
 5. Add Environment Variables (`BOT_TOKEN`, `GEMINI_API_KEY`, `ABA_MERCHANT_ID`, `ABA_API_KEY`, `ADMIN_USER_IDS`, `SERVER_URL`).
 6. Set up a **5-minute HTTP Monitor** on [UptimeRobot](https://uptimerobot.com/) targeting `https://<your-app>.onrender.com/health`.
 
----
+<br>
 
+<!-- 3D Footer Animation Banner -->
 <div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,18,24,30,36&height=150&section=footer" width="100%" alt="3D Footer Animation" />
 
-### 👨‍💻 Created & Maintained by **Kosal Sensok**
+  <h3>👨‍💻 Created & Maintained by <b>Kosal Sensok</b></h3>
 
-[![GitHub](https://img.shields.io/badge/GitHub-Kosalsensok-181717.svg?style=for-the-badge&logo=github)](https://github.com/Kosalsensok)
+  <p align="center">
+    <a href="https://github.com/Kosalsensok">
+      <img src="https://img.shields.io/badge/GitHub-Kosalsensok-181717.svg?style=for-the-badge&logo=github" alt="GitHub Profile" />
+    </a>
+  </p>
 
-*Star ⭐ this repository if you find it helpful!*
-
+  <i>Star ⭐ this repository if you find it helpful!</i>
 </div>
