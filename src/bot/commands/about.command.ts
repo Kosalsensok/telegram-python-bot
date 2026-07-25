@@ -3,7 +3,11 @@ import { env } from '../../config/env';
 
 export async function handleAboutCommand(ctx: Context) {
   const msg = (
-    `👤 <b>អំពី Smart AI Math Solver Bot / About</b>\n\n` +
+    `👤 <b>អំពី Smart AI Math Solver Bot / About</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🇰🇭 <b>បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n` +
+    `👑 <b>អ្នកបង្កើត (Creator):</b> <a href="https://t.me/kosalsensokpk">@kosalsensokpk</a>\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
     `🤖 <b>Bot Name:</b> Smart AI Math Solver\n` +
     `⚡ <b>Engine:</b> KaTeX + Playwright + ${env.AI_PROVIDER.toUpperCase()}\n` +
     `📐 <b>Rendering:</b> High-Res PNG Card & A4 PDF Document\n` +

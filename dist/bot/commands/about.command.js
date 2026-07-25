@@ -3,7 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleAboutCommand = handleAboutCommand;
 const env_1 = require("../../config/env");
 async function handleAboutCommand(ctx) {
-    const msg = (`👤 <b>អំពី Smart AI Math Solver Bot / About</b>\n\n` +
+    const msg = (`👤 <b>អំពី Smart AI Math Solver Bot / About</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `🇰🇭 <b>បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n` +
+        `👑 <b>អ្នកបង្កើត (Creator):</b> <a href="https://t.me/kosalsensokpk">@kosalsensokpk</a>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
         `🤖 <b>Bot Name:</b> Smart AI Math Solver\n` +
         `⚡ <b>Engine:</b> KaTeX + Playwright + ${env_1.env.AI_PROVIDER.toUpperCase()}\n` +
         `📐 <b>Rendering:</b> High-Res PNG Card & A4 PDF Document\n` +

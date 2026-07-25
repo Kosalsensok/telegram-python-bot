@@ -10,9 +10,27 @@ DEFAULT_LANG = "km"
 
 STRINGS: Dict[str, Dict[str, str]] = {
     "km": {
-        "welcome_header": "🧠 <b>SMART AI ASSISTANT</b>\n━━━━━━━━━━━━━━━━━━",
-        "welcome_intro": "សួស្តី {name}! 👋\nខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។",
-        "menu_header": "🧠 <b>SMART AI ASSISTANT</b>\n━━━━━━━━━━━━━━━━━━\n\nជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព\nគណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។",
+        "welcome_header": (
+            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
+            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        ),
+        "welcome_intro": (
+            "សួស្តី {name}! 👋\n"
+            "ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ បង្កើតឡើងដោយកូនខ្មែរ សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n"
+            "🔗 អ្នកបង្កើត៖ https://t.me/kosalsensokpk"
+        ),
+        "menu_header": (
+            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
+            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព\n"
+            "គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។"
+        ),
         "btn_ask_ai": "💬 សួរ AI",
         "btn_analyze_image": "🖼 វិភាគរូបភាព",
         "btn_ai_modes": "🎯 AI Modes",

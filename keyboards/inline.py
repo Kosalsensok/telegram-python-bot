@@ -5,12 +5,13 @@ from utils.localization import STRINGS, MODE_NAMES
 
 def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     """
-    Build main menu inline keyboard with prominent ABA PayWay Donation button.
+    Build main menu inline keyboard with prominent ABA PayWay Donation button and Khmer Creator link.
     Row 1: [💬 សួរ AI] [🖼 វិភាគរូបភាព]
-    Row 2: [💖 បរិច្ចាគ $0.50] [🌐 Mini App]
+    Row 2: [💖 បរិច្ចាគ 2,000 ៛] [🌐 Mini App]
     Row 3: [🎯 AI Modes] [🌍 ភាសា]
     Row 4: [ℹ️ ជំនួយ] [🤖 អំពី Bot]
-    Row 5: [🔐 ឯកជនភាព] [✕ បិទ Menu]
+    Row 5: [👑 អ្នកបង្កើត (Creator)]
+    Row 6: [🔐 ឯកជនភាព] [✕ បិទ Menu]
     """
     builder = InlineKeyboardBuilder()
     builder.button(text="💬 សួរ AI" if lang == "km" else "💬 Ask AI", callback_data="cb_ask_ai")
@@ -21,9 +22,10 @@ def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     builder.button(text="🌍 ភាសា" if lang == "km" else "🌍 Language", callback_data="cb_language")
     builder.button(text="ℹ️ ជំនួយ" if lang == "km" else "ℹ️ Help", callback_data="cb_help")
     builder.button(text="🤖 អំពី Bot" if lang == "km" else "🤖 About Bot", callback_data="cb_about")
+    builder.button(text="👑 អ្នកបង្កើត (Creator)" if lang == "km" else "👑 Creator (@kosalsensokpk)", url="https://t.me/kosalsensokpk")
     builder.button(text="🔐 ឯកជនភាព" if lang == "km" else "🔐 Privacy", callback_data="cb_privacy")
     builder.button(text="✕ បិទ Menu" if lang == "km" else "✕ Close Menu", callback_data="cb_close_menu")
-    builder.adjust(2, 2, 2, 2, 2)
+    builder.adjust(2, 2, 2, 2, 1, 2)
     return builder.as_markup()
 
 

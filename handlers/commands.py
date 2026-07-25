@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import os
 import random
 import re
 import time
 from html import escape
 from aiogram import Router, types, F
+from aiogram.types import FSInputFile
 from aiogram.filters import CommandStart, Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from services.db_service import DatabaseService
@@ -96,7 +98,10 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         user_id_str = str(message.from_user.id) if message.from_user else "N/A"
         welcome_text = (
             "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
-            "━━━━━━━━━━━━━━━━━━\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
+            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"សួស្តី <b>{escaped_user_name}</b>! 👋\n\n"
             f"សូមស្វាគមន៍មកកាន់ <b>Smart AI Assistant Bot</b> 🤖\n"
             f"<i>(ប្រព័ន្ធបានចាប់យក Telegram ID របស់អ្នក៖ <code>{user_id_str}</code>)</i>\n\n"
@@ -105,6 +110,20 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "លោកអ្នកអាចចុចបញ្ជា /donate ដើម្បីចូលរួមបរិច្ចាគ $0.50 គាំទ្រការអភិវឌ្ឍន៍ AI សម្រាប់ឆ្នាំបន្ទាប់បាន។\n\n"
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
+
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.jpg")
+        if os.path.exists(logo_path):
+            try:
+                photo = FSInputFile(logo_path)
+                await message.answer_photo(
+                    photo=photo,
+                    caption=welcome_text,
+                    parse_mode="HTML",
+                    reply_markup=get_welcome_inline_keyboard()
+                )
+                return
+            except Exception as e:
+                logging.error(f"Error sending photo start message: {e}")
 
         await message.answer(
             welcome_text,
@@ -289,7 +308,11 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         formatted = format_user_count(total_users)
 
         about_text = (
-            f"👤 <b>អំពី {BOT_DISPLAY_NAME} / About Bot:</b>\n\n"
+            f"👤 <b>អំពី {BOT_DISPLAY_NAME} / About Bot:</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🇰🇭 <b>បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
+            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a> (https://t.me/kosalsensokpk)\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"🤖 <b>Bot Name:</b> {BOT_DISPLAY_NAME}\n"
             f"⚡ <b>AI Engine:</b> Google Gemini ({GEMINI_MODEL})\n"
             "🌐 <b>Supported Languages:</b> 🇰🇭 Khmer & 🇬🇧 English\n"
@@ -299,6 +322,21 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "🌐 <b>Telegram Mini App:</b> Supported (/miniapp)\n"
             "🔒 <b>Privacy:</b> Secure, in-memory image vision pipeline."
         )
+
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.jpg")
+        if os.path.exists(logo_path):
+            try:
+                photo = FSInputFile(logo_path)
+                await message.answer_photo(
+                    photo=photo,
+                    caption=about_text,
+                    parse_mode="HTML",
+                    reply_markup=get_welcome_inline_keyboard()
+                )
+                return
+            except Exception as e:
+                logging.error(f"Error sending photo about message: {e}")
+
         await message.answer(about_text, parse_mode="HTML")
 
     @router.message(Command("privacy"))

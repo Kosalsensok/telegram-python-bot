@@ -253,13 +253,15 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         except Exception:
             pass
 
-    # 12. About Callback
     @router.callback_query(F.data == "cb_about")
     async def callback_about(callback: types.CallbackQuery):
         await callback.answer()
         about_text = (
-            f"🤖 <b>អំពី {BOT_DISPLAY_NAME}</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n\n"
+            f"🤖 <b>អំពី {BOT_DISPLAY_NAME} / About Bot</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🇰🇭 <b>បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
+            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"⚡ <b>AI Engine:</b> Google Gemini ({GEMINI_MODEL})\n"
             "🌐 <b>Supported Languages:</b> 🇰🇭 Khmer & 🇬🇧 English\n"
             "🛠 <b>Framework:</b> Python 3.11+ & Aiogram 3.x\n"
