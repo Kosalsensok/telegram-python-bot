@@ -186,27 +186,42 @@ async def handle_donate_checkout(request):
         )
 
         html_content = f"""<!DOCTYPE html>
-<html>
+<html lang="km">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connecting to ABA Pay...</title>
+    <title>ABA Pay KHQR Checkout - Smart AI Assistant</title>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; background-color: #f8f9fa; color: #333; }}
-        .card {{ background: #fff; max-width: 450px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }}
-        .spinner {{ border: 4px solid #f3f3f3; border-top: 4px solid #0056b3; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 20px auto; }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 25px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
+        .card {{ background: #1e293b; max-width: 440px; margin: 20px auto; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }}
+        .spinner {{ border: 4px solid #334155; border-top: 4px solid #0284c7; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 25px auto; }}
         @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-        h3 {{ color: #0056b3; margin-bottom: 10px; }}
-        p {{ color: #666; font-size: 15px; line-height: 1.5; }}
-        .btn {{ display: inline-block; margin-top: 15px; padding: 12px 25px; background: #0056b3; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; }}
+        h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 20px; }}
+        p {{ color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 10px 0; }}
+        .qr-container {{ background: #ffffff; padding: 15px; border-radius: 14px; display: inline-block; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }}
+        .qr-img {{ width: 230px; height: 230px; display: block; border-radius: 8px; }}
+        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 18px; padding: 14px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; text-decoration: none; transition: background 0.2s; }}
+        .btn-deeplink:hover {{ background: linear-gradient(135deg, #0369a1, #075985); }}
+        .badge {{ background: #0369a1; color: #e0f2fe; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 15px; }}
     </style>
 </head>
-<body onload="document.forms[0].submit()">
+<body>
     <div class="card">
-        <div class="spinner"></div>
-        <h3>កំពុងបញ្ជូនទៅកាន់ទំព័របង់ប្រាក់ ABA Pay...</h3>
-        <p>សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងដំណើរការបង្កើតប្រតិបត្តិការបរិច្ចាគ 2,000 ៛ (ID: {tran_id})...</p>
-        <form method="POST" action="{ABA_PAYWAY_URL}">
+        <h3>🏦 ABA PAY / KHQR CHECKOUT</h3>
+        <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD)</div>
+        <p id="status-msg">សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងបង្កើត KHQR Code សម្រាប់ទូទាត់ (ID: {tran_id})...</p>
+        
+        <div id="loading" class="spinner"></div>
+        
+        <div id="qr-section" style="display: none;">
+            <div class="qr-container">
+                <img id="qr-image" class="qr-img" src="" alt="ABA KHQR Code" />
+            </div>
+            <p style="color: #cbd5e1; font-weight: 500;">សូមស្កែន QR Code ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
+            <a id="deeplink-btn" href="#" class="btn-deeplink" target="_blank">📲 បើក App ABA Bank ដើម្បីទូទាត់</a>
+        </div>
+
+        <form id="payform" method="POST" action="{ABA_PAYWAY_URL}" style="display: none; margin-top: 15px;">
             <input type="hidden" name="req_time" value="{req_time}" />
             <input type="hidden" name="merchant_id" value="{ABA_MERCHANT_ID}" />
             <input type="hidden" name="tran_id" value="{tran_id}" />
@@ -215,9 +230,47 @@ async def handle_donate_checkout(request):
             <input type="hidden" name="hash" value="{hash_val}" />
             <input type="hidden" name="continue_success_url" value="{continue_success_url_b64}" />
             <input type="hidden" name="return_params" value="{return_params_b64}" />
-            <button type="submit" class="btn">👉 បង់ប្រាក់ឥឡូវនេះ (Pay Now)</button>
+            <button type="submit" class="btn-deeplink">👉 បន្តទៅកាន់ ABA Pay</button>
         </form>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async function() {{
+            const form = document.getElementById("payform");
+            const formData = new FormData(form);
+
+            try {{
+                const response = await fetch("{ABA_PAYWAY_URL}", {{
+                    method: "POST",
+                    body: formData
+                }});
+
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {{
+                    const data = await response.json();
+                    if (data.qrImage || data.abapay_deeplink) {{
+                        document.getElementById("loading").style.display = "none";
+                        document.getElementById("status-msg").textContent = "KHQR Code ត្រូវបានបង្កើតរួចរាល់ហើយ!";
+                        document.getElementById("qr-section").style.display = "block";
+
+                        if (data.qrImage) {{
+                            document.getElementById("qr-image").src = data.qrImage;
+                        }}
+                        if (data.abapay_deeplink) {{
+                            document.getElementById("deeplink-btn").href = data.abapay_deeplink;
+                        }}
+                        return;
+                    }}
+                }}
+            }} catch(e) {{
+                console.error("AJAX Error:", e);
+            }}
+            // Fallback if not JSON: submit form standard way
+            document.getElementById("loading").style.display = "none";
+            form.style.display = "block";
+            form.submit();
+        }});
+    </script>
 </body>
 </html>"""
         return web.Response(text=html_content, content_type="text/html")
