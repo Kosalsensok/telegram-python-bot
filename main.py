@@ -702,6 +702,7 @@ async def main():
     commands = [
         BotCommand(command="start", description="🚀 ចាប់ផ្តើមប្រើប្រាស់ (Start)"),
         BotCommand(command="donate", description="💖 បរិច្ចាគ $0.50 គាំទ្រ AI (Donate $0.50)"),
+        BotCommand(command="myid", description="🆔 មើល Telegram ID របស់អ្នក (My Telegram ID)"),
         BotCommand(command="miniapp", description="🌐 បើក Telegram Mini App (Open Mini App)"),
         BotCommand(command="image", description="🎨 បង្កើតរូបភាព AI កម្រិត HD (Generate AI Image)"),
         BotCommand(command="imagine", description="🎨 បង្កើតរូបភាព AI (Imagine Image)"),

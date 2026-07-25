@@ -46,6 +46,32 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
                 language_code=from_user.language_code or "en"
             )
 
+    @router.message(Command("myid"))
+    @router.message(Command("id"))
+    @router.message(F.text == "🆔 ID របស់ខ្ញុំ")
+    async def cmd_myid(message: types.Message):
+        """
+        Displays user's private Telegram User ID and Chat ID information.
+        """
+        if message.from_user:
+            await _register_user(message.from_user, message.bot)
+            user_id = message.from_user.id
+            first_name = escape(message.from_user.first_name or "N/A")
+            last_name = escape(message.from_user.last_name or "")
+            username = f"@{message.from_user.username}" if message.from_user.username else "No Username"
+            chat_type = message.chat.type.capitalize()
+            
+            msg_text = (
+                "👤 <b>ព័ត៌មានគណនី Telegram របស់អ្នក (Your Telegram Profile ID):</b>\n"
+                "━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 <b>Telegram User ID:</b> <code>{user_id}</code>\n"
+                f"👤 <b>ឈ្មោះ (Name):</b> {first_name} {last_name}\n"
+                f"🏷️ <b>Username:</b> {username}\n"
+                f"💬 <b>ប្រភេទឆាត (Chat Type):</b> {chat_type}\n\n"
+                "💡 <i>ប្រព័ន្ធប្រើប្រាស់ Telegram User ID នេះដើម្បីផ្ញើសារ Private Alert និងសារអរគុណពេលបរិច្ចាគ!</i> 🚀"
+            )
+            await message.reply(msg_text, parse_mode="HTML")
+
     @router.message(CommandStart())
     @router.message(Command("menu"))
     @router.message(F.text == "🏠 Menu")
