@@ -185,37 +185,181 @@ async def handle_donate_checkout(request):
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ABA PayWay Sandbox Checkout - Smart AI Assistant</title>
+    <title>ABA PayWay Checkout - Smart AI Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 20px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
-        .card {{ background: #1e293b; max-width: 480px; margin: 15px auto; padding: 25px 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #334155; text-align: left; }}
-        h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 22px; font-weight: 700; text-align: center; }}
-        p {{ color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 8px 0; }}
-        .tab-btn-group {{ display: flex; gap: 8px; margin: 15px 0; border-bottom: 2px solid #334155; padding-bottom: 10px; }}
-        .tab-btn {{ flex: 1; padding: 10px; background: #334155; color: #cbd5e1; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; text-align: center; font-size: 14px; transition: all 0.2s; }}
-        .tab-btn.active {{ background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); }}
-        .tab-content {{ display: none; margin-top: 15px; }}
+        :root {{
+            --bg-color: #090d16;
+            --card-bg: rgba(30, 41, 59, 0.75);
+            --primary: #0284c7;
+            --primary-glow: rgba(56, 189, 248, 0.4);
+            --accent: #38bdf8;
+            --success: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #090d16 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }}
+        .card {{
+            background: var(--card-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            max-width: 460px;
+            width: 100%;
+            padding: 32px 28px;
+            border-radius: 28px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }}
+        .header {{ text-align: center; margin-bottom: 20px; }}
+        h3 {{
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }}
+        .badge {{
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 14px;
+            text-align: center;
+            width: 100%;
+        }}
+        p {{ color: var(--text-sub); font-size: 14px; line-height: 1.5; margin: 8px 0; }}
+        .tab-btn-group {{
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 6px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }}
+        .tab-btn {{
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            color: var(--text-sub);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+        .tab-btn.active {{
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }}
+        .tab-content {{ display: none; margin-top: 18px; animation: fadeIn 0.3s ease; }}
         .tab-content.active {{ display: block; }}
-        .qr-container {{ background: #ffffff; padding: 16px; border-radius: 16px; display: inline-block; margin: 10px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: center; width: 100%; box-sizing: border-box; }}
-        .qr-img {{ width: 220px; height: 220px; display: block; border-radius: 8px; margin: 0 auto; }}
-        .form-group {{ margin-bottom: 14px; }}
-        label {{ display: block; font-size: 13px; color: #cbd5e1; margin-bottom: 5px; font-weight: 600; }}
-        input {{ width: 100%; box-sizing: border-box; padding: 12px 14px; background: #0f172a; border: 1px solid #475569; border-radius: 10px; color: #fff; font-size: 15px; font-family: monospace; outline: none; }}
-        input:focus {{ border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }}
-        .form-row {{ display: flex; gap: 10px; }}
-        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 14px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; text-align: center; transition: all 0.2s; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }}
-        .btn-pay-card {{ display: block; width: 100%; box-sizing: border-box; margin-top: 15px; padding: 14px 20px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; text-align: center; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }}
-        .btn-pay-card:hover {{ background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }}
-        .badge {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 12px; text-align: center; width: 100%; box-sizing: border-box; }}
-        .tran-info {{ font-family: monospace; font-size: 12px; color: #64748b; margin-top: 15px; text-align: center; }}
+        @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(6px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+        
+        .qr-container {{
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 12px 0;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+            width: 100%;
+        }}
+        .qr-img {{ width: 230px; height: 230px; display: block; border-radius: 10px; }}
+        
+        .form-group {{ margin-bottom: 16px; }}
+        label {{ display: block; font-size: 13px; color: #cbd5e1; margin-bottom: 6px; font-weight: 600; }}
+        input {{
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            font-family: monospace;
+            outline: none;
+            transition: all 0.2s;
+        }}
+        input:focus {{ border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }}
+        .form-row {{ display: flex; gap: 12px; }}
+        
+        .btn-deeplink {{
+            display: block;
+            width: 100%;
+            margin-top: 14px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.25s;
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+        }}
+        .btn-deeplink:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(2, 132, 199, 0.5); }}
+        
+        .btn-pay-card {{
+            display: block;
+            width: 100%;
+            margin-top: 18px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.25s;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+        }}
+        .btn-pay-card:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.5); }}
+        
+        .tran-info {{ font-family: monospace; font-size: 12px; color: #64748b; margin-top: 20px; text-align: center; }}
         .status-dot {{ display: inline-block; width: 9px; height: 9px; background-color: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }}
-        @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.4; }} 100% {{ opacity: 1; }} }}
+        @keyframes pulse {{ 0% {{ opacity: 1; transform: scale(1); }} 50% {{ opacity: 0.4; transform: scale(1.2); }} 100% {{ opacity: 1; transform: scale(1); }} }}
     </style>
 </head>
 <body>
     <div class="card">
-        <h3>🏦 ABA PAYWAY CHECKOUT</h3>
-        <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD) • ABA Sandbox Test</div>
+        <div class="header">
+            <h3>🏦 ABA PAYWAY CHECKOUT</h3>
+            <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD) • ABA Sandbox Test</div>
+        </div>
         <p style="text-align: center;"><span class="status-dot"></span> ជ្រើសរើសវិធីសាស្ត្រទូទាត់ខាងក្រោម៖</p>
         
         <div class="tab-btn-group">
@@ -226,16 +370,16 @@ async def handle_donate_checkout(request):
         <!-- Tab 1: ABA KHQR Code -->
         <div id="qr-tab" class="tab-content active">
             <div class="qr-container">
-                {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444'>⚠️ QR Code Generation Failed</p>"}
+                {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444; font-weight:600;'>⚠️ QR Code Generation Failed</p>"}
             </div>
-            <p style="color: #cbd5e1; font-weight: 500; text-align: center;">សូមស្កែន QR Code ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
+            <p style="color: #cbd5e1; font-weight: 500; text-align: center; margin-top: 14px;">សូមស្កែន QR Code ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
             {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
         </div>
 
         <!-- Tab 2: Test Credit Card Numbers -->
         <div id="card-tab" class="tab-content">
             <p style="color: #38bdf8; font-weight: 600; font-size: 13px; margin-bottom: 10px;">💳 លេខកាតសាកល្បង ABA Sandbox Official Test Cards:</p>
-            <div style="background: rgba(56, 189, 248, 0.1); border: 1px dashed rgba(56, 189, 248, 0.3); padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; font-size: 12px; font-family: monospace; color: #7dd3fc;">
+            <div style="background: rgba(56, 189, 248, 0.1); border: 1px dashed rgba(56, 189, 248, 0.3); padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; font-size: 12px; font-family: monospace; color: #7dd3fc;">
                 • Visa Test: 4286 0900 0000 0206 (04/30 - 777)<br/>
                 • Mastercard: 5156 8399 3770 6777 (01/30 - 993)
             </div>
@@ -469,26 +613,148 @@ def make_payment_success_handler(bot=None):
             if tran_id in pending_donations:
                 del pending_donations[tran_id]
 
-        html_content = """<!DOCTYPE html>
-<html>
+        html_content = f"""<!DOCTYPE html>
+<html lang="km">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Donation Successful!</title>
+    <title>Donation Successful - Smart AI Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px 20px; background: #eef9f1; color: #2e7d32; }
-        .card { background: #ffffff; max-width: 500px; margin: 0 auto; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-        .icon { font-size: 60px; margin-bottom: 15px; }
-        h2 { margin-bottom: 10px; color: #1b5e20; }
-        p { color: #4e4e4e; line-height: 1.6; font-size: 16px; }
+        :root {{
+            --bg-color: #090d16;
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --success-gradient: linear-gradient(135deg, #10b981, #059669);
+            --success-glow: rgba(16, 185, 129, 0.4);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at 50% 0%, #064e3b 0%, #0f172a 60%, #090d16 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }}
+        .card {{
+            background: var(--card-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            max-width: 480px;
+            width: 100%;
+            padding: 40px 32px;
+            border-radius: 32px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }}
+        @keyframes cardAppear {{
+            from {{ opacity: 0; transform: scale(0.92) translateY(20px); }}
+            to {{ opacity: 1; transform: scale(1) translateY(0); }}
+        }}
+        .icon-circle {{
+            width: 90px;
+            height: 90px;
+            background: var(--success-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 40px var(--success-glow);
+            font-size: 44px;
+            color: #ffffff;
+            animation: pulseGlow 2s infinite alternate;
+        }}
+        @keyframes pulseGlow {{
+            0% {{ box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); transform: scale(1); }}
+            100% {{ box-shadow: 0 0 50px rgba(16, 185, 129, 0.7); transform: scale(1.05); }}
+        }}
+        h2 {{
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #34d399, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }}
+        p {{
+            color: var(--text-sub);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }}
+        .summary-box {{
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 13px;
+            color: #cbd5e1;
+            text-align: left;
+        }}
+        .summary-row {{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }}
+        .summary-row:last-child {{ margin-bottom: 0; }}
+        .summary-label {{ color: #64748b; font-weight: 500; }}
+        .summary-val {{ font-family: monospace; font-weight: 700; color: #34d399; }}
+        
+        .btn-return {{
+            display: inline-block;
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 16px;
+            text-decoration: none;
+            transition: all 0.25s;
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+            margin-top: 10px;
+        }}
+        .btn-return:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(2, 132, 199, 0.5);
+        }}
     </style>
 </head>
 <body>
     <div class="card">
-        <div class="icon">✅</div>
+        <div class="icon-circle">✓</div>
         <h2>ការបង់ប្រាក់បរិច្ចាគបានជោគជ័យ!</h2>
-        <p>សូមអរគុណយ៉ាងជ្រាលជ្រៅសម្រាប់ការគាំទ្រអភិវឌ្ឍន៍ <strong>Smart AI Assistant</strong>។<br/>សារជូនពរត្រូវបានផ្ញើទៅកាន់ Telegram របស់លោកអ្នករួចរាល់ហើយ!</p>
-        <p>លោកអ្នកអាចបិទទំព័រនេះ ហើយត្រឡប់ទៅ Telegram វិញបាន។</p>
+        <p>សូមអរគុណយ៉ាងជ្រាលជ្រៅសម្រាប់ការគាំទ្រអភិវឌ្ឍន៍ <strong>Smart AI Assistant</strong> 🚀<br/>សារជូនពរ និងបង្កាន់ដៃត្រូវបានផ្ញើទៅកាន់ Telegram របស់អ្នករួចរាល់ហើយ!</p>
+        
+        <div class="summary-box">
+            <div class="summary-row">
+                <span class="summary-label">ចំនួនទឹកប្រាក់ (Amount):</span>
+                <span class="summary-val">$0.50 USD (2,000 ៛)</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Transaction ID:</span>
+                <span class="summary-val">{tran_id or 'TXN_ABA_COMPLETED'}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">ស្ថានភាព (Status):</span>
+                <span class="summary-val" style="color: #34d399;">✓ Completed</span>
+            </div>
+        </div>
+
+        <a href="https://t.me/mysmart_v2_2026_bot" class="btn-return">📲 ត្រឡប់ទៅកាន់ Telegram វិញ</a>
     </div>
 </body>
 </html>"""
