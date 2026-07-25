@@ -32,9 +32,25 @@ def is_callback_locked(user_id: int, lock_time_sec: float = 1.0) -> bool:
 
 def get_callbacks_router(db_service: DatabaseService = None, memory: ConversationMemory = None) -> Router:
     """
-    Construct callbacks router with immediate callback acknowledgement and debouncing.
+    Construct callbacks router with immediate callback acknowledgement, safe photo/text caption edits, and debouncing.
     """
     router = Router(name="callbacks_router")
+
+    async def safe_edit_message(message: types.Message, text: str, reply_markup=None):
+        """Safely edit message caption if photo message or text if normal text message."""
+        try:
+            if message.photo or message.caption is not None:
+                await message.edit_caption(caption=text, parse_mode="HTML", reply_markup=reply_markup)
+            else:
+                await message.edit_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
+        except Exception:
+            try:
+                await message.edit_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
+            except Exception:
+                try:
+                    await message.answer(text, parse_mode="HTML", reply_markup=reply_markup)
+                except Exception:
+                    pass
 
     # 1. Close Menu Callback Handler
     @router.callback_query(F.data == "cb_close_menu")
@@ -43,7 +59,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         try:
             await callback.message.delete()
         except Exception:
-            await callback.message.edit_text("✅ Menu ត្រូវបានបិទ។", parse_mode="HTML")
+            await safe_edit_message(callback.message, "✅ Menu ត្រូវបានបិទ។")
 
     # 2. Main Menu Navigation Callback
     @router.callback_query(F.data == "cb_back_main")
@@ -63,17 +79,17 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         formatted_users = format_user_count(total_users)
 
         welcome_text = (
-            "🧠 <b>SMART AI ASSISTANT</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n\n"
-            f"សួស្តី {user_name}! 👋\n"
+            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
+            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"សួស្តី <b>{user_name}</b>! 👋\n\n"
             "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
             f"👥 <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
-        try:
-            await callback.message.edit_text(welcome_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard(user_lang))
-        except Exception as e:
-            logging.debug(f"Menu update skipped: {e}")
+        await safe_edit_message(callback.message, welcome_text, reply_markup=get_welcome_inline_keyboard(user_lang))
 
     # 3. Ask AI Prompt Callback
     @router.callback_query(F.data == "cb_ask_ai")
@@ -85,10 +101,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "សូមវាយសំណួររបស់អ្នកជាអក្សរ (Text) រួចផ្ញើមកកាន់ Bot ឥឡូវនេះ!\n\n"
             "<i>ឧទាហរណ៍៖ \"សូមពន្យល់ពី Python Asyncio ឱ្យបានច្បាស់\"</i>"
         )
-        try:
-            await callback.message.edit_text(msg_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, msg_text, reply_markup=get_welcome_inline_keyboard())
 
     # 4. Analyze Image Banner Callback
     @router.callback_query(F.data == "cb_analyze_image")
@@ -110,10 +123,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "• រូបមន្ត\n"
             "• ផលិតផល"
         )
-        try:
-            await callback.message.edit_text(banner_text, parse_mode="HTML", reply_markup=get_image_analysis_banner_keyboard())
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, banner_text, reply_markup=get_image_analysis_banner_keyboard())
 
     # 5. Cancel Image Mode
     @router.callback_query(F.data == "cb_cancel_image_mode")
@@ -138,10 +148,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "━━━━━━━━━━━━━━━━━━\n\n"
             "សូមជ្រើសរើស AI Mode ដែលសមស្របនឹងសំណួររបស់អ្នក៖"
         )
-        try:
-            await callback.message.edit_text(mode_text, parse_mode="HTML", reply_markup=get_mode_inline_keyboard(current_mode))
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, mode_text, reply_markup=get_mode_inline_keyboard(current_mode))
 
     # 7. Set Mode Callback
     @router.callback_query(F.data.startswith("set_mode_"))
@@ -162,10 +169,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "━━━━━━━━━━━━━━━━━━\n\n"
             f"✅ Mode ត្រូវបានប្តូរទៅជា៖ <b>{selected_mode.upper()}</b>"
         )
-        try:
-            await callback.message.edit_text(mode_text, parse_mode="HTML", reply_markup=get_mode_inline_keyboard(selected_mode))
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, mode_text, reply_markup=get_mode_inline_keyboard(selected_mode))
 
     # 8. Language Selection Menu
     @router.callback_query(F.data == "cb_language")
@@ -181,10 +185,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "━━━━━━━━━━━━━━━━━━\n\n"
             "សូមជ្រើសរើសភាសាសម្រាប់ចម្លើយរបស់ AI ៖"
         )
-        try:
-            await callback.message.edit_text(lang_text, parse_mode="HTML", reply_markup=get_language_inline_keyboard(current_lang))
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, lang_text, reply_markup=get_language_inline_keyboard(current_lang))
 
     # 9. Set Language Callback
     @router.callback_query(F.data.startswith("set_lang_"))
@@ -205,10 +206,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "━━━━━━━━━━━━━━━━━━\n\n"
             f"✅ ភាសាត្រូវបានប្តូរទៅជា៖ <b>{selected_lang.upper()}</b>"
         )
-        try:
-            await callback.message.edit_text(lang_text, parse_mode="HTML", reply_markup=get_language_inline_keyboard(selected_lang))
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, lang_text, reply_markup=get_language_inline_keyboard(selected_lang))
 
     # 10. Mini App Callback
     @router.callback_query(F.data == "cb_miniapp")
@@ -231,10 +229,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "• <b>Telegram Dark/Light Theme:</b> សមស្របតាមម៉ូដទូរស័ព្ទ\n\n"
             "👇 <b>ចុចប៊ូតុងខាងក្រោមដើម្បីបើក Mini App៖</b>"
         )
-        try:
-            await callback.message.edit_text(msg_text, parse_mode="HTML", reply_markup=builder.as_markup())
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, msg_text, reply_markup=builder.as_markup())
 
     # 11. Help Callback
     @router.callback_query(F.data == "cb_help")
@@ -248,10 +243,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "<b>3. 🎯 AI Modes:</b> ប្តូរ Mode តាមមុខវិជ្ជា (គណិត គីមី រូបវិទ្យា...)\n"
             "<b>4. 🌐 Mini App:</b> ប្រើប្រាស់ Mini App អន្តរកម្មកម្រិតខ្ពស់"
         )
-        try:
-            await callback.message.edit_text(help_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, help_text, reply_markup=get_welcome_inline_keyboard())
 
     @router.callback_query(F.data == "cb_about")
     async def callback_about(callback: types.CallbackQuery):
@@ -267,10 +259,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "🛠 <b>Framework:</b> Python 3.11+ & Aiogram 3.x\n"
             "🔒 <b>Security:</b> Enterprise grade, privacy focused."
         )
-        try:
-            await callback.message.edit_text(about_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, about_text, reply_markup=get_welcome_inline_keyboard())
 
     # 13. Privacy Callback
     @router.callback_query(F.data == "cb_privacy")
@@ -283,10 +272,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "• ប្រវត្តិសន្ទនាត្រូវបានរក្សាទុកតែក្នុងប្រព័ន្ធសុវត្ថិភាព។\n"
             "• ព័ត៌មានផ្ទាល់ខ្លួនមិនត្រូវបានចែករំលែកទៅភាគីទីបីឡើយ។"
         )
-        try:
-            await callback.message.edit_text(privacy_text, parse_mode="HTML", reply_markup=get_welcome_inline_keyboard())
-        except Exception:
-            pass
+        await safe_edit_message(callback.message, privacy_text, reply_markup=get_welcome_inline_keyboard())
 
     # 14. Contextual Result Action Callbacks
     @router.callback_query(F.data.startswith("ai_like:"))
