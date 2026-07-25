@@ -136,8 +136,15 @@ async def handle_donate_checkout(request):
     from datetime import datetime
     import base64
 
-    tran_id = request.query.get("tran_id", "").replace("_", "")
-    amount = request.query.get("amount", "2000")
+    raw_amount = request.query.get("amount", "2000")
+    try:
+        if float(raw_amount) < 100:
+            amount = "2000"
+        else:
+            amount = raw_amount
+    except (ValueError, TypeError):
+        amount = "2000"
+
     req_time = request.query.get("req_time", "")
     chat_id = request.query.get("chat_id", "")
 
