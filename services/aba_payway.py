@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import logging
 import time
+import aiohttp
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 
@@ -63,7 +64,9 @@ def create_donation_checkout_params(
     pending_donations[tran_id] = {
         "chat_id": chat_id,
         "amount": amount,
-        "time": req_time
+        "time": req_time,
+        "status": "pending",
+        "created_at": time.time()
     }
 
     clean_server_url = server_url.rstrip("/")
@@ -95,3 +98,86 @@ def create_donation_checkout_params(
     }
 
     return tran_id, req_time, form_data
+
+
+async def request_aba_payway_purchase(
+    chat_id: int,
+    merchant_id: str,
+    public_key: str,
+    payway_url: str,
+    server_url: str,
+    amount: str = "2000"
+) -> dict:
+    """
+    Executes a direct server-side async HTTP POST to ABA PayWay purchase API endpoint.
+    Retrieves and parses qrString, qrImage, and abapay_deeplink.
+    """
+    tran_id, req_time, form_data = create_donation_checkout_params(
+        chat_id=chat_id,
+        merchant_id=merchant_id,
+        public_key=public_key,
+        payway_url=payway_url,
+        server_url=server_url,
+        amount=amount
+    )
+
+    # Post data to ABA API
+    post_payload = {
+        "req_time": form_data["req_time"],
+        "merchant_id": form_data["merchant_id"],
+        "tran_id": form_data["tran_id"],
+        "amount": form_data["amount"],
+        "payment_option": form_data["payment_option"],
+        "hash": form_data["hash"],
+        "continue_success_url": form_data["continue_success_url"],
+        "return_params": form_data["return_params"]
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(payway_url, data=post_payload, timeout=15) as resp:
+                status_code = resp.status
+                if status_code == 200:
+                    data = await resp.json()
+                    qr_image = data.get("qrImage", "")
+                    deeplink = data.get("abapay_deeplink", "")
+                    qr_string = data.get("qrString", "")
+                    status_info = data.get("status", {})
+
+                    if tran_id in pending_donations:
+                        pending_donations[tran_id].update({
+                            "qr_image": qr_image,
+                            "abapay_deeplink": deeplink,
+                            "qr_string": qr_string,
+                            "status": "active"
+                        })
+
+                    return {
+                        "success": True,
+                        "tran_id": tran_id,
+                        "amount": amount,
+                        "req_time": req_time,
+                        "qr_image": qr_image,
+                        "abapay_deeplink": deeplink,
+                        "qr_string": qr_string,
+                        "status_info": status_info,
+                        "raw": data
+                    }
+                else:
+                    text = await resp.text()
+                    logger.error(f"ABA PayWay purchase request failed with HTTP {status_code}: {text}")
+                    return {
+                        "success": False,
+                        "tran_id": tran_id,
+                        "amount": amount,
+                        "error": f"HTTP {status_code}"
+                    }
+    except Exception as e:
+        logger.error(f"Exception during ABA PayWay purchase request: {e}")
+        return {
+            "success": False,
+            "tran_id": tran_id,
+            "amount": amount,
+            "error": str(e)
+        }
+

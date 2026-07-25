@@ -132,14 +132,17 @@ async def handle_spell_check_api(request):
 
 
 async def handle_donate_checkout(request):
-    """Generates ABA PayWay HTML checkout form and auto-submits to PayWay Gateway."""
+    """Generates ABA PayWay KHQR purchase via server API and renders full interactive checkout UI."""
     try:
         from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
-        from services.aba_payway import generate_aba_hash, pending_donations
-        from datetime import datetime
-        import base64
+        from services.aba_payway import request_aba_payway_purchase
 
-        raw_tran_id = request.query.get("tran_id", "").replace("_", "")
+        chat_id_raw = request.query.get("chat_id", "0")
+        try:
+            chat_id = int(chat_id_raw)
+        except ValueError:
+            chat_id = 0
+
         raw_amount = request.query.get("amount", "2000")
         try:
             if float(raw_amount) < 100:
@@ -149,41 +152,22 @@ async def handle_donate_checkout(request):
         except (ValueError, TypeError):
             amount = "2000"
 
-        req_time = request.query.get("req_time", "")
-        chat_id = request.query.get("chat_id", "")
-
-        if not req_time:
-            req_time = datetime.now().strftime("%Y%m%d%H%M%S")
-
-        if not raw_tran_id or len(raw_tran_id) > 20:
-            chat_str = str(chat_id)[-6:] if chat_id else "100000"
-            time_str = str(int(datetime.now().timestamp()))[-8:]
-            tran_id = f"D{chat_str}{time_str}"
-        else:
-            tran_id = raw_tran_id
-
-        if tran_id and chat_id:
-            pending_donations[tran_id] = {
-                "chat_id": chat_id,
-                "amount": amount,
-                "time": req_time
-            }
-
-        clean_server_url = SERVER_URL.rstrip("/")
-        success_url = f"{clean_server_url}/payment_success?tran_id={tran_id}"
-        continue_success_url_b64 = base64.b64encode(success_url.encode('utf-8')).decode('utf-8')
-        return_params_b64 = base64.b64encode(f"chat_id={chat_id}".encode('utf-8')).decode('utf-8')
-
-        hash_val = generate_aba_hash(
-            req_time=req_time,
+        # Execute direct ABA PayWay Purchase API call on server side
+        res = await request_aba_payway_purchase(
+            chat_id=chat_id,
             merchant_id=ABA_MERCHANT_ID,
-            tran_id=tran_id,
-            amount=amount,
-            payment_option="abapay",
-            continue_success_url=continue_success_url_b64,
-            return_params=return_params_b64,
-            public_key=ABA_API_KEY
+            public_key=ABA_API_KEY,
+            payway_url=ABA_PAYWAY_URL,
+            server_url=SERVER_URL,
+            amount=amount
         )
+
+        tran_id = res.get("tran_id", "D100000")
+        qr_image = res.get("qr_image", "")
+        deeplink = res.get("abapay_deeplink", "")
+
+        if qr_image and not qr_image.startswith("data:image"):
+            qr_image = f"data:image/png;base64,{qr_image}"
 
         html_content = f"""<!DOCTYPE html>
 <html lang="km">
@@ -192,84 +176,52 @@ async def handle_donate_checkout(request):
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ABA Pay KHQR Checkout - Smart AI Assistant</title>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 25px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
-        .card {{ background: #1e293b; max-width: 440px; margin: 20px auto; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }}
-        .spinner {{ border: 4px solid #334155; border-top: 4px solid #0284c7; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 25px auto; }}
-        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-        h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 20px; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 25px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
+        .card {{ background: #1e293b; max-width: 440px; margin: 20px auto; padding: 30px 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #334155; }}
+        h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 22px; font-weight: 700; }}
         p {{ color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 10px 0; }}
-        .qr-container {{ background: #ffffff; padding: 15px; border-radius: 14px; display: inline-block; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }}
-        .qr-img {{ width: 230px; height: 230px; display: block; border-radius: 8px; }}
-        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 18px; padding: 14px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; text-decoration: none; transition: background 0.2s; }}
-        .btn-deeplink:hover {{ background: linear-gradient(135deg, #0369a1, #075985); }}
-        .badge {{ background: #0369a1; color: #e0f2fe; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 15px; }}
+        .qr-container {{ background: #ffffff; padding: 18px; border-radius: 16px; display: inline-block; margin: 20px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }}
+        .qr-img {{ width: 240px; height: 240px; display: block; border-radius: 8px; margin: 0 auto; }}
+        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 18px; padding: 15px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; text-decoration: none; transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }}
+        .btn-deeplink:hover {{ background: linear-gradient(135deg, #0369a1, #075985); transform: translateY(-1px); }}
+        .badge {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 15px; }}
+        .tran-info {{ font-family: monospace; font-size: 13px; color: #64748b; margin-top: 15px; }}
+        .status-dot {{ display: inline-block; width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }}
+        @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.4; }} 100% {{ opacity: 1; }} }}
     </style>
 </head>
 <body>
     <div class="card">
         <h3>🏦 ABA PAY / KHQR CHECKOUT</h3>
         <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD)</div>
-        <p id="status-msg">សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងបង្កើត KHQR Code សម្រាប់ទូទាត់ (ID: {tran_id})...</p>
+        <p><span class="status-dot"></span> KHQR Code ត្រូវបានបង្កើតរួចរាល់ហើយ!</p>
         
-        <div id="loading" class="spinner"></div>
-        
-        <div id="qr-section" style="display: none;">
-            <div class="qr-container">
-                <img id="qr-image" class="qr-img" src="" alt="ABA KHQR Code" />
-            </div>
-            <p style="color: #cbd5e1; font-weight: 500;">សូមស្កែន QR Code ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
-            <a id="deeplink-btn" href="#" class="btn-deeplink" target="_blank">📲 បើក App ABA Bank ដើម្បីទូទាត់</a>
+        <div class="qr-container">
+            {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444'>⚠️ QR Code Generation Failed</p>"}
         </div>
-
-        <form id="payform" method="POST" action="{ABA_PAYWAY_URL}" style="display: none; margin-top: 15px;">
-            <input type="hidden" name="req_time" value="{req_time}" />
-            <input type="hidden" name="merchant_id" value="{ABA_MERCHANT_ID}" />
-            <input type="hidden" name="tran_id" value="{tran_id}" />
-            <input type="hidden" name="amount" value="{amount}" />
-            <input type="hidden" name="payment_option" value="abapay" />
-            <input type="hidden" name="hash" value="{hash_val}" />
-            <input type="hidden" name="continue_success_url" value="{continue_success_url_b64}" />
-            <input type="hidden" name="return_params" value="{return_params_b64}" />
-            <button type="submit" class="btn-deeplink">👉 បន្តទៅកាន់ ABA Pay</button>
-        </form>
+        
+        <p style="color: #cbd5e1; font-weight: 500;">សូមស្កែន QR Code ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
+        
+        {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
+        
+        <div class="tran-info">Transaction ID: {tran_id}</div>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", async function() {{
-            const form = document.getElementById("payform");
-            const formData = new FormData(form);
-
+        // Real-time payment verification status polling
+        const tranId = "{tran_id}";
+        let checkInterval = setInterval(async function() {{
             try {{
-                const response = await fetch("{ABA_PAYWAY_URL}", {{
-                    method: "POST",
-                    body: formData
-                }});
-
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {{
-                    const data = await response.json();
-                    if (data.qrImage || data.abapay_deeplink) {{
-                        document.getElementById("loading").style.display = "none";
-                        document.getElementById("status-msg").textContent = "KHQR Code ត្រូវបានបង្កើតរួចរាល់ហើយ!";
-                        document.getElementById("qr-section").style.display = "block";
-
-                        if (data.qrImage) {{
-                            document.getElementById("qr-image").src = data.qrImage;
-                        }}
-                        if (data.abapay_deeplink) {{
-                            document.getElementById("deeplink-btn").href = data.abapay_deeplink;
-                        }}
-                        return;
-                    }}
+                const res = await fetch("/aba_payment_status?tran_id=" + tranId);
+                const data = await res.json();
+                if (data.completed) {{
+                    clearInterval(checkInterval);
+                    window.location.href = "/payment_success?tran_id=" + tranId;
                 }}
             }} catch(e) {{
-                console.error("AJAX Error:", e);
+                console.error("Polling status error:", e);
             }}
-            // Fallback if not JSON: submit form standard way
-            document.getElementById("loading").style.display = "none";
-            form.style.display = "block";
-            form.submit();
-        }});
+        }}, 3000);
     </script>
 </body>
 </html>"""
@@ -278,6 +230,16 @@ async def handle_donate_checkout(request):
         import traceback
         logger.error(f"Error rendering checkout form: {e}\n{traceback.format_exc()}")
         return web.Response(text=f"<h3>Error rendering checkout: {e}</h3>", content_type="text/html", status=500)
+
+
+async def handle_aba_payment_status(request):
+    """API endpoint to query payment status for web checkout auto-redirect."""
+    from services.aba_payway import pending_donations, completed_donations
+    tran_id = request.query.get("tran_id", "")
+    if tran_id in completed_donations:
+        return web.json_response({"completed": True, "tran_id": tran_id})
+    return web.json_response({"completed": False, "tran_id": tran_id})
+
 
 
 async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str = "0.50"):
@@ -411,6 +373,7 @@ async def start_health_server(bot=None):
 
     # ABA PayWay Donation routes
     app.router.add_get("/donate_checkout", handle_donate_checkout)
+    app.router.add_get("/aba_payment_status", handle_aba_payment_status)
     if bot:
         app.router.add_get("/payment_success", make_payment_success_handler(bot))
         app.router.add_post("/aba_webhook", make_aba_webhook_handler(bot))

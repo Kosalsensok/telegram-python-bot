@@ -594,7 +594,7 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
     @router.message(F.text == "💖 បរិច្ចាគ (Donate)")
     async def cmd_donate(message: types.Message):
         """
-        Handle /donate command to generate ABA PayWay $0.50 donation payment link.
+        Handle /donate command to generate ABA PayWay $0.50 donation payment link and native KHQR photo.
         """
         if message.from_user:
             await _register_user(message.from_user, message.bot)
@@ -602,10 +602,17 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         else:
             chat_id = message.chat.id
 
-        from services.aba_payway import create_donation_checkout_params
+        from services.aba_payway import request_aba_payway_purchase
         from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
+        from aiogram.utils.keyboard import InlineKeyboardBuilder
+        import base64
 
-        tran_id, req_time, form_data = create_donation_checkout_params(
+        try:
+            await message.bot.send_chat_action(chat_id=message.chat.id, action="upload_photo")
+        except Exception:
+            pass
+
+        res = await request_aba_payway_purchase(
             chat_id=chat_id,
             merchant_id=ABA_MERCHANT_ID,
             public_key=ABA_API_KEY,
@@ -614,20 +621,48 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             amount="2000"
         )
 
+        tran_id = res.get("tran_id", "")
+        req_time = res.get("req_time", "")
+        qr_image_b64 = res.get("qr_image", "")
+        deeplink = res.get("abapay_deeplink", "")
+
         checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=2000&req_time={req_time}&chat_id={chat_id}"
 
         builder = InlineKeyboardBuilder()
-        builder.button(text="💖 បរិច្ចាគ 2,000 ៛ ($0.50) តាម ABA Pay", url=checkout_url)
+        if deeplink:
+            builder.button(text="📲 បើក App ABA Bank ដើម្បីទូទាត់", url=deeplink)
+        builder.button(text="🌐 ទំព័រ Web Checkout", url=checkout_url)
+        builder.button(text="🏠 Menu", callback_data="cb_back_main")
+        if deeplink:
+            builder.adjust(1, 1, 1)
+        else:
+            builder.adjust(1, 1)
 
         message_text = (
             "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
             "ដើម្បីជួយឱ្យប្រព័ន្ធ <b>Smart AI Assistant</b> អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
-            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>2,000 ៛ ($0.50)</b> តាមរយៈ ABA Pay បាន។\n\n"
-            "👇 <b>សូមចុចប៊ូតុងខាងក្រោមដើម្បីបរិច្ចាគ៖</b>"
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>2,000 ៛ ($0.50)</b> តាមរយៈ ABA Pay KHQR បាន។\n\n"
+            "👇 <b>សូមស្កែន KHQR ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់៖</b>"
         )
+
+        if qr_image_b64:
+            try:
+                clean_b64 = qr_image_b64.split(",")[-1] if "," in qr_image_b64 else qr_image_b64
+                img_bytes = base64.b64decode(clean_b64)
+                photo_file = types.BufferedInputFile(img_bytes, filename=f"aba_khqr_{tran_id}.png")
+                await message.answer_photo(
+                    photo=photo_file,
+                    caption=message_text,
+                    parse_mode="HTML",
+                    reply_markup=builder.as_markup()
+                )
+                return
+            except Exception as img_err:
+                logging.warning(f"Could not send KHQR photo: {img_err}")
 
         await message.answer(message_text, parse_mode="HTML", reply_markup=builder.as_markup())
 
     return router
+
 

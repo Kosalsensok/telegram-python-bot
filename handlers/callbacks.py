@@ -314,22 +314,83 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         except Exception:
             pass
 
+    # 14. Contextual AI Actions Callbacks
     @router.callback_query(F.data.startswith("ai_explain:"))
+    async def callback_ai_explain(callback: types.CallbackQuery):
+        await callback.answer()
+        guide_msg = "💡 <b>សូមវាយសំណួរ៖</b> <i>\"សូមពន្យល់ចំណុចខាងលើឱ្យបានលម្អិតបន្ថែម\"</i>"
+        try:
+            await callback.message.reply(guide_msg, parse_mode="HTML")
+        except Exception:
+            pass
+
     @router.callback_query(F.data.startswith("ai_regen:"))
+    async def callback_ai_regen(callback: types.CallbackQuery):
+        await callback.answer("🔄 កំពុងបង្កើតចម្លើយឡើងវិញ...", show_alert=False)
+
     @router.callback_query(F.data.startswith("ai_simple:"))
+    async def callback_ai_simple(callback: types.CallbackQuery):
+        await callback.answer()
+        guide_msg = "📋 <b>សូមវាយសំណួរ៖</b> <i>\"សូមសង្ខេបចម្លើយខាងលើឱ្យខ្លី និងសាមញ្ញបំផុត\"</i>"
+        try:
+            await callback.message.reply(guide_msg, parse_mode="HTML")
+        except Exception:
+            pass
+
     @router.callback_query(F.data.startswith("img_ask:"))
+    async def callback_img_ask(callback: types.CallbackQuery):
+        await callback.answer()
+        guide_msg = "💬 <b>សូមវាយសំណួរបន្ថែម៖</b> <i>\"តើរូបភាពនេះមានន័យដូចម្តេច?\"</i>"
+        try:
+            await callback.message.reply(guide_msg, parse_mode="HTML")
+        except Exception:
+            pass
+
     @router.callback_query(F.data.startswith("img_reanalyze:"))
+    async def callback_img_reanalyze(callback: types.CallbackQuery):
+        await callback.answer()
+        guide_msg = "🔁 <b>សូមផ្ញើរូបភាពម្តងទៀត</b> ដើម្បីឱ្យ AI ធ្វើការវិភាគឡើងវិញ!"
+        try:
+            await callback.message.reply(guide_msg, parse_mode="HTML")
+        except Exception:
+            pass
+
     @router.callback_query(F.data.startswith("math_latex:"))
+    async def callback_math_latex(callback: types.CallbackQuery):
+        await callback.answer()
+        msg_text = callback.message.text or callback.message.caption or ""
+        import re
+        latex_matches = re.findall(r'(\$\$.*?\$\$|\\\[.*?\\\]|\\\(.*?\\\))', msg_text, re.DOTALL)
+        if latex_matches:
+            extracted = "\n\n".join(latex_matches)
+            resp = f"📋 <b>LaTeX Code:</b>\n\n<pre><code>{html.escape(extracted)}</code></pre>"
+        else:
+            resp = f"📋 <b>Text / Math Content:</b>\n\n<pre><code>{html.escape(msg_text[:1000])}</code></pre>"
+        try:
+            await callback.message.reply(resp, parse_mode="HTML")
+        except Exception:
+            pass
+
     @router.callback_query(F.data.startswith("math_steps:"))
+    async def callback_math_steps(callback: types.CallbackQuery):
+        await callback.answer()
+        guide_msg = "💡 <b>សូមវាយសំណួរ៖</b> <i>\"សូមបង្ហាញជំហានគណនាឱ្យបានលម្អិតគ្រប់ Step\"</i>"
+        try:
+            await callback.message.reply(guide_msg, parse_mode="HTML")
+        except Exception:
+            pass
+
+    # 15. ABA PayWay Donation Callback
     @router.callback_query(F.data == "cb_donate")
     async def callback_donate(callback: types.CallbackQuery):
         await callback.answer()
         chat_id = callback.from_user.id if callback.from_user else callback.message.chat.id
-        from services.aba_payway import create_donation_checkout_params
+        from services.aba_payway import request_aba_payway_purchase
         from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
         from aiogram.utils.keyboard import InlineKeyboardBuilder
+        import base64
 
-        tran_id, req_time, form_data = create_donation_checkout_params(
+        res = await request_aba_payway_purchase(
             chat_id=chat_id,
             merchant_id=ABA_MERCHANT_ID,
             public_key=ABA_API_KEY,
@@ -338,18 +399,45 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             amount="2000"
         )
 
+        tran_id = res.get("tran_id", "")
+        req_time = res.get("req_time", "")
+        qr_image_b64 = res.get("qr_image", "")
+        deeplink = res.get("abapay_deeplink", "")
+
         checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=2000&req_time={req_time}&chat_id={chat_id}"
 
         builder = InlineKeyboardBuilder()
-        builder.button(text="💖 បរិច្ចាគ 2,000 ៛ ($0.50) តាម ABA Pay", url=checkout_url)
+        if deeplink:
+            builder.button(text="📲 បើក App ABA Bank ដើម្បីទូទាត់", url=deeplink)
+        builder.button(text="🌐 ទំព័រ Web Checkout", url=checkout_url)
+        builder.button(text="🏠 Menu", callback_data="cb_back_main")
+        if deeplink:
+            builder.adjust(1, 1, 1)
+        else:
+            builder.adjust(1, 1)
 
         message_text = (
             "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
             "ដើម្បីជួយឱ្យប្រព័ន្ធ <b>Smart AI Assistant</b> អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
-            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>2,000 ៛ ($0.50)</b> តាមរយៈ ABA Pay បាន។\n\n"
-            "👇 <b>សូមចុចប៊ូតុងខាងក្រោមដើម្បីបរិច្ចាគ៖</b>"
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>2,000 ៛ ($0.50)</b> តាមរយៈ ABA Pay KHQR បាន។\n\n"
+            "👇 <b>សូមស្កែន KHQR ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់៖</b>"
         )
+
+        if qr_image_b64:
+            try:
+                clean_b64 = qr_image_b64.split(",")[-1] if "," in qr_image_b64 else qr_image_b64
+                img_bytes = base64.b64decode(clean_b64)
+                photo_file = types.BufferedInputFile(img_bytes, filename=f"aba_khqr_{tran_id}.png")
+                await callback.message.answer_photo(
+                    photo=photo_file,
+                    caption=message_text,
+                    parse_mode="HTML",
+                    reply_markup=builder.as_markup()
+                )
+                return
+            except Exception as img_err:
+                logging.warning(f"Could not send KHQR photo in callback: {img_err}")
 
         try:
             await callback.message.reply(message_text, parse_mode="HTML", reply_markup=builder.as_markup())
