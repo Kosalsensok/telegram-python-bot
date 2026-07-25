@@ -58,8 +58,8 @@ if 5496354981 not in ADMIN_USER_IDS:
 STATS_PUBLIC: bool = os.getenv("STATS_PUBLIC", "true").lower() in ("true", "1", "t", "yes")
 
 # ABA PayWay Payment Gateway Configurations
-ABA_MERCHANT_ID: str = os.getenv("ABA_MERCHANT_ID", "ec476893").strip()
-ABA_API_KEY: str = os.getenv("ABA_API_KEY", "f9d516a91f7ecd66841edfd648e767d1cdd54595").strip()
+ABA_MERCHANT_ID: str = os.getenv("ABA_MERCHANT_ID", "ec477154").strip()
+ABA_API_KEY: str = os.getenv("ABA_API_KEY", "758d62f9bc45bf0322aadf778999bf833a9d68a0").strip()
 ABA_PAYWAY_URL: str = os.getenv("ABA_PAYWAY_URL", "https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase").strip()
 SERVER_URL: str = os.getenv("SERVER_URL", RENDER_EXTERNAL_URL).strip()
 
