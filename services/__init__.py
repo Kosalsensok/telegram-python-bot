@@ -3,7 +3,7 @@ from .db_service import DatabaseService
 from .bot_profile_service import bot_profile_worker
 from .piston_service import execute_code
 from .image_gen_service import ImageGenService
-from .aba_payway import create_donation_checkout_params, generate_aba_hash, pending_donations, completed_donations, request_aba_payway_purchase
+from .aba_payway import create_donation_checkout_params, generate_aba_hash, pending_donations, completed_donations, request_aba_payway_purchase, check_aba_payment_status
 
 __all__ = [
     "GeminiService", 
@@ -15,7 +15,8 @@ __all__ = [
     "generate_aba_hash",
     "pending_donations",
     "completed_donations",
-    "request_aba_payway_purchase"
+    "request_aba_payway_purchase",
+    "check_aba_payment_status"
 ]
 
 

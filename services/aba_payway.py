@@ -182,3 +182,61 @@ async def request_aba_payway_purchase(
             "error": str(e)
         }
 
+
+async def check_aba_payment_status(
+    tran_id: str,
+    merchant_id: str,
+    public_key: str,
+    payway_url: str
+) -> dict:
+    """
+    Queries ABA PayWay Check Transaction API to verify real-time status of a transaction.
+    API endpoint: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/check-transaction
+    Hash string concat: req_time + merchant_id + tran_id
+    """
+    req_time = datetime.now().strftime("%Y%m%d%H%M%S")
+    str_to_hash = str(req_time) + str(merchant_id) + str(tran_id)
+    hashed = hmac.new(public_key.encode('utf-8'), str_to_hash.encode('utf-8'), hashlib.sha512).digest()
+    aba_hash = base64.b64encode(hashed).decode('utf-8')
+
+    # Construct check-transaction API URL
+    if "check-transaction" not in payway_url:
+        base_domain = payway_url.split("/api/payment-gateway/")[0]
+        check_url = f"{base_domain}/api/payment-gateway/v1/payments/check-transaction"
+    else:
+        check_url = payway_url
+
+    post_payload = {
+        "req_time": req_time,
+        "merchant_id": merchant_id,
+        "tran_id": tran_id,
+        "hash": aba_hash
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(check_url, data=post_payload, timeout=15) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    status_val = data.get("status", {})
+                    if isinstance(status_val, dict):
+                        status_code = status_val.get("code", "1")
+                        message = status_val.get("message", "")
+                    else:
+                        status_code = str(status_val)
+                        message = ""
+                    
+                    is_approved = str(status_code) in ("0", "00", "SUCCESS", "APPROVED")
+                    return {
+                        "success": True,
+                        "approved": is_approved,
+                        "status_code": status_code,
+                        "message": message,
+                        "raw": data
+                    }
+                else:
+                    return {"success": False, "approved": False, "error": f"HTTP {resp.status}"}
+    except Exception as e:
+        logger.error(f"Error checking ABA transaction status for {tran_id}: {e}")
+        return {"success": False, "approved": False, "error": str(e)}
+
