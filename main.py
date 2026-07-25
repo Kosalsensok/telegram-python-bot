@@ -184,44 +184,104 @@ async def handle_donate_checkout(request):
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ABA Pay KHQR Checkout - Smart AI Assistant</title>
+    <title>ABA PayWay Sandbox Checkout - Smart AI Assistant</title>
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 25px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
-        .card {{ background: #1e293b; max-width: 460px; margin: 20px auto; padding: 30px 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #334155; }}
-        h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 22px; font-weight: 700; }}
-        p {{ color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 10px 0; }}
-        .qr-container {{ background: #ffffff; padding: 18px; border-radius: 16px; display: inline-block; margin: 15px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }}
-        .qr-img {{ width: 230px; height: 230px; display: block; border-radius: 8px; margin: 0 auto; }}
-        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 14px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }}
-        .btn-deeplink:hover {{ background: linear-gradient(135deg, #0369a1, #075985); transform: translateY(-1px); }}
-        .btn-sandbox {{ display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 14px 20px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }}
-        .btn-sandbox:hover {{ background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }}
-        .badge {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 15px; }}
-        .tran-info {{ font-family: monospace; font-size: 13px; color: #64748b; margin-top: 15px; }}
-        .status-dot {{ display: inline-block; width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 20px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
+        .card {{ background: #1e293b; max-width: 480px; margin: 15px auto; padding: 25px 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #334155; text-align: left; }}
+        h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 22px; font-weight: 700; text-align: center; }}
+        p {{ color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 8px 0; }}
+        .tab-btn-group {{ display: flex; gap: 8px; margin: 15px 0; border-bottom: 2px solid #334155; padding-bottom: 10px; }}
+        .tab-btn {{ flex: 1; padding: 10px; background: #334155; color: #cbd5e1; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; text-align: center; font-size: 14px; transition: all 0.2s; }}
+        .tab-btn.active {{ background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); }}
+        .tab-content {{ display: none; margin-top: 15px; }}
+        .tab-content.active {{ display: block; }}
+        .qr-container {{ background: #ffffff; padding: 16px; border-radius: 16px; display: inline-block; margin: 10px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: center; width: 100%; box-sizing: border-box; }}
+        .qr-img {{ width: 220px; height: 220px; display: block; border-radius: 8px; margin: 0 auto; }}
+        .form-group {{ margin-bottom: 14px; }}
+        label {{ display: block; font-size: 13px; color: #cbd5e1; margin-bottom: 5px; font-weight: 600; }}
+        input {{ width: 100%; box-sizing: border-box; padding: 12px 14px; background: #0f172a; border: 1px solid #475569; border-radius: 10px; color: #fff; font-size: 15px; font-family: monospace; outline: none; }}
+        input:focus {{ border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }}
+        .form-row {{ display: flex; gap: 10px; }}
+        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 14px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; text-align: center; transition: all 0.2s; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }}
+        .btn-pay-card {{ display: block; width: 100%; box-sizing: border-box; margin-top: 15px; padding: 14px 20px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; text-align: center; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }}
+        .btn-pay-card:hover {{ background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }}
+        .badge {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 12px; text-align: center; width: 100%; box-sizing: border-box; }}
+        .tran-info {{ font-family: monospace; font-size: 12px; color: #64748b; margin-top: 15px; text-align: center; }}
+        .status-dot {{ display: inline-block; width: 9px; height: 9px; background-color: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }}
         @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.4; }} 100% {{ opacity: 1; }} }}
     </style>
 </head>
 <body>
     <div class="card">
-        <h3>🏦 ABA PAY / KHQR CHECKOUT</h3>
-        <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD)</div>
-        <p><span class="status-dot"></span> KHQR Code & Gateway ត្រូវបានរៀបចំរួចរាល់!</p>
+        <h3>🏦 ABA PAYWAY CHECKOUT</h3>
+        <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD) • ABA Sandbox Test</div>
+        <p style="text-align: center;"><span class="status-dot"></span> ជ្រើសរើសវិធីសាស្ត្រទូទាត់ខាងក្រោម៖</p>
         
-        <div class="qr-container">
-            {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444'>⚠️ QR Code Generation Failed</p>"}
+        <div class="tab-btn-group">
+            <button class="tab-btn active" onclick="switchTab('qr-tab')">📱 ABA KHQR Code</button>
+            <button class="tab-btn" onclick="switchTab('card-tab')">💳 Test Credit Cards</button>
         </div>
-        
-        <p style="color: #cbd5e1; font-weight: 500;">សូមស្កែន QR Code ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
-        
-        {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
-        
-        <a href="/test_complete_payment?tran_id={tran_id}&chat_id={chat_id}" class="btn-sandbox">🧪 សាកល្បងទូទាត់ Sandbox (Test Payment Complete)</a>
+
+        <!-- Tab 1: ABA KHQR Code -->
+        <div id="qr-tab" class="tab-content active">
+            <div class="qr-container">
+                {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444'>⚠️ QR Code Generation Failed</p>"}
+            </div>
+            <p style="color: #cbd5e1; font-weight: 500; text-align: center;">សូមស្កែន QR Code ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
+            {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
+        </div>
+
+        <!-- Tab 2: Test Credit Card Numbers -->
+        <div id="card-tab" class="tab-content">
+            <p style="color: #38bdf8; font-weight: 600; font-size: 13px; margin-bottom: 12px;">💳 លេខកាតសាកល្បង ABA Sandbox Test Card Numbers:</p>
+            
+            <form action="/test_complete_payment" method="GET">
+                <input type="hidden" name="tran_id" value="{tran_id}" />
+                <input type="hidden" name="chat_id" value="{chat_id}" />
+                <input type="hidden" name="amount" value="{amount}" />
+
+                <div class="form-group">
+                    <label>លេខកាត Credit Card Number (Visa / Mastercard):</label>
+                    <input type="text" name="card_number" value="4000 0000 0000 0001" required />
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label>ថ្ងៃផុតកំណត់ Expiry:</label>
+                        <input type="text" name="expiry" value="12/28" placeholder="MM/YY" required />
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>CVV / CVC:</label>
+                        <input type="text" name="cvv" value="123" placeholder="123" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>ឈ្មោះលើកាត Cardholder Name:</label>
+                    <input type="text" name="card_name" value="KOSAL SENSOK" required />
+                </div>
+
+                <button type="submit" class="btn-pay-card">💳 បង់ប្រាក់សាកល្បង $0.50 (Pay with Test Card)</button>
+            </form>
+        </div>
         
         <div class="tran-info">Transaction ID: {tran_id}</div>
     </div>
 
     <script>
+        function switchTab(tabId) {{
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tabId === 'qr-tab') {{
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('qr-tab').classList.add('active');
+            }} else {{
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('card-tab').classList.add('active');
+            }}
+        }}
+
         // Real-time payment verification status polling
         const tranId = "{tran_id}";
         let checkInterval = setInterval(async function() {{
