@@ -57,7 +57,7 @@ def create_donation_checkout_params(
     req_time = datetime.now().strftime("%Y%m%d%H%M%S")
     chat_str = str(chat_id)[-6:]
     time_str = str(int(time.time()))[-8:]
-    tran_id = f"D{chat_str}_{time_str}"  # Max 16 chars (ABA PayWay requires max 20 chars)
+    tran_id = f"D{chat_str}{time_str}"  # Pure alphanumeric (A-Z, 0-9), max 15 chars (ABA PayWay strict rule)
     
     # Store pending transaction state
     pending_donations[tran_id] = {
