@@ -132,10 +132,10 @@ async def handle_spell_check_api(request):
 
 
 async def handle_donate_checkout(request):
-    """Generates ABA PayWay KHQR purchase via server API and renders full interactive checkout UI."""
+    """Generates ABA PayWay KHQR purchase & direct ABA Gateway HTML Form for Sandbox Testing."""
     try:
         from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
-        from services.aba_payway import request_aba_payway_purchase
+        from services.aba_payway import request_aba_payway_purchase, create_donation_checkout_params
 
         chat_id_raw = request.query.get("chat_id", "0")
         try:
@@ -152,7 +152,18 @@ async def handle_donate_checkout(request):
         except (ValueError, TypeError):
             amount = "2000"
 
-        # Execute direct ABA PayWay Purchase API call on server side
+        # Generate standard ABA PayWay Checkout form parameters
+        tran_id, req_time, form_data = create_donation_checkout_params(
+            chat_id=chat_id,
+            merchant_id=ABA_MERCHANT_ID,
+            public_key=ABA_API_KEY,
+            payway_url=ABA_PAYWAY_URL,
+            server_url=SERVER_URL,
+            amount=amount,
+            payment_option=""
+        )
+
+        # Execute direct ABA PayWay Purchase API call on server side for KHQR & Deeplink
         res = await request_aba_payway_purchase(
             chat_id=chat_id,
             merchant_id=ABA_MERCHANT_ID,
@@ -162,7 +173,6 @@ async def handle_donate_checkout(request):
             amount=amount
         )
 
-        tran_id = res.get("tran_id", "D100000")
         qr_image = res.get("qr_image", "")
         deeplink = res.get("abapay_deeplink", "")
 
@@ -177,13 +187,15 @@ async def handle_donate_checkout(request):
     <title>ABA Pay KHQR Checkout - Smart AI Assistant</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 25px 15px; background-color: #0f172a; color: #f8fafc; margin: 0; }}
-        .card {{ background: #1e293b; max-width: 440px; margin: 20px auto; padding: 30px 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #334155; }}
+        .card {{ background: #1e293b; max-width: 460px; margin: 20px auto; padding: 30px 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #334155; }}
         h3 {{ color: #38bdf8; margin-top: 0; margin-bottom: 10px; font-size: 22px; font-weight: 700; }}
         p {{ color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 10px 0; }}
-        .qr-container {{ background: #ffffff; padding: 18px; border-radius: 16px; display: inline-block; margin: 20px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }}
-        .qr-img {{ width: 240px; height: 240px; display: block; border-radius: 8px; margin: 0 auto; }}
-        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 18px; padding: 15px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; text-decoration: none; transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }}
+        .qr-container {{ background: #ffffff; padding: 18px; border-radius: 16px; display: inline-block; margin: 15px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }}
+        .qr-img {{ width: 230px; height: 230px; display: block; border-radius: 8px; margin: 0 auto; }}
+        .btn-deeplink {{ display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 14px 20px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }}
         .btn-deeplink:hover {{ background: linear-gradient(135deg, #0369a1, #075985); transform: translateY(-1px); }}
+        .btn-sandbox {{ display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 14px 20px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; transition: all 0.2s ease-in-out; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }}
+        .btn-sandbox:hover {{ background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }}
         .badge {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 15px; }}
         .tran-info {{ font-family: monospace; font-size: 13px; color: #64748b; margin-top: 15px; }}
         .status-dot {{ display: inline-block; width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }}
@@ -194,15 +206,27 @@ async def handle_donate_checkout(request):
     <div class="card">
         <h3>🏦 ABA PAY / KHQR CHECKOUT</h3>
         <div class="badge">បរិច្ចាគ 2,000 ៛ ($0.50 USD)</div>
-        <p><span class="status-dot"></span> KHQR Code ត្រូវបានបង្កើតរួចរាល់ហើយ!</p>
+        <p><span class="status-dot"></span> KHQR Code & Gateway ត្រូវបានរៀបចំរួចរាល់!</p>
         
         <div class="qr-container">
             {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444'>⚠️ QR Code Generation Failed</p>"}
         </div>
         
-        <p style="color: #cbd5e1; font-weight: 500;">សូមស្កែន QR Code ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
+        <p style="color: #cbd5e1; font-weight: 500;">សូមស្កែន QR Code ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
         
         {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
+        
+        <form method="POST" action="{ABA_PAYWAY_URL}" style="margin-top: 10px;">
+            <input type="hidden" name="req_time" value="{form_data['req_time']}" />
+            <input type="hidden" name="merchant_id" value="{form_data['merchant_id']}" />
+            <input type="hidden" name="tran_id" value="{form_data['tran_id']}" />
+            <input type="hidden" name="amount" value="{form_data['amount']}" />
+            <input type="hidden" name="payment_option" value="{form_data['payment_option']}" />
+            <input type="hidden" name="hash" value="{form_data['hash']}" />
+            <input type="hidden" name="continue_success_url" value="{form_data['continue_success_url']}" />
+            <input type="hidden" name="return_params" value="{form_data['return_params']}" />
+            <button type="submit" class="btn-sandbox">💳 បើកទំព័របង់ប្រាក់ ABA Sandbox Gateway (Test Credit Card)</button>
+        </form>
         
         <div class="tran-info">Transaction ID: {tran_id}</div>
     </div>
@@ -216,7 +240,7 @@ async def handle_donate_checkout(request):
                 const data = await res.json();
                 if (data.completed) {{
                     clearInterval(checkInterval);
-                    window.location.href = "/payment_success?tran_id=" + tranId;
+                    window.location.href = "/payment_success?tran_id=" + tranId + "&chat_id={chat_id}";
                 }}
             }} catch(e) {{
                 console.error("Polling status error:", e);
@@ -295,11 +319,25 @@ async def handle_open_abapay(request):
 
 def make_payment_success_handler(bot):
     async def handle_payment_success(request):
+        import base64
         from services.aba_payway import pending_donations
         tran_id = request.query.get("tran_id", "")
+        chat_id = request.query.get("chat_id", "")
+        
         donation = pending_donations.get(tran_id, {})
-        chat_id = donation.get("chat_id")
+        if not chat_id:
+            chat_id = donation.get("chat_id")
+            
         amount = donation.get("amount", "0.50")
+
+        return_params = request.query.get("return_params", "")
+        if not chat_id and return_params:
+            try:
+                decoded = base64.b64decode(return_params).decode('utf-8')
+                if "chat_id=" in decoded:
+                    chat_id = decoded.split("chat_id=")[1].split("&")[0]
+            except Exception:
+                pass
 
         if chat_id and bot:
             await notify_donation_completed(bot, chat_id=chat_id, tran_id=tran_id, amount=amount)

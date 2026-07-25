@@ -50,13 +50,14 @@ def create_donation_checkout_params(
     public_key: str,
     payway_url: str,
     server_url: str,
-    amount: str = "2000"
+    amount: str = "2000",
+    payment_option: str = ""
 ) -> Tuple[str, str, dict]:
     """
     Creates transaction ID, request timestamp, and parameters for ABA PayWay Checkout HTML form.
     """
     req_time = datetime.now().strftime("%Y%m%d%H%M%S")
-    chat_str = str(chat_id)[-6:]
+    chat_str = str(chat_id)[-6:] if chat_id else "100000"
     time_str = str(int(time.time()))[-8:]
     tran_id = f"D{chat_str}{time_str}"  # Pure alphanumeric (A-Z, 0-9), max 15 chars (ABA PayWay strict rule)
     
@@ -70,7 +71,7 @@ def create_donation_checkout_params(
     }
 
     clean_server_url = server_url.rstrip("/")
-    success_url = f"{clean_server_url}/payment_success?tran_id={tran_id}"
+    success_url = f"{clean_server_url}/payment_success?tran_id={tran_id}&chat_id={chat_id}"
     continue_success_url_b64 = base64.b64encode(success_url.encode('utf-8')).decode('utf-8')
     return_params_b64 = base64.b64encode(f"chat_id={chat_id}".encode('utf-8')).decode('utf-8')
 
@@ -79,7 +80,7 @@ def create_donation_checkout_params(
         merchant_id=merchant_id,
         tran_id=tran_id,
         amount=amount,
-        payment_option="abapay",
+        payment_option=payment_option,
         continue_success_url=continue_success_url_b64,
         return_params=return_params_b64,
         public_key=public_key
@@ -90,7 +91,7 @@ def create_donation_checkout_params(
         "merchant_id": merchant_id,
         "tran_id": tran_id,
         "amount": amount,
-        "payment_option": "abapay",
+        "payment_option": payment_option,
         "hash": hash_val,
         "continue_success_url": continue_success_url_b64,
         "return_params": return_params_b64,
