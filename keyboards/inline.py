@@ -5,24 +5,25 @@ from utils.localization import STRINGS, MODE_NAMES
 
 def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     """
-    Build main menu inline keyboard per strict Telegram UX rules.
+    Build main menu inline keyboard with prominent ABA PayWay Donation button.
     Row 1: [💬 សួរ AI] [🖼 វិភាគរូបភាព]
-    Row 2: [🎯 AI Modes] [🌐 Mini App]
-    Row 3: [🌍 ភាសា] [ℹ️ ជំនួយ]
-    Row 4: [🤖 អំពី Bot] [🔐 ឯកជនភាព]
-    Row 5: [✕ បិទ Menu]
+    Row 2: [💖 បរិច្ចាគ $0.50] [🌐 Mini App]
+    Row 3: [🎯 AI Modes] [🌍 ភាសា]
+    Row 4: [ℹ️ ជំនួយ] [🤖 អំពី Bot]
+    Row 5: [🔐 ឯកជនភាព] [✕ បិទ Menu]
     """
     builder = InlineKeyboardBuilder()
     builder.button(text="💬 សួរ AI" if lang == "km" else "💬 Ask AI", callback_data="cb_ask_ai")
     builder.button(text="🖼 វិភាគរូបភាព" if lang == "km" else "🖼 Analyze Image", callback_data="cb_analyze_image")
-    builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
+    builder.button(text="💖 បរិច្ចាគ $0.50" if lang == "km" else "💖 Donate $0.50", callback_data="cb_donate")
     builder.button(text="🌐 Mini App", callback_data="cb_miniapp")
+    builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
     builder.button(text="🌍 ភាសា" if lang == "km" else "🌍 Language", callback_data="cb_language")
     builder.button(text="ℹ️ ជំនួយ" if lang == "km" else "ℹ️ Help", callback_data="cb_help")
     builder.button(text="🤖 អំពី Bot" if lang == "km" else "🤖 About Bot", callback_data="cb_about")
     builder.button(text="🔐 ឯកជនភាព" if lang == "km" else "🔐 Privacy", callback_data="cb_privacy")
     builder.button(text="✕ បិទ Menu" if lang == "km" else "✕ Close Menu", callback_data="cb_close_menu")
-    builder.adjust(2, 2, 2, 2, 1)
+    builder.adjust(2, 2, 2, 2, 2)
     return builder.as_markup()
 
 
