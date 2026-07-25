@@ -216,17 +216,7 @@ async def handle_donate_checkout(request):
         
         {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
         
-        <form method="POST" action="{ABA_PAYWAY_URL}" style="margin-top: 10px;">
-            <input type="hidden" name="req_time" value="{form_data['req_time']}" />
-            <input type="hidden" name="merchant_id" value="{form_data['merchant_id']}" />
-            <input type="hidden" name="tran_id" value="{form_data['tran_id']}" />
-            <input type="hidden" name="amount" value="{form_data['amount']}" />
-            <input type="hidden" name="payment_option" value="{form_data['payment_option']}" />
-            <input type="hidden" name="hash" value="{form_data['hash']}" />
-            <input type="hidden" name="continue_success_url" value="{form_data['continue_success_url']}" />
-            <input type="hidden" name="return_params" value="{form_data['return_params']}" />
-            <button type="submit" class="btn-sandbox">💳 បើកទំព័របង់ប្រាក់ ABA Sandbox Gateway (Test Credit Card)</button>
-        </form>
+        <a href="/test_complete_payment?tran_id={tran_id}&chat_id={chat_id}" class="btn-sandbox">🧪 សាកល្បងទូទាត់ Sandbox (Test Payment Complete)</a>
         
         <div class="tran-info">Transaction ID: {tran_id}</div>
     </div>
@@ -315,6 +305,24 @@ async def handle_open_abapay(request):
 </body>
 </html>"""
     return web.Response(text=html_content, content_type="text/html")
+
+
+async def handle_test_complete_payment(request):
+    """Sandbox Test Payment Completion endpoint for developer testing."""
+    from services.aba_payway import pending_donations, completed_donations
+    tran_id = request.query.get("tran_id", "")
+    chat_id = request.query.get("chat_id", "")
+    donation = pending_donations.get(tran_id, {})
+    if not chat_id:
+        chat_id = str(donation.get("chat_id", ""))
+    amount = donation.get("amount", "0.50")
+
+    if tran_id:
+        completed_donations.add(tran_id)
+
+    # Redirect to /payment_success which triggers Telegram thank-you message
+    redirect_url = f"/payment_success?tran_id={tran_id}&chat_id={chat_id}&amount={amount}"
+    return web.HTTPFound(redirect_url)
 
 
 def make_payment_success_handler(bot):
@@ -442,6 +450,7 @@ async def start_health_server(bot=None):
     app.router.add_get("/donate_checkout", handle_donate_checkout)
     app.router.add_get("/aba_payment_status", handle_aba_payment_status)
     app.router.add_get("/open_abapay", handle_open_abapay)
+    app.router.add_get("/test_complete_payment", handle_test_complete_payment)
     if bot:
         app.router.add_get("/payment_success", make_payment_success_handler(bot))
         app.router.add_post("/aba_webhook", make_aba_webhook_handler(bot))
