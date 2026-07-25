@@ -349,10 +349,34 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
         "ឱ្យកាន់តែឆ្លាតវៃ និងមានសមត្ថភាពខ្ពស់បន្ថែមទៀតសម្រាប់ឆ្នាំបន្ទាប់។\n\n"
         "✨ <i>សូមជូនពរឱ្យលោកអ្នកជួបប្រទះតែសេចក្ដីសុខ សុភមង្គល និងជោគជ័យគ្រប់ភារកិច្ច!</i> 🚀"
     )
+
+    admin_notification = (
+        "🔔 <b>[ADMIN ALERT] ទទួលបានការបរិច្ចាគថ្មី!</b> 💰\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>Donor Chat ID:</b> <code>{chat_id}</code>\n"
+        f"💵 <b>ចំនួនថវិកា Amount:</b> ${amount} USD\n"
+        f"🧾 <b>Transaction ID:</b> <code>{tran_id}</code>\n"
+        f"⏰ <b>ម៉ោងប្រតិបត្តិការ:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    )
+
     try:
+        # 1. Send thank-you message to donor
         await target_bot.send_message(chat_id=int(chat_id), text=thank_you_message, parse_mode="HTML")
         completed_donations.add(tran_id)
         logging.info(f"✅ Successfully sent Telegram donation thank-you to chat_id={chat_id} for tran_id={tran_id}")
+
+        # 2. Also send notification to Admin / Owner (ID: 5496354981 and ADMIN_USER_IDS)
+        from config import ADMIN_USER_IDS
+        admin_set = set(ADMIN_USER_IDS)
+        admin_set.add(5496354981)
+
+        for admin_id in admin_set:
+            try:
+                await target_bot.send_message(chat_id=int(admin_id), text=admin_notification, parse_mode="HTML")
+                logging.info(f"📢 Sent donation alert to Admin ID {admin_id}")
+            except Exception as admin_err:
+                logging.warning(f"Could not send admin alert to {admin_id}: {admin_err}")
+
         return True
     except Exception as e:
         logging.error(f"❌ Failed to send Telegram donation thank-you to chat_id={chat_id}: {e}")

