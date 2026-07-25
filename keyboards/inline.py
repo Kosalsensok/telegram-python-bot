@@ -15,7 +15,7 @@ def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="💬 សួរ AI" if lang == "km" else "💬 Ask AI", callback_data="cb_ask_ai")
     builder.button(text="🖼 វិភាគរូបភាព" if lang == "km" else "🖼 Analyze Image", callback_data="cb_analyze_image")
-    builder.button(text="💖 បរិច្ចាគ $1.00" if lang == "km" else "💖 Donate $1.00", callback_data="cb_donate")
+    builder.button(text="💖 បរិច្ចាគ 2,000 ៛" if lang == "km" else "💖 Donate 2,000 KHR", callback_data="cb_donate")
     builder.button(text="🌐 Mini App", callback_data="cb_miniapp")
     builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
     builder.button(text="🌍 ភាសា" if lang == "km" else "🌍 Language", callback_data="cb_language")

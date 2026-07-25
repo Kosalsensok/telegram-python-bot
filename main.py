@@ -137,7 +137,7 @@ async def handle_donate_checkout(request):
     import base64
 
     tran_id = request.query.get("tran_id", "").replace("_", "")
-    amount = request.query.get("amount", "0.50")
+    amount = request.query.get("amount", "2000")
     req_time = request.query.get("req_time", "")
     chat_id = request.query.get("chat_id", "")
 
