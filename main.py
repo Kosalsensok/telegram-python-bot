@@ -319,9 +319,14 @@ async def handle_aba_payment_status(request):
 async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str = "0.50"):
     """Sends thank-you message to Telegram user upon successful donation."""
     from services.aba_payway import completed_donations
-    if tran_id in completed_donations:
+    
+    if not chat_id or str(chat_id) in ("0", "None", ""):
+        logging.warning(f"Cannot send donation notification: Invalid chat_id '{chat_id}' for tran_id={tran_id}")
         return
-    completed_donations.add(tran_id)
+
+    if tran_id in completed_donations:
+        logging.info(f"Donation notification already processed for tran_id={tran_id}")
+        return
 
     thank_you_message = (
         "🎉 <b>សូមថ្លែងអំណរគុណយ៉ាងជ្រាលជ្រៅ!</b> 🙏❤️\n"
@@ -333,9 +338,10 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
     )
     try:
         await bot.send_message(chat_id=int(chat_id), text=thank_you_message, parse_mode="HTML")
-        logging.info(f"Sent Telegram donation thank-you to chat_id={chat_id} for tran_id={tran_id}")
+        completed_donations.add(tran_id)
+        logging.info(f"✅ Successfully sent Telegram donation thank-you to chat_id={chat_id} for tran_id={tran_id}")
     except Exception as e:
-        logging.error(f"Failed to send Telegram donation thank-you to chat_id={chat_id}: {e}")
+        logging.error(f"❌ Failed to send Telegram donation thank-you to chat_id={chat_id}: {e}")
 
 
 async def handle_open_abapay(request):
@@ -369,16 +375,13 @@ async def handle_open_abapay(request):
 
 async def handle_test_complete_payment(request):
     """Sandbox Test Payment Completion endpoint for developer testing."""
-    from services.aba_payway import pending_donations, completed_donations
+    from services.aba_payway import pending_donations
     tran_id = request.query.get("tran_id", "")
     chat_id = request.query.get("chat_id", "")
     donation = pending_donations.get(tran_id, {})
     if not chat_id:
         chat_id = str(donation.get("chat_id", ""))
     amount = donation.get("amount", "0.50")
-
-    if tran_id:
-        completed_donations.add(tran_id)
 
     # Redirect to /payment_success which triggers Telegram thank-you message
     redirect_url = f"/payment_success?tran_id={tran_id}&chat_id={chat_id}&amount={amount}"
