@@ -4,6 +4,8 @@ import os
 import sys
 import time
 import aiohttp
+
+logger = logging.getLogger(__name__)
 from typing import Optional
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
