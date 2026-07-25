@@ -233,7 +233,11 @@ async def handle_donate_checkout(request):
 
         <!-- Tab 2: Test Credit Card Numbers -->
         <div id="card-tab" class="tab-content">
-            <p style="color: #38bdf8; font-weight: 600; font-size: 13px; margin-bottom: 12px;">💳 លេខកាតសាកល្បង ABA Sandbox Test Card Numbers:</p>
+            <p style="color: #38bdf8; font-weight: 600; font-size: 13px; margin-bottom: 10px;">💳 លេខកាតសាកល្បង ABA Sandbox Official Test Cards:</p>
+            <div style="background: rgba(56, 189, 248, 0.1); border: 1px dashed rgba(56, 189, 248, 0.3); padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; font-size: 12px; font-family: monospace; color: #7dd3fc;">
+                • Visa Test: 4286 0900 0000 0206 (04/30 - 777)<br/>
+                • Mastercard: 5156 8399 3770 6777 (01/30 - 993)
+            </div>
             
             <form action="/test_complete_payment" method="GET">
                 <input type="hidden" name="tran_id" value="{tran_id}" />
@@ -242,17 +246,17 @@ async def handle_donate_checkout(request):
 
                 <div class="form-group">
                     <label>លេខកាត Credit Card Number (Visa / Mastercard):</label>
-                    <input type="text" name="card_number" value="4000 0000 0000 0001" required />
+                    <input type="text" name="card_number" value="4286 0900 0000 0206" required />
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group" style="flex: 1;">
                         <label>ថ្ងៃផុតកំណត់ Expiry:</label>
-                        <input type="text" name="expiry" value="12/28" placeholder="MM/YY" required />
+                        <input type="text" name="expiry" value="04/30" placeholder="MM/YY" required />
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>CVV / CVC:</label>
-                        <input type="text" name="cvv" value="123" placeholder="123" required />
+                        <input type="text" name="cvv" value="777" placeholder="777" required />
                     </div>
                 </div>
 
@@ -316,17 +320,26 @@ async def handle_aba_payment_status(request):
 
 
 
-async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str = "0.50"):
+GLOBAL_BOT = None
+
+
+async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str = "0.50", force: bool = False):
     """Sends thank-you message to Telegram user upon successful donation."""
+    global GLOBAL_BOT
     from services.aba_payway import completed_donations
+
+    target_bot = bot or GLOBAL_BOT
+    if not target_bot:
+        logging.error(f"Cannot send donation notification: Bot instance is None for tran_id={tran_id}")
+        return False
     
     if not chat_id or str(chat_id) in ("0", "None", ""):
         logging.warning(f"Cannot send donation notification: Invalid chat_id '{chat_id}' for tran_id={tran_id}")
-        return
+        return False
 
-    if tran_id in completed_donations:
+    if not force and tran_id in completed_donations:
         logging.info(f"Donation notification already processed for tran_id={tran_id}")
-        return
+        return True
 
     thank_you_message = (
         "🎉 <b>សូមថ្លែងអំណរគុណយ៉ាងជ្រាលជ្រៅ!</b> 🙏❤️\n"
@@ -337,11 +350,13 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
         "✨ <i>សូមជូនពរឱ្យលោកអ្នកជួបប្រទះតែសេចក្ដីសុខ សុភមង្គល និងជោគជ័យគ្រប់ភារកិច្ច!</i> 🚀"
     )
     try:
-        await bot.send_message(chat_id=int(chat_id), text=thank_you_message, parse_mode="HTML")
+        await target_bot.send_message(chat_id=int(chat_id), text=thank_you_message, parse_mode="HTML")
         completed_donations.add(tran_id)
         logging.info(f"✅ Successfully sent Telegram donation thank-you to chat_id={chat_id} for tran_id={tran_id}")
+        return True
     except Exception as e:
         logging.error(f"❌ Failed to send Telegram donation thank-you to chat_id={chat_id}: {e}")
+        return False
 
 
 async def handle_open_abapay(request):
@@ -388,18 +403,25 @@ async def handle_test_complete_payment(request):
     return web.HTTPFound(redirect_url)
 
 
-def make_payment_success_handler(bot):
+def make_payment_success_handler(bot=None):
     async def handle_payment_success(request):
+        global GLOBAL_BOT
         import base64
         from services.aba_payway import pending_donations
+        
+        target_bot = bot or GLOBAL_BOT
         tran_id = request.query.get("tran_id", "")
         chat_id = request.query.get("chat_id", "")
+        amount = request.query.get("amount", "0.50")
         
         donation = pending_donations.get(tran_id, {})
         if not chat_id:
-            chat_id = donation.get("chat_id")
+            chat_id = str(donation.get("chat_id", ""))
             
-        amount = donation.get("amount", "0.50")
+        if not amount or amount in ("2000", "0"):
+            amount = donation.get("amount", "0.50")
+            if amount == "2000":
+                amount = "0.50"
 
         return_params = request.query.get("return_params", "")
         if not chat_id and return_params:
@@ -410,8 +432,8 @@ def make_payment_success_handler(bot):
             except Exception:
                 pass
 
-        if chat_id and bot:
-            await notify_donation_completed(bot, chat_id=chat_id, tran_id=tran_id, amount=amount)
+        if chat_id and target_bot:
+            await notify_donation_completed(target_bot, chat_id=chat_id, tran_id=tran_id, amount=amount, force=True)
             if tran_id in pending_donations:
                 del pending_donations[tran_id]
 
@@ -442,10 +464,13 @@ def make_payment_success_handler(bot):
     return handle_payment_success
 
 
-def make_aba_webhook_handler(bot):
+def make_aba_webhook_handler(bot=None):
     async def handle_aba_webhook(request):
+        global GLOBAL_BOT
         import base64
         from services.aba_payway import pending_donations
+
+        target_bot = bot or GLOBAL_BOT
         try:
             if request.method == "POST":
                 try:
@@ -477,8 +502,8 @@ def make_aba_webhook_handler(bot):
             if not chat_id and tran_id in pending_donations:
                 chat_id = pending_donations[tran_id].get("chat_id")
 
-            if status in ("0", "00", "SUCCESS", "APPROVED") and tran_id and chat_id and bot:
-                await notify_donation_completed(bot, chat_id=chat_id, tran_id=tran_id)
+            if status in ("0", "00", "SUCCESS", "APPROVED") and tran_id and chat_id and target_bot:
+                await notify_donation_completed(target_bot, chat_id=chat_id, tran_id=tran_id, force=True)
                 return web.json_response({"status": "SUCCESS", "message": "Donation recorded successfully"})
 
             return web.json_response({"status": "ACK", "message": "Notification received"})
@@ -490,6 +515,10 @@ def make_aba_webhook_handler(bot):
 
 async def start_health_server(bot=None):
     """Starts a lightweight web server for Render Free Web Service deployment, ABA PayWay Webhook, and Telegram Mini App."""
+    global GLOBAL_BOT
+    if bot:
+        GLOBAL_BOT = bot
+
     port_str = os.getenv("PORT", "8080").strip()
     try:
         port = int(port_str)
@@ -514,10 +543,9 @@ async def start_health_server(bot=None):
     app.router.add_get("/aba_payment_status", handle_aba_payment_status)
     app.router.add_get("/open_abapay", handle_open_abapay)
     app.router.add_get("/test_complete_payment", handle_test_complete_payment)
-    if bot:
-        app.router.add_get("/payment_success", make_payment_success_handler(bot))
-        app.router.add_post("/aba_webhook", make_aba_webhook_handler(bot))
-        app.router.add_get("/aba_webhook", make_aba_webhook_handler(bot))
+    app.router.add_get("/payment_success", make_payment_success_handler(bot))
+    app.router.add_post("/aba_webhook", make_aba_webhook_handler(bot))
+    app.router.add_get("/aba_webhook", make_aba_webhook_handler(bot))
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -600,6 +628,8 @@ async def main():
             parse_mode=ParseMode.HTML
         )
     )
+    global GLOBAL_BOT
+    GLOBAL_BOT = bot
     dp = Dispatcher()
 
     # Start HTTP Health Server for Render Web Service & ABA Webhook Notification Receiver
