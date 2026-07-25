@@ -93,12 +93,16 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             total_users = stats.get("total_users", 0)
         formatted_users = format_user_count(total_users)
 
+        user_id_str = str(message.from_user.id) if message.from_user else "N/A"
         welcome_text = (
-            "🧠 <b>SMART AI ASSISTANT</b>\n"
+            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
-            f"សួស្តី {escaped_user_name}! 👋\n"
-            "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            f"សួស្តី <b>{escaped_user_name}</b>! 👋\n\n"
+            f"សូមស្វាគមន៍មកកាន់ <b>Smart AI Assistant Bot</b> 🤖\n"
+            f"<i>(ប្រព័ន្ធបានចាប់យក Telegram ID របស់អ្នក៖ <code>{user_id_str}</code>)</i>\n\n"
+            "✨ <i>សូមជូនពរឱ្យលោកអ្នកមានសុខភាពល្អ និងប្រកបដោយសេចក្តីសុខ!</i>\n\n"
             f"👥 <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
+            "លោកអ្នកអាចចុចបញ្ជា /donate ដើម្បីចូលរួមបរិច្ចាគ $0.50 គាំទ្រការអភិវឌ្ឍន៍ AI សម្រាប់ឆ្នាំបន្ទាប់បាន។\n\n"
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
 

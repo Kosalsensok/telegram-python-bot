@@ -351,20 +351,20 @@ async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str
     username_str = f"(@{username_val})" if username_val else ""
 
     thank_you_message = (
-        "🎉 <b>សូមថ្លែងអំណរគុណយ៉ាងជ្រាលជ្រៅ!</b> 🙏❤️\n\n"
+        f"🎉 <b>សូមថ្លែងអំណរគុណ {first_name_val}!</b> 🙏❤️\n\n"
         f"ការបរិច្ចាគចំនួន <b>$0.50</b> របស់លោកអ្នកបានជោគជ័យហើយ! (ID: <code>{tran_id}</code>)\n"
         "ថវិកានេះ នឹងត្រូវយកទៅប្រើប្រាស់សម្រាប់អភិវឌ្ឍន៍ប្រព័ន្ធ <b>Smart AI Assistant</b> សម្រាប់ឆ្នាំបន្ទាប់។\n\n"
         "✨ <i>សូមជូនពរឱ្យលោកអ្នកជួបប្រទះតែសេចក្ដីសុខ សុភមង្គល និងជោគជ័យគ្រប់ភារកិច្ច!</i> 🚀"
     )
 
     admin_notification = (
-        "💰 <b>មានការបរិច្ចាគ $0.50 ថ្មី!</b>\n\n"
+        "🔔 <b>ALERT: មានការបរិច្ចាគថ្មីទទួលបាន!</b> 💰\n\n"
         f"👤 <b>អ្នកបរិច្ចាគ:</b> {first_name_val} {username_str}\n"
-        f"🆔 <b>Telegram ID របស់គេ:</b> <code>{chat_id}</code>\n"
-        f"💵 <b>ចំនួន:</b> $0.50\n"
+        f"🆔 <b>Telegram User ID របស់គេ:</b> <code>{chat_id}</code>\n"
+        f"💵 <b>ចំនួនទឹកប្រាក់:</b> $0.50\n"
         f"🧾 <b>Tran ID:</b> <code>{tran_id}</code>\n"
         f"⏰ <b>ម៉ោង:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-        "✅ ប្រព័ន្ធបានផ្ញើសារជូនពរទៅកាន់គាត់រួចរាល់ហើយ!"
+        "✅ ប្រព័ន្ធបានផ្ញើសារជូនពរទៅកាន់ ID របស់គាត់រួចរាល់ហើយ!"
     )
 
     try:
