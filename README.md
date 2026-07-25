@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/Kosalsensok/telegram-python-bot">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=28&pause=1000&color=00F5D4&center=true&vCenter=true&width=800&lines=⚡+24%2F7+Omnimodal+Telegram+AI+Bot;🧠+Gemini+1.5+Multimodal+AI+Brain;💳+ABA+PayWay+Sandbox+Payment+Gateway;📐+Math+%26+LaTeX+PNG+Solution+Card+Renderer;✨+AI+Image+Enhancer+%26+Super-Resolution;💻+Piston+Multi-Language+Code+Compiler" alt="Typing SVG Animation" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=24&pause=1000&color=00F5D4&center=true&vCenter=true&width=800&lines=24%2F7+Omnimodal+Telegram+AI+Bot;Google+Gemini+1.5+Multimodal+Engine;ABA+PayWay+Sandbox+Payment+Gateway;Math+%26+LaTeX+PNG+Solution+Card+Renderer;AI+Image+Enhancer+%26+Super-Resolution;Piston+Multi-Language+Code+Compiler" alt="Typing SVG Animation" />
   </a>
 </p>
 
