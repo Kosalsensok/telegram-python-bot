@@ -131,58 +131,59 @@ async def handle_spell_check_api(request):
 
 async def handle_donate_checkout(request):
     """Generates ABA PayWay HTML checkout form and auto-submits to PayWay Gateway."""
-    from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
-    from services.aba_payway import generate_aba_hash, pending_donations
-    from datetime import datetime
-    import base64
-
-    raw_tran_id = request.query.get("tran_id", "").replace("_", "")
-    raw_amount = request.query.get("amount", "2000")
     try:
-        if float(raw_amount) < 100:
+        from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
+        from services.aba_payway import generate_aba_hash, pending_donations
+        from datetime import datetime
+        import base64
+
+        raw_tran_id = request.query.get("tran_id", "").replace("_", "")
+        raw_amount = request.query.get("amount", "2000")
+        try:
+            if float(raw_amount) < 100:
+                amount = "2000"
+            else:
+                amount = raw_amount
+        except (ValueError, TypeError):
             amount = "2000"
+
+        req_time = request.query.get("req_time", "")
+        chat_id = request.query.get("chat_id", "")
+
+        if not req_time:
+            req_time = datetime.now().strftime("%Y%m%d%H%M%S")
+
+        if not raw_tran_id or len(raw_tran_id) > 20:
+            chat_str = str(chat_id)[-6:] if chat_id else "100000"
+            time_str = str(int(datetime.now().timestamp()))[-8:]
+            tran_id = f"D{chat_str}{time_str}"
         else:
-            amount = raw_amount
-    except (ValueError, TypeError):
-        amount = "2000"
+            tran_id = raw_tran_id
 
-    req_time = request.query.get("req_time", "")
-    chat_id = request.query.get("chat_id", "")
+        if tran_id and chat_id:
+            pending_donations[tran_id] = {
+                "chat_id": chat_id,
+                "amount": amount,
+                "time": req_time
+            }
 
-    if not req_time:
-        req_time = datetime.now().strftime("%Y%m%d%H%M%S")
+        clean_server_url = SERVER_URL.rstrip("/")
+        success_url = f"{clean_server_url}/payment_success?tran_id={tran_id}"
+        continue_success_url_b64 = base64.b64encode(success_url.encode('utf-8')).decode('utf-8')
+        return_params_b64 = base64.b64encode(f"chat_id={chat_id}".encode('utf-8')).decode('utf-8')
 
-    if not raw_tran_id or len(raw_tran_id) > 20:
-        chat_str = str(chat_id)[-6:] if chat_id else "100000"
-        time_str = str(int(datetime.now().timestamp()))[-8:]
-        tran_id = f"D{chat_str}{time_str}"
-    else:
-        tran_id = raw_tran_id
+        hash_val = generate_aba_hash(
+            req_time=req_time,
+            merchant_id=ABA_MERCHANT_ID,
+            tran_id=tran_id,
+            amount=amount,
+            payment_option="abapay",
+            continue_success_url=continue_success_url_b64,
+            return_params=return_params_b64,
+            public_key=ABA_API_KEY
+        )
 
-    if tran_id and chat_id:
-        pending_donations[tran_id] = {
-            "chat_id": chat_id,
-            "amount": amount,
-            "time": req_time
-        }
-
-    clean_server_url = SERVER_URL.rstrip("/")
-    success_url = f"{clean_server_url}/payment_success?tran_id={tran_id}"
-    continue_success_url_b64 = base64.b64encode(success_url.encode('utf-8')).decode('utf-8')
-    return_params_b64 = base64.b64encode(f"chat_id={chat_id}".encode('utf-8')).decode('utf-8')
-
-    hash_val = generate_aba_hash(
-        req_time=req_time,
-        merchant_id=ABA_MERCHANT_ID,
-        tran_id=tran_id,
-        amount=amount,
-        payment_option="abapay",
-        continue_success_url=continue_success_url_b64,
-        return_params=return_params_b64,
-        public_key=ABA_API_KEY
-    )
-
-    html_content = f"""<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -202,7 +203,7 @@ async def handle_donate_checkout(request):
     <div class="card">
         <div class="spinner"></div>
         <h3>កំពុងបញ្ជូនទៅកាន់ទំព័របង់ប្រាក់ ABA Pay...</h3>
-        <p>សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងដំណើរការបង្កើតប្រតិបត្តិការបរិច្ចាគ ${amount} (ID: {tran_id})...</p>
+        <p>សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងដំណើរការបង្កើតប្រតិបត្តិការបរិច្ចាគ 2,000 ៛ (ID: {tran_id})...</p>
         <form method="POST" action="{ABA_PAYWAY_URL}">
             <input type="hidden" name="req_time" value="{req_time}" />
             <input type="hidden" name="merchant_id" value="{ABA_MERCHANT_ID}" />
@@ -217,7 +218,11 @@ async def handle_donate_checkout(request):
     </div>
 </body>
 </html>"""
-    return web.Response(text=html_content, content_type="text/html")
+        return web.Response(text=html_content, content_type="text/html")
+    except Exception as e:
+        import traceback
+        logger.error(f"Error rendering checkout form: {e}\n{traceback.format_exc()}")
+        return web.Response(text=f"<h3>Error rendering checkout: {e}</h3>", content_type="text/html", status=500)
 
 
 async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str = "0.50"):
