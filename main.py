@@ -8,10 +8,10 @@ import aiohttp
 
 logger = logging.getLogger(__name__)
 from typing import Optional
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, ErrorEvent
 from aiohttp import web
 
 from config import (
@@ -613,9 +613,9 @@ async def keep_alive_worker():
     # Allow health web server to start before pinging
     await asyncio.sleep(10)
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            while True:
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
                 for target_url in urls_to_ping:
                     try:
                         async with session.get(target_url, timeout=15) as resp:
@@ -625,11 +625,13 @@ async def keep_alive_worker():
                                 logging.warning(f"Keep-Alive ping to {target_url} returned status {resp.status}")
                     except Exception as ping_err:
                         logging.warning(f"Keep-Alive ping to {target_url} error: {ping_err}")
-                await asyncio.sleep(180)  # Self-ping every 3 minutes
-    except asyncio.CancelledError:
-        logging.info("Self-Keep-Alive background worker cancelled.")
-    except Exception as e:
-        logging.error(f"Unexpected error in Keep-Alive worker: {e}")
+        except asyncio.CancelledError:
+            logging.info("Self-Keep-Alive background worker cancelled.")
+            break
+        except Exception as e:
+            logging.error(f"Unexpected error in Keep-Alive worker: {e}")
+
+        await asyncio.sleep(180)  # Self-ping every 3 minutes
 
 
 async def main():
@@ -663,6 +665,32 @@ async def main():
     global GLOBAL_BOT
     GLOBAL_BOT = bot
     dp = Dispatcher()
+
+    # Register Global Exception Handler to catch any unhandled update errors
+    @dp.error()
+    async def global_error_handler(event: types.ErrorEvent):
+        logging.error(f"🛡 Global Aiogram Exception Caught: {event.exception}", exc_info=event.exception)
+        try:
+            if event.update and event.update.message:
+                await event.update.message.answer(
+                    "⚠️ <b>មានបញ្ហាបច្ចេកទេសមួយបានកើតឡើង</b>\n"
+                    "━━━━━━━━━━━━━━━━━━\n\n"
+                    "ប្រព័ន្ធបានកត់ត្រានិងដំណើរការបន្តធម្មតា។ សូមព្យាយាមម្តងទៀត!",
+                    parse_mode="HTML"
+                )
+        except Exception as notify_err:
+            logging.warning(f"Could not send error notification: {notify_err}")
+        return True
+
+    # Set Asyncio Loop Exception Handler to isolate background task exceptions
+    try:
+        loop = asyncio.get_running_loop()
+        def _loop_exception_handler(loop, context):
+            exc = context.get("exception")
+            logging.error(f"🛡 Asyncio Task Exception: {context.get('message')}", exc_info=exc)
+        loop.set_exception_handler(_loop_exception_handler)
+    except Exception as loop_err:
+        logging.warning(f"Could not set asyncio loop exception handler: {loop_err}")
 
     # Start HTTP Health Server for Render Web Service & ABA Webhook Notification Receiver
     runner = None
@@ -704,7 +732,10 @@ async def main():
     logging.info("Routers and Middleware registered successfully: [UserTrackerMiddleware, Commands, Callbacks, Admin, Image, Document, Voice, Text, Fallback]")
 
     # 6. Delete any pending webhook updates to ensure smooth Long Polling
-    await bot.delete_webhook(drop_pending_updates=True)
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+    except Exception as wh_err:
+        logging.warning(f"Note on delete_webhook: {wh_err}")
 
     # 7. Set Bot Commands Menu
     commands = [
@@ -740,7 +771,13 @@ async def main():
         if sys.is_finalizing():
             break
         try:
+            logging.info("⚡ Telegram Long Polling session active...")
+            await bot.delete_webhook(drop_pending_updates=True)
             await dp.start_polling(bot, handle_signals=False)
+            logging.warning("Telegram polling session ended. Reconnecting in 3 seconds...")
+            await asyncio.sleep(3)
+        except (KeyboardInterrupt, SystemExit):
+            logging.info("Shutdown signal received.")
             break
         except asyncio.CancelledError:
             logging.info("Bot polling loop cancelled.")

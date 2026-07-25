@@ -1,7 +1,19 @@
 import re
 import html
 import logging
+import time
+import hashlib
 from typing import Dict, List, Any, Tuple
+
+_SPELL_CHECK_CACHE: Dict[str, tuple] = {}
+_SPELL_CHECK_CACHE_TTL = 7200  # 2 hours
+_MAX_SPELL_CACHE_SIZE = 1000
+
+def _get_spell_cache_key(text: str, language: str, mode: str, custom_dictionary: list) -> str:
+    raw = f"{language}:{mode}:{sorted(custom_dictionary or [])}:{text.strip()}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+# Baseline rule-based spell check implementation continues...
 
 # Common Khmer misspellings map (misspelled -> list of correct suggestions, explanation, auto_fixable, severity, confidence)
 KHMER_DICTIONARY_RULES = {
@@ -242,6 +254,15 @@ async def check_khmer_spelling_ai(
     if custom_dictionary is None:
         custom_dictionary = []
 
+    # 0. Instant Cache Lookup (<1ms latency)
+    cache_key = _get_spell_cache_key(text, language, mode, custom_dictionary)
+    if cache_key in _SPELL_CHECK_CACHE:
+        cached_res, ts = _SPELL_CHECK_CACHE[cache_key]
+        if time.time() - ts < _SPELL_CHECK_CACHE_TTL:
+            return cached_res
+        else:
+            del _SPELL_CHECK_CACHE[cache_key]
+
     # Baseline rule-based results
     base_result = check_khmer_spelling(text, language=language, mode=mode, custom_dictionary=custom_dictionary)
     
@@ -366,5 +387,10 @@ Output STRICTLY a JSON object matching this schema with NO extra text or markdow
 
     except Exception as err:
         logging.warning(f"AI Spell Check Fallback to Rule-Based: {err}")
+
+    # Store in LRU Cache for subsequent zero-latency requests
+    if len(_SPELL_CHECK_CACHE) >= _MAX_SPELL_CACHE_SIZE:
+        _SPELL_CHECK_CACHE.pop(next(iter(_SPELL_CHECK_CACHE)), None)
+    _SPELL_CHECK_CACHE[cache_key] = (base_result, time.time())
 
     return base_result

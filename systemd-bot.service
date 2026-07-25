@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram Smart AI Assistant Bot 24/7 Service
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/telegram-ai-bot
+ExecStart=/var/www/telegram-ai-bot/.venv/bin/python main.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

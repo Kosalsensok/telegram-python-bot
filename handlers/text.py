@@ -32,13 +32,13 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
         """
         if message.from_user:
             if db_service:
-                await db_service.save_or_update_user(
+                asyncio.create_task(db_service.save_or_update_user(
                     telegram_id=message.from_user.id,
                     username=message.from_user.username,
                     first_name=message.from_user.first_name,
                     last_name=message.from_user.last_name,
                     language_code=message.from_user.language_code or "en"
-                )
+                ))
             user_id = message.from_user.id
         else:
             user_id = message.chat.id

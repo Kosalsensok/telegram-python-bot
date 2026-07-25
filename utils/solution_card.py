@@ -85,12 +85,17 @@ def validate_solution_owner(solution_id: str, telegram_user_id: int) -> bool:
     return True
 
 
-def cleanup_expired_solution_cache():
-    """Removes expired solution records from cache memory."""
+def cleanup_expired_solution_cache(max_size: int = 2000):
+    """Removes expired solution records and caps memory cache size."""
     now = time.time()
     expired_keys = [k for k, v in SOLUTION_CACHE.items() if v.get("expiresAt", 0) < now]
     for k in expired_keys:
         SOLUTION_CACHE.pop(k, None)
+    if len(SOLUTION_CACHE) > max_size:
+        # Remove oldest entries if exceeding max_size
+        sorted_keys = sorted(SOLUTION_CACHE.keys(), key=lambda k: SOLUTION_CACHE[k].get("createdAt", 0))
+        for k in sorted_keys[:len(SOLUTION_CACHE) - max_size]:
+            SOLUTION_CACHE.pop(k, None)
 
 
 def render_solution_card(

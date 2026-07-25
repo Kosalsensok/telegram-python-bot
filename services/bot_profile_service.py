@@ -108,12 +108,13 @@ async def bot_profile_worker(bot: Bot, db_service: DatabaseService = None) -> No
     Background worker loop that periodically updates bot profile.
     """
     logging.info("Starting Bot Profile Auto-Update background worker...")
-    try:
-        while True:
+    while True:
+        try:
             await update_bot_profile(bot, db_service)
-            # Sleep for configured interval
-            await asyncio.sleep(PROFILE_UPDATE_INTERVAL_MINUTES * 60)
-    except asyncio.CancelledError:
-        logging.info("Bot Profile background worker cancelled.")
-    except Exception as e:
-        logging.error(f"Unexpected error in bot profile worker: {e}")
+        except asyncio.CancelledError:
+            logging.info("Bot Profile background worker cancelled.")
+            break
+        except Exception as e:
+            logging.error(f"Unexpected error in bot profile worker: {e}")
+        
+        await asyncio.sleep(PROFILE_UPDATE_INTERVAL_MINUTES * 60)

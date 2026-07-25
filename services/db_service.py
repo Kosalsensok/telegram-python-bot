@@ -156,6 +156,15 @@ class DatabaseService:
             self.is_connected = False
             return False
 
+    async def ensure_connected(self) -> bool:
+        """
+        Ensures MySQL connection pool is active. Automatically reconnects if closed or dropped.
+        """
+        if self.is_connected and self.pool and not self.pool._closed:
+            return True
+        logging.info("DatabaseService: Connection pool dropped or closed. Attempting auto-reconnect...")
+        return await self.init_db()
+
     async def save_or_update_user(
         self, 
         telegram_id: int, 
