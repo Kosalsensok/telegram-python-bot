@@ -55,6 +55,13 @@ if admin_ids_raw:
 
 STATS_PUBLIC: bool = os.getenv("STATS_PUBLIC", "true").lower() in ("true", "1", "t", "yes")
 
+# ABA PayWay Payment Gateway Configurations
+ABA_MERCHANT_ID: str = os.getenv("ABA_MERCHANT_ID", "ec477154").strip()
+ABA_API_KEY: str = os.getenv("ABA_API_KEY", "758d62f9bc45bf0322aadf778999bf833a9d68a0").strip()
+ABA_PAYWAY_URL: str = os.getenv("ABA_PAYWAY_URL", "https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase").strip()
+SERVER_URL: str = os.getenv("SERVER_URL", RENDER_EXTERNAL_URL).strip()
+
+
 # Validate required variables
 if not BOT_TOKEN or "YourTelegramBotToken" in BOT_TOKEN or "your_telegram_bot_token" in BOT_TOKEN:
     print("❌ Error: BOT_TOKEN is not properly set in .env file.")

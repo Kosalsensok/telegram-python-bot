@@ -10,5 +10,14 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-flash-lite-latest
+        value: gemini-3.6-flash
+      - key: ABA_MERCHANT_ID
+        value: ec477154
+      - key: ABA_API_KEY
+        value: 758d62f9bc45bf0322aadf778999bf833a9d68a0
+      - key: ABA_PAYWAY_URL
+        value: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
+      - key: SERVER_URL
+        sync: false
+
 

@@ -129,8 +129,186 @@ async def handle_spell_check_api(request):
     return web.json_response(result, status=200)
 
 
-async def start_health_server():
-    """Starts a lightweight web server for Render Free Web Service deployment and Telegram Mini App."""
+async def handle_donate_checkout(request):
+    """Generates ABA PayWay HTML checkout form and auto-submits to PayWay Gateway."""
+    from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
+    from services.aba_payway import generate_aba_hash, pending_donations
+    import base64
+
+    tran_id = request.query.get("tran_id", "")
+    amount = request.query.get("amount", "0.50")
+    req_time = request.query.get("req_time", "")
+    chat_id = request.query.get("chat_id", "")
+
+    if tran_id and chat_id:
+        pending_donations[tran_id] = {
+            "chat_id": chat_id,
+            "amount": amount,
+            "time": req_time
+        }
+
+    clean_server_url = SERVER_URL.rstrip("/")
+    success_url = f"{clean_server_url}/payment_success?tran_id={tran_id}"
+    continue_success_url_b64 = base64.b64encode(success_url.encode('utf-8')).decode('utf-8')
+    return_params_b64 = base64.b64encode(f"chat_id={chat_id}".encode('utf-8')).decode('utf-8')
+
+    hash_val = generate_aba_hash(
+        req_time=req_time,
+        merchant_id=ABA_MERCHANT_ID,
+        tran_id=tran_id,
+        amount=amount,
+        payment_option="abapay",
+        continue_success_url=continue_success_url_b64,
+        return_params=return_params_b64,
+        public_key=ABA_API_KEY
+    )
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connecting to ABA Pay...</title>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; background-color: #f8f9fa; color: #333; }}
+        .card {{ background: #fff; max-width: 450px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }}
+        .spinner {{ border: 4px solid #f3f3f3; border-top: 4px solid #0056b3; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 20px auto; }}
+        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+        h3 {{ color: #0056b3; margin-bottom: 10px; }}
+        p {{ color: #666; font-size: 15px; }}
+    </style>
+</head>
+<body onload="document.forms[0].submit()">
+    <div class="card">
+        <div class="spinner"></div>
+        <h3>កំពុងបញ្ជូនទៅកាន់ទំព័របង់ប្រាក់ ABA Pay...</h3>
+        <p>សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងដំណើរការបង្កើតប្រតិបត្តិការបរិច្ចាគ ${amount}...</p>
+        <form method="POST" action="{ABA_PAYWAY_URL}">
+            <input type="hidden" name="req_time" value="{req_time}" />
+            <input type="hidden" name="merchant_id" value="{ABA_MERCHANT_ID}" />
+            <input type="hidden" name="tran_id" value="{tran_id}" />
+            <input type="hidden" name="amount" value="{amount}" />
+            <input type="hidden" name="payment_option" value="abapay" />
+            <input type="hidden" name="hash" value="{hash_val}" />
+            <input type="hidden" name="continue_success_url" value="{continue_success_url_b64}" />
+            <input type="hidden" name="return_params" value="{return_params_b64}" />
+        </form>
+    </div>
+</body>
+</html>"""
+    return web.Response(text=html_content, content_type="text/html")
+
+
+async def notify_donation_completed(bot, chat_id: str, tran_id: str, amount: str = "0.50"):
+    """Sends thank-you message to Telegram user upon successful donation."""
+    from services.aba_payway import completed_donations
+    if tran_id in completed_donations:
+        return
+    completed_donations.add(tran_id)
+
+    thank_you_message = (
+        "🎉 <b>សូមថ្លែងអំណរគុណយ៉ាងជ្រាលជ្រៅ!</b> 🙏❤️\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        f"ការបរិច្ចាគចំនួន <b>${amount}</b> របស់លោកអ្នកបានជោគជ័យហើយ! (ID: <code>{tran_id}</code>)\n"
+        "ថវិកានេះនឹងត្រូវយកទៅប្រើប្រាស់សម្រាប់អភិវឌ្ឍន៍ប្រព័ន្ធ <b>Smart AI Assistant</b> "
+        "ឱ្យកាន់តែឆ្លាតវៃ និងមានសមត្ថភាពខ្ពស់បន្ថែមទៀតសម្រាប់ឆ្នាំបន្ទាប់។\n\n"
+        "✨ <i>សូមជូនពរឱ្យលោកអ្នកជួបប្រទះតែសេចក្ដីសុខ សុភមង្គល និងជោគជ័យគ្រប់ភារកិច្ច!</i> 🚀"
+    )
+    try:
+        await bot.send_message(chat_id=int(chat_id), text=thank_you_message, parse_mode="HTML")
+        logging.info(f"Sent Telegram donation thank-you to chat_id={chat_id} for tran_id={tran_id}")
+    except Exception as e:
+        logging.error(f"Failed to send Telegram donation thank-you to chat_id={chat_id}: {e}")
+
+
+def make_payment_success_handler(bot):
+    async def handle_payment_success(request):
+        from services.aba_payway import pending_donations
+        tran_id = request.query.get("tran_id", "")
+        donation = pending_donations.get(tran_id, {})
+        chat_id = donation.get("chat_id")
+        amount = donation.get("amount", "0.50")
+
+        if chat_id and bot:
+            await notify_donation_completed(bot, chat_id=chat_id, tran_id=tran_id, amount=amount)
+            if tran_id in pending_donations:
+                del pending_donations[tran_id]
+
+        html_content = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Donation Successful!</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px 20px; background: #eef9f1; color: #2e7d32; }
+        .card { background: #ffffff; max-width: 500px; margin: 0 auto; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        .icon { font-size: 60px; margin-bottom: 15px; }
+        h2 { margin-bottom: 10px; color: #1b5e20; }
+        p { color: #4e4e4e; line-height: 1.6; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">✅</div>
+        <h2>ការបង់ប្រាក់បរិច្ចាគបានជោគជ័យ!</h2>
+        <p>សូមអរគុណយ៉ាងជ្រាលជ្រៅសម្រាប់ការគាំទ្រអភិវឌ្ឍន៍ <strong>Smart AI Assistant</strong>។<br/>សារជូនពរត្រូវបានផ្ញើទៅកាន់ Telegram របស់លោកអ្នករួចរាល់ហើយ!</p>
+        <p>លោកអ្នកអាចបិទទំព័រនេះ ហើយត្រឡប់ទៅ Telegram វិញបាន។</p>
+    </div>
+</body>
+</html>"""
+        return web.Response(text=html_content, content_type="text/html")
+    return handle_payment_success
+
+
+def make_aba_webhook_handler(bot):
+    async def handle_aba_webhook(request):
+        import base64
+        from services.aba_payway import pending_donations
+        try:
+            if request.method == "POST":
+                try:
+                    payload = await request.post()
+                except Exception:
+                    payload = {}
+                if not payload:
+                    try:
+                        payload = await request.json()
+                    except Exception:
+                        payload = {}
+            else:
+                payload = request.query
+
+            logging.info(f"Received ABA Webhook callback: {dict(payload)}")
+            status = str(payload.get("status", payload.get("status_code", "")))
+            tran_id = str(payload.get("tran_id", payload.get("transaction_id", "")))
+            
+            return_params = str(payload.get("return_params", ""))
+            chat_id = None
+            if return_params:
+                try:
+                    decoded = base64.b64decode(return_params).decode('utf-8')
+                    if "chat_id=" in decoded:
+                        chat_id = decoded.split("chat_id=")[1].split("&")[0]
+                except Exception:
+                    pass
+
+            if not chat_id and tran_id in pending_donations:
+                chat_id = pending_donations[tran_id].get("chat_id")
+
+            if status in ("0", "00", "SUCCESS", "APPROVED") and tran_id and chat_id and bot:
+                await notify_donation_completed(bot, chat_id=chat_id, tran_id=tran_id)
+                return web.json_response({"status": "SUCCESS", "message": "Donation recorded successfully"})
+
+            return web.json_response({"status": "ACK", "message": "Notification received"})
+        except Exception as e:
+            logging.error(f"Error handling ABA Webhook: {e}")
+            return web.json_response({"status": "ERROR", "message": str(e)}, status=400)
+    return handle_aba_webhook
+
+
+async def start_health_server(bot=None):
+    """Starts a lightweight web server for Render Free Web Service deployment, ABA PayWay Webhook, and Telegram Mini App."""
     port_str = os.getenv("PORT", "8080").strip()
     try:
         port = int(port_str)
@@ -150,12 +328,20 @@ async def start_health_server():
     app.router.add_get("/api/solution/{solution_id}", handle_solution_api)
     app.router.add_post("/api/spell-check", handle_spell_check_api)
 
+    # ABA PayWay Donation routes
+    app.router.add_get("/donate_checkout", handle_donate_checkout)
+    if bot:
+        app.router.add_get("/payment_success", make_payment_success_handler(bot))
+        app.router.add_post("/aba_webhook", make_aba_webhook_handler(bot))
+        app.router.add_get("/aba_webhook", make_aba_webhook_handler(bot))
+
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    logging.info(f"Health check & Mini App HTTP server started on 0.0.0.0:{port}")
+    logging.info(f"Health check, ABA Webhook & Mini App HTTP server started on 0.0.0.0:{port}")
     return runner
+
 
 
 async def keep_alive_worker():
@@ -208,13 +394,6 @@ async def main():
     """
     logging.info("Initializing Smart AI Assistant services...")
 
-    # Start HTTP Health Server for Render Web Service (Free Tier)
-    runner = None
-    try:
-        runner = await start_health_server()
-    except Exception as e:
-        logging.warning(f"Could not start HTTP health server: {e}")
-
     # 1. Initialize MySQL Database Service
     db_service = DatabaseService(
         host=MYSQL_HOST,
@@ -238,6 +417,13 @@ async def main():
         )
     )
     dp = Dispatcher()
+
+    # Start HTTP Health Server for Render Web Service & ABA Webhook Notification Receiver
+    runner = None
+    try:
+        runner = await start_health_server(bot=bot)
+    except Exception as e:
+        logging.warning(f"Could not start HTTP health server: {e}")
 
     # Register User Tracking Outer Middleware
     tracker_mw = UserTrackerMiddleware(db_service)
@@ -277,6 +463,7 @@ async def main():
     # 7. Set Bot Commands Menu
     commands = [
         BotCommand(command="start", description="🚀 ចាប់ផ្តើមប្រើប្រាស់ (Start)"),
+        BotCommand(command="donate", description="💖 បរិច្ចាគ $0.50 គាំទ្រ AI (Donate $0.50)"),
         BotCommand(command="miniapp", description="🌐 បើក Telegram Mini App (Open Mini App)"),
         BotCommand(command="image", description="🎨 បង្កើតរូបភាព AI កម្រិត HD (Generate AI Image)"),
         BotCommand(command="imagine", description="🎨 បង្កើតរូបភាព AI (Imagine Image)"),
@@ -291,6 +478,7 @@ async def main():
         BotCommand(command="about", description="👤 អំពី Bot នេះ (About)"),
         BotCommand(command="privacy", description="🔒 គោលការណ៍ឯកជនភាព (Privacy)"),
     ]
+
     try:
         await bot.set_my_commands(commands)
         logging.info("Bot commands menu set successfully.")

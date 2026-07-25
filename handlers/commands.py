@@ -589,4 +589,45 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             logging.error(f"Error enhancing image: {e}")
             await message.reply(f"⚠️ មានបញ្ហាក្នុងការកែរូបភាពឲ្យច្បាស់: {escape(str(e))}", parse_mode="HTML")
 
+    @router.message(Command("donate"))
+    @router.message(Command("buy"))
+    @router.message(F.text == "💖 បរិច្ចាគ (Donate)")
+    async def cmd_donate(message: types.Message):
+        """
+        Handle /donate command to generate ABA PayWay $0.50 donation payment link.
+        """
+        if message.from_user:
+            await _register_user(message.from_user, message.bot)
+            chat_id = message.from_user.id
+        else:
+            chat_id = message.chat.id
+
+        from services.aba_payway import create_donation_checkout_params
+        from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
+
+        tran_id, req_time, form_data = create_donation_checkout_params(
+            chat_id=chat_id,
+            merchant_id=ABA_MERCHANT_ID,
+            public_key=ABA_API_KEY,
+            payway_url=ABA_PAYWAY_URL,
+            server_url=SERVER_URL,
+            amount="0.50"
+        )
+
+        checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=0.50&req_time={req_time}&chat_id={chat_id}"
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="💖 បរិច្ចាគ $0.50 តាម ABA Pay", url=checkout_url)
+
+        message_text = (
+            "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            "ដើម្បីជួយឱ្យប្រព័ន្ធ <b>Smart AI Assistant</b> អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>$0.50</b> តាមរយៈ ABA Pay បាន។\n\n"
+            "👇 <b>សូមចុចប៊ូតុងខាងក្រោមដើម្បីបរិច្ចាគ៖</b>"
+        )
+
+        await message.answer(message_text, parse_mode="HTML", reply_markup=builder.as_markup())
+
     return router
+
