@@ -133,12 +133,21 @@ async def handle_donate_checkout(request):
     """Generates ABA PayWay HTML checkout form and auto-submits to PayWay Gateway."""
     from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
     from services.aba_payway import generate_aba_hash, pending_donations
+    from datetime import datetime
     import base64
 
-    tran_id = request.query.get("tran_id", "")
+    tran_id = request.query.get("tran_id", "").replace("_", "")
     amount = request.query.get("amount", "0.50")
     req_time = request.query.get("req_time", "")
     chat_id = request.query.get("chat_id", "")
+
+    if not req_time:
+        req_time = datetime.now().strftime("%Y%m%d%H%M%S")
+
+    if not tran_id or len(tran_id) > 20:
+        chat_str = str(chat_id)[-6:] if chat_id else "100000"
+        time_str = str(int(datetime.now().timestamp()))[-8:]
+        tran_id = f"D{chat_str}{time_str}"
 
     if tran_id and chat_id:
         pending_donations[tran_id] = {
@@ -175,14 +184,15 @@ async def handle_donate_checkout(request):
         .spinner {{ border: 4px solid #f3f3f3; border-top: 4px solid #0056b3; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 20px auto; }}
         @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
         h3 {{ color: #0056b3; margin-bottom: 10px; }}
-        p {{ color: #666; font-size: 15px; }}
+        p {{ color: #666; font-size: 15px; line-height: 1.5; }}
+        .btn {{ display: inline-block; margin-top: 15px; padding: 12px 25px; background: #0056b3; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; }}
     </style>
 </head>
 <body onload="document.forms[0].submit()">
     <div class="card">
         <div class="spinner"></div>
         <h3>កំពុងបញ្ជូនទៅកាន់ទំព័របង់ប្រាក់ ABA Pay...</h3>
-        <p>សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងដំណើរការបង្កើតប្រតិបត្តិការបរិច្ចាគ ${amount}...</p>
+        <p>សូមរង់ចាំមួយភ្លែត ប្រព័ន្ធកំពុងដំណើរការបង្កើតប្រតិបត្តិការបរិច្ចាគ ${amount} (ID: {tran_id})...</p>
         <form method="POST" action="{ABA_PAYWAY_URL}">
             <input type="hidden" name="req_time" value="{req_time}" />
             <input type="hidden" name="merchant_id" value="{ABA_MERCHANT_ID}" />
@@ -192,6 +202,7 @@ async def handle_donate_checkout(request):
             <input type="hidden" name="hash" value="{hash_val}" />
             <input type="hidden" name="continue_success_url" value="{continue_success_url_b64}" />
             <input type="hidden" name="return_params" value="{return_params_b64}" />
+            <button type="submit" class="btn">👉 បង់ប្រាក់ឥឡូវនេះ (Pay Now)</button>
         </form>
     </div>
 </body>
