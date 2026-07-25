@@ -14,6 +14,7 @@
     <img src="https://img.shields.io/badge/Bot-@mysmart__v2__2026__bot-blueviolet?style=for-the-badge&logo=telegram" alt="Bot Demo" />
   </a>
   <img src="https://img.shields.io/badge/ABA_PayWay-Integrated-00A859?style=for-the-badge&logo=cashapp&logoColor=white" alt="ABA PayWay" />
+  <img src="https://img.shields.io/badge/Security-API_Keys_Masked-red?style=for-the-badge&logo=shield&logoColor=white" alt="Security Shield" />
 </p>
 
 <p align="center">
@@ -55,19 +56,36 @@
                                    │
          ┌─────────────────────────┴─────────────────────────┐
          ▼                                                   ▼
-【 ផ្លូវទី ១ ៖ ផ្ញើទៅកាន់ User អ្នកបរិច្ចាគ 】               【 ផ្លូវទី ២ ៖ ផ្ញើទៅ Admin ផ្ទាល់ខ្លួន 】
+【 ផ្លូវទី ១ ៖ ផ្ញើទៅកាន់ User អ្នកបរិច្ចាគ 】               【 ផ្លូវទី ពីរ ៖ ផ្ញើទៅ Admin ផ្ទាល់ខ្លួន 】
 • ផ្ញើចូល Private Chat របស់ User នោះ                        • ផ្ញើចូល Private Chat របស់ KOSAL SENSOK
 • ខ្លឹមសារ៖ សារអរគុណ + សារជូនពរ                             (ID: 5496354981 / @kosalsensokpk)
                                                            • ខ្លឹមសារ៖ Alert ឈ្មោះ, Username, ID,
                                                              ចំនួនទឹកប្រាក់, Tran ID & ម៉ោងទូទាត់
 ```
 
-### 🔑 Official Sandbox Merchant Credentials Registered
-- **Merchant ID:** `ec477154`
-- **Public API Key:** `758d62f9bc45bf0322aadf778999bf833a9d68a0`
+<details>
+<summary>🔒 <b>Click to View Protected Credentials Configuration (ចុចទីនេះដើម្បីមើល/បិទព័ត៌មាន API Keys)</b></summary>
+
+<br>
+
+> [!NOTE]
+> All sensitive API Tokens & Secret Keys are strictly secured and stored using Environment Variables (`.env`). Below is the masked reference structure:
+
+```env
+# 🔒 Masked Credentials Reference
+BOT_TOKEN=894604••••:••••••••••••••••••••••••••••••••
+GEMINI_API_KEY=AIzaSy••••••••••••••••••••••••••••••••
+ABA_MERCHANT_ID=ec47••••
+ABA_API_KEY=758d62f9••••••••••••••••••••••••••••••••
+ADMIN_USER_IDS=5496354981
+SERVER_URL=https://telegram-python-bot-yt64.onrender.com
+```
+
 - **Official Visa Test Card:** `4286 0900 0000 0206` | Exp: `04/30` | CVV: `777`
 - **Official Mastercard Test Card:** `5156 8399 3770 6777` | Exp: `01/30` | CVV: `993`
 - **Admin Alert Telegram ID:** `5496354981`
+
+</details>
 
 ---
 
@@ -236,12 +254,12 @@ int main() {
 
 ## 🔑 Environment Variables Reference (ការកំណត់បរិស្ថាន)
 
-| Variable | Required | Description | Default Value |
+| Variable | Required | Description | Value Format |
 | :--- | :---: | :--- | :--- |
-| `BOT_TOKEN` | Yes | Telegram Bot API Token from @BotFather | `8946041199:AAFJoie...` |
-| `GEMINI_API_KEY` | Yes | Google Gemini AI Key from AI Studio | - |
-| `ABA_MERCHANT_ID` | Yes | ABA PayWay Sandbox Merchant ID | `ec477154` |
-| `ABA_API_KEY` | Yes | ABA PayWay Sandbox Public Key | `758d62f9bc45bf0322aadf778999bf833a9d68a0` |
+| `BOT_TOKEN` | Yes | Telegram Bot API Token from @BotFather | `YOUR_BOT_TOKEN` |
+| `GEMINI_API_KEY` | Yes | Google Gemini AI Key from AI Studio | `YOUR_GEMINI_API_KEY` |
+| `ABA_MERCHANT_ID` | Yes | ABA PayWay Sandbox Merchant ID | `YOUR_ABA_MERCHANT_ID` |
+| `ABA_API_KEY` | Yes | ABA PayWay Sandbox Public Key | `YOUR_ABA_PUBLIC_KEY` |
 | `ADMIN_USER_IDS` | Yes | Telegram Owner ID for Instant Alerts | `5496354981` |
 | `SERVER_URL` | Yes | Render Public External URL | `https://telegram-python-bot-yt64.onrender.com` |
 | `PORT` | No | HTTP Health & Webhook Server Port | `8080` / `10000` |
