@@ -281,6 +281,43 @@ async def handle_donate_checkout(request):
         .tab-content.active {{ display: block; }}
         @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(6px); }} to {{ opacity: 1; transform: translateY(0); }} }}
         
+        .timer-box {{
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            margin: 12px 0 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }}
+        #countdown-timer {{
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #ef4444;
+        }}
+        .timer-progress-bar {{
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }}
+        .timer-progress-fill {{
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            transition: width 1s linear;
+        }}
+
         .qr-container {{
             background: #ffffff;
             padding: 20px;
@@ -288,9 +325,10 @@ async def handle_donate_checkout(request):
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 12px 0;
+            margin: 8px 0;
             box-shadow: 0 12px 30px rgba(0,0,0,0.5);
             width: 100%;
+            position: relative;
         }}
         .qr-img {{ width: 230px; height: 230px; display: block; border-radius: 10px; }}
         
@@ -369,8 +407,16 @@ async def handle_donate_checkout(request):
 
         <!-- Tab 1: ABA KHQR Code -->
         <div id="qr-tab" class="tab-content active">
+            <!-- Dynamic Countdown Timer UI -->
+            <div class="timer-box">
+                ⏱️ ពេលវេលាដែលនៅសល់ (Time Remaining): <span id="countdown-timer">10:00</span>
+            </div>
+            <div class="timer-progress-bar">
+                <div id="timer-progress" class="timer-progress-fill"></div>
+            </div>
+
             <div class="qr-container">
-                {"<img class='qr-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444; font-weight:600;'>⚠️ QR Code Generation Failed</p>"}
+                {"<img class='qr-img' id='khqr-code-img' src='" + qr_image + "' alt='ABA KHQR Code' />" if qr_image else "<p style='color:#ef4444; font-weight:600;'>⚠️ QR Code Generation Failed</p>"}
             </div>
             <p style="color: #cbd5e1; font-weight: 500; text-align: center; margin-top: 14px;">សូមស្កែន QR Code ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់</p>
             {"<a href='" + deeplink + "' class='btn-deeplink' target='_blank'>📲 បើក App ABA Bank ដើម្បីទូទាត់</a>" if deeplink else ""}
@@ -431,6 +477,33 @@ async def handle_donate_checkout(request):
             }}
         }}
 
+        // Dynamic 10-minute live countdown timer with progress bar
+        let totalSeconds = 600; // 10 minutes (600 seconds)
+        const initialSeconds = 600;
+        const timerDisplay = document.getElementById('countdown-timer');
+        const progressBar = document.getElementById('timer-progress');
+
+        const timerInterval = setInterval(function() {{
+            totalSeconds--;
+            if (totalSeconds <= 0) {{
+                clearInterval(timerInterval);
+                timerDisplay.innerText = "00:00 (Expired)";
+                progressBar.style.width = "0%";
+                document.querySelector('.timer-box').style.background = "rgba(239, 68, 68, 0.25)";
+                document.querySelector('.timer-box').innerHTML = "⚠️ QR Code ផុតកំណត់សុពលភាព! (QR Code Expired)";
+                return;
+            }}
+
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const minStr = minutes < 10 ? "0" + minutes : minutes;
+            const secStr = seconds < 10 ? "0" + seconds : seconds;
+            
+            timerDisplay.innerText = minStr + ":" + secStr;
+            const pct = (totalSeconds / initialSeconds) * 100;
+            progressBar.style.width = pct + "%";
+        }}, 1000);
+
         // Real-time payment verification status polling
         const tranId = "{tran_id}";
         let checkInterval = setInterval(async function() {{
@@ -439,6 +512,7 @@ async def handle_donate_checkout(request):
                 const data = await res.json();
                 if (data.completed) {{
                     clearInterval(checkInterval);
+                    clearInterval(timerInterval);
                     window.location.href = "/payment_success?tran_id=" + tranId + "&chat_id={chat_id}";
                 }}
             }} catch(e) {{
