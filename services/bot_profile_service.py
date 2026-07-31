@@ -61,11 +61,7 @@ async def update_bot_profile(bot: Bot, db_service: DatabaseService = None) -> No
                     logging.warning(f"Failed to update Bot Name: {error_msg}")
 
         # 2. Update Short Description (shown on profile card)
-        if total_count > 0:
-            short_desc = f"🤖 Smart Khmer & English AI • 👥 {formatted_count} users"
-        else:
-            short_desc = "🤖 Smart Khmer & English AI • ⚡ Powered by Gemini AI"
-
+        short_desc = f"🤖 ជំនួយការ AI ឆ្លាតវៃ (Khmer & English) • 👥 {formatted_count} users"
         if len(short_desc) > 120:
             short_desc = short_desc[:120]
 
@@ -74,19 +70,17 @@ async def update_bot_profile(bot: Bot, db_service: DatabaseService = None) -> No
         except Exception as e:
             logging.warning(f"Failed to update Bot Short Description: {e}")
 
-        # 3. Update Full Description
-        user_line = f"👥 Trusted by {formatted_count} users" if total_count > 0 else "👥 24/7 Smart AI Assistant"
+        # 3. Update Full Description (What can this bot do?)
         full_desc = (
             f"🤖 {BOT_DISPLAY_NAME}\n\n"
-            "សួរជាភាសាខ្មែរ ឬ English.\n"
-            "ផ្ញើរូបភាព ដើម្បីឱ្យ AI មើល វិភាគ និងពន្យល់.\n\n"
-            "✨ AI Chat\n"
-            "🖼 Image Analysis\n"
-            "🎙️ Voice Notes AI\n"
-            "📄 PDF & Code Analysis\n"
-            "💻 Code Runner (/run)\n"
-            "🌐 Khmer & English\n\n"
-            f"{user_line}"
+            "ជំនួយការ AI ឆ្លាតវៃ ជួយវិភាគអត្ថបទ រូបភាព សំឡេង គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            "✨ មុខងារចម្បង៖\n"
+            "• 💬 សួរ AI & សរសេរកូដ\n"
+            "• 🖼️ វិភាគរូបភាព (Vision OCR)\n"
+            "• 🎙️ សំឡេងទៅជាអក្សរ (Speech-to-Text)\n"
+            "• 🗺️ បង្ហាញផ្លូវ & ទីតាំង\n"
+            "• 🌐 Telegram Mini App\n\n"
+            f"📊 អ្នកប្រើប្រាស់សរុប៖ {formatted_count} នាក់"
         )
         if len(full_desc) > 512:
             full_desc = full_desc[:512]

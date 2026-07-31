@@ -163,16 +163,9 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             await db_service.set_user_mode(user_id, "image_analysis")
             
         banner_text = (
-            "🖼 <b>វិភាគរូបភាព</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n\n"
-            "សូមផ្ញើរូបភាពដែលអ្នកចង់ឱ្យ AI វិភាគ។\n\n"
-            "AI អាចសម្គាល់៖\n"
-            "• Screenshot\n"
-            "• ឯកសារ\n"
-            "• អត្ថបទ\n"
-            "• តារាង\n"
-            "• រូបមន្ត\n"
-            "• ផលិតផល"
+            "🖼️ <b>មុខងារវិភាគរូបភាព (Vision AI)</b>\n\n"
+            "សូមផ្ញើរូបភាព ( Screenshot, ឯកសារ, អត្ថបទ, រូបមន្ត ឬផលិតផល ) ចូលក្នុងឆាតនេះជាការស្រេច!\n\n"
+            "💡 AI នឹងស្កែន និងពន្យល់ព័ត៌មានពីរូបភាពជូនអ្នកភ្លាមៗ។"
         )
         await safe_edit_message(callback.message, banner_text, reply_markup=get_image_analysis_banner_keyboard())
 

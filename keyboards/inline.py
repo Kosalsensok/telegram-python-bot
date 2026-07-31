@@ -164,12 +164,14 @@ def get_math_answer_keyboard(solution_id: str = "", mini_app_url: str = "") -> I
 
 def get_image_analysis_banner_keyboard() -> InlineKeyboardMarkup:
     """
-    Keyboard displayed with the initial Image Analysis banner.
-    [✕ បោះបង់]
+    Build banner keyboard for image analysis mode per user spec:
+    [ 🏠 Menu ដើម ]
+    [ ❌ បិទ ]
     """
     builder = InlineKeyboardBuilder()
-    builder.button(text="✕ បោះបង់", callback_data="cb_cancel_image_mode")
-    builder.adjust(1)
+    builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
+    builder.button(text="❌ បិទ", callback_data="cb_close_menu")
+    builder.adjust(1, 1)
     return builder.as_markup()
 
 
