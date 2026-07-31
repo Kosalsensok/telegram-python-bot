@@ -257,16 +257,16 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
 
         from aiogram.utils.keyboard import InlineKeyboardBuilder
         builder = InlineKeyboardBuilder()
-        builder.button(text="🌐 បើក Telegram Mini App (Launch)", web_app=types.WebAppInfo(url=mini_app_url))
-        builder.button(text="🏠 Menu", callback_data="cb_back_main")
+        builder.button(text="🌐 បើក Telegram Mini App", web_app=types.WebAppInfo(url=mini_app_url))
+        builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
         builder.adjust(1, 1)
 
         msg_text = (
-            "🌐 <b>TELEGRAM MINI APP INTERACTIVE EXPERIENCE</b>\n\n"
-            "លោកអ្នកអាចបើកមើល <b>Smart AI Assistant Mini App</b> ដោយផ្ទាល់ក្នុង Telegram ជាមួយនឹង៖\n"
-            "• <b>Vertical Stepper Navigation:</b> ចុចមើលតាម Step & Section\n"
-            "• <b>Copy Code Buttons:</b> ចម្លងកូដដោយត្រង់\n"
-            "• <b>Telegram Dark/Light Theme:</b> សមស្របតាមម៉ូដទូរស័ព្ទ\n\n"
+            "🌐 <b>Telegram Mini App</b>\n\n"
+            "លោកអ្នកអាចប្រើប្រាស់ <b>Smart AI Assistant Mini App</b> ដោយផ្ទាល់នៅក្នុង Telegram ជាមួយនឹងបទពិសោធន៍រលូន និងទាន់សម័យ៖\n\n"
+            "• 📱 <b>UI/UX ទំនើប៖</b> ងាយស្រួលប្រើប្រាស់ និងមើលស្អាតលើទូរស័ព្ទ\n"
+            "• 📋 <b>Copy កូដងាយស្រួល៖</b> ចុច Copy កូដបានភ្លាមៗដោយចុចតែ ១ ប៊ូតុង\n"
+            "• 🌓 <b>សម្រួលពន្លឺ៖</b> ផ្លាស់ប្តូរ Theme Dark/Light ស្វ័យប្រវត្តិ\n\n"
             "👇 <b>ចុចប៊ូតុងខាងក្រោមដើម្បីបើក Mini App៖</b>"
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=builder.as_markup())
