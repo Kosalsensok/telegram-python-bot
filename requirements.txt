@@ -6,8 +6,6 @@ aiomysql
 pymysql
 aiosqlite
 aiohttp
-fastapi
-uvicorn
 requests
-python-telegram-bot
+
 

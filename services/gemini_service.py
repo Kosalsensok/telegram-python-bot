@@ -26,8 +26,8 @@ class GeminiService:
         
         # High-speed In-Memory TTL Cache (key -> (text_response, timestamp))
         self._cache: Dict[str, tuple] = {}
-        self._cache_ttl = 3600  # 1 hour cache duration
-        self._max_cache_size = 1000
+        self._cache_ttl = 1800  # 30 mins cache duration
+        self._max_cache_size = 150
 
     def update_primary_model(self, new_model: str):
         self.primary_model = new_model
