@@ -125,6 +125,26 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
 
+    # 3b-2. STT Voice Prompt Alert Callback
+    @router.callback_query(F.data == "cb_stt_record_prompt")
+    async def callback_stt_record_prompt(callback: types.CallbackQuery):
+        await callback.answer("🎙️ សូមផ្ញើសារសំឡេង (Voice Note) របស់អ្នកចូលក្នុង Bot ឥឡូវនេះ!", show_alert=True)
+        user_id = callback.from_user.id if callback.from_user else 0
+        if db_service:
+            await db_service.set_user_mode(user_id, "speech_to_text")
+
+        mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
+        msg_text = (
+            "🎙️ <b>សូមផ្ញើសារសំឡេង (Voice Note) របស់អ្នកចូលក្នុង Bot ឥឡូវនេះ!</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "👉 <b>របៀបផ្ញើសារសំឡេង៖</b>\n"
+            "1. ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ Telegram)\n"
+            "2. និយាយសារសំឡេងរបស់អ្នក (Voice Note) ឬ ផ្ញើ File សំឡេង (.mp3, .m4a, .wav)\n"
+            "3. Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!\n\n"
+            "💡 <i>ប្រសិនបើលោកអ្នកចង់បើក Mini App ថតសំឡេងផ្សាយផ្ទាល់ សូមចុចប៊ូតុងខាងក្រោម៖</i>"
+        )
+        await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
+
     # 3c. Navigation & Location Callback
     @router.callback_query(F.data == "cb_navigation")
     async def callback_navigation(callback: types.CallbackQuery):
