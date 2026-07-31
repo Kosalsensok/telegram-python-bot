@@ -346,22 +346,27 @@ class DatabaseService:
 
     async def get_global_stats(self) -> Dict[str, Any]:
         """
-        Retrieves global system statistics from MySQL database or in-memory fallback.
-        Uses 60-second high-speed TTL cache to prevent DB latency on /start command.
+        Retrieves global system statistics from in-memory cache instantly without blocking.
+        Uses background refresh every 60 seconds to prevent DB latency on /start command.
         """
         now = time.time()
-        if self._cached_global_stats and (now - self._cached_global_stats_time < 60):
-            return self._cached_global_stats
-
         in_mem_users_cnt = len(self.in_memory_users)
         in_mem_msgs_cnt = self.in_memory_messages_count
 
-        if not self.is_connected or not self.pool:
-            res = {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
-            self._cached_global_stats = res
-            self._cached_global_stats_time = now
-            return res
+        current = self._cached_global_stats or {
+            "total_users": max(in_mem_users_cnt, 1),
+            "total_messages": max(in_mem_msgs_cnt, 1)
+        }
 
+        if not self._cached_global_stats or (now - self._cached_global_stats_time >= 60):
+            self._cached_global_stats = current
+            self._cached_global_stats_time = now
+            if self.is_connected and self.pool:
+                asyncio.create_task(self._refresh_global_stats_bg(in_mem_users_cnt, in_mem_msgs_cnt))
+
+        return current
+
+    async def _refresh_global_stats_bg(self, in_mem_users_cnt: int, in_mem_msgs_cnt: int):
         try:
             sql_users = "SELECT COUNT(*) FROM users;"
             sql_msgs = "SELECT COUNT(*) FROM messages;"
@@ -375,19 +380,13 @@ class DatabaseService:
                     db_users = u_row[0] if u_row else 0
                     db_msgs = m_row[0] if m_row else 0
 
-                    res = {
+                    self._cached_global_stats = {
                         "total_users": max(db_users, in_mem_users_cnt),
                         "total_messages": max(db_msgs, in_mem_msgs_cnt)
                     }
-                    self._cached_global_stats = res
-                    self._cached_global_stats_time = now
-                    return res
+                    self._cached_global_stats_time = time.time()
         except Exception as e:
-            logging.error(f"Error fetching global stats from MySQL: {e}")
-        res = {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
-        self._cached_global_stats = res
-        self._cached_global_stats_time = now
-        return res
+            logging.error(f"Error fetching global stats in background: {e}")
 
     async def close(self) -> None:
         """
