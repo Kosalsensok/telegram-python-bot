@@ -240,7 +240,7 @@ class DatabaseService:
         model_used: str = "gemini-3.6-flash"
     ) -> None:
         """
-        Saves a chat message turn (user or model) to MySQL database and in-memory counter.
+        Saves a chat message turn (user or model) to MySQL database and in-memory counter asynchronously without blocking.
         """
         self.in_memory_messages_count += 1
         if telegram_id:
@@ -256,16 +256,19 @@ class DatabaseService:
         if not self.is_connected or not self.pool:
             return
 
-        try:
-            sql = """
-                INSERT INTO messages (telegram_id, role, message_type, content, model_used)
-                VALUES (%s, %s, %s, %s, %s);
-            """
-            async with self.pool.acquire() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(sql, (telegram_id, role, message_type, content, model_used))
-        except Exception as e:
-            logging.error(f"Error saving message for user {telegram_id} in MySQL: {e}")
+        async def _async_save():
+            try:
+                sql = """
+                    INSERT INTO messages (telegram_id, role, message_type, content, model_used)
+                    VALUES (%s, %s, %s, %s, %s);
+                """
+                async with self.pool.acquire() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(sql, (telegram_id, role, message_type, content, model_used))
+            except Exception as e:
+                logging.error(f"Error saving message for user {telegram_id} in MySQL: {e}")
+
+        asyncio.create_task(_async_save())
 
     async def get_history(self, telegram_id: int, limit: int = 20) -> List[Dict[str, str]]:
         """
@@ -424,19 +427,22 @@ class DatabaseService:
 
     async def set_user_mode(self, telegram_id: int, mode: str) -> None:
         """
-        Set active operating mode for a user in MySQL and in-memory cache.
+        Set active operating mode for a user in MySQL and in-memory cache asynchronously without blocking.
         """
         self.user_modes[telegram_id] = mode
         if not self.is_connected or not self.pool:
             return
 
-        try:
-            sql = "UPDATE users SET active_mode = %s, selectedMode = %s WHERE telegram_id = %s OR telegramId = %s;"
-            async with self.pool.acquire() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(sql, (mode, mode, telegram_id, telegram_id))
-        except Exception as e:
-            logging.error(f"Error updating active_mode for user {telegram_id} in MySQL: {e}")
+        async def _async_update():
+            try:
+                sql = "UPDATE users SET active_mode = %s, selectedMode = %s WHERE telegram_id = %s OR telegramId = %s;"
+                async with self.pool.acquire() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(sql, (mode, mode, telegram_id, telegram_id))
+            except Exception as e:
+                logging.error(f"Error updating active_mode for user {telegram_id} in MySQL: {e}")
+
+        asyncio.create_task(_async_update())
 
     async def get_user_mode(self, telegram_id: int) -> str:
         """
@@ -464,19 +470,22 @@ class DatabaseService:
 
     async def set_user_language(self, telegram_id: int, lang: str) -> None:
         """
-        Set active language for a user in MySQL and in-memory cache.
+        Set active language for a user in MySQL and in-memory cache asynchronously without blocking.
         """
         self.user_languages[telegram_id] = lang
         if not self.is_connected or not self.pool:
             return
 
-        try:
-            sql = "UPDATE users SET language_code = %s, language = %s WHERE telegram_id = %s OR telegramId = %s;"
-            async with self.pool.acquire() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(sql, (lang, lang, telegram_id, telegram_id))
-        except Exception as e:
-            logging.error(f"Error updating language_code for user {telegram_id} in MySQL: {e}")
+        async def _async_update():
+            try:
+                sql = "UPDATE users SET language_code = %s, language = %s WHERE telegram_id = %s OR telegramId = %s;"
+                async with self.pool.acquire() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(sql, (lang, lang, telegram_id, telegram_id))
+            except Exception as e:
+                logging.error(f"Error updating language_code for user {telegram_id} in MySQL: {e}")
+
+        asyncio.create_task(_async_update())
 
     async def get_user_language(self, telegram_id: int) -> str:
         """

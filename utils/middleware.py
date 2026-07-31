@@ -33,14 +33,18 @@ class UserTrackerMiddleware(BaseMiddleware):
 
         if from_user and not from_user.is_bot and self.db_service:
             try:
-                await self.db_service.save_or_update_user(
-                    telegram_id=from_user.id,
-                    username=from_user.username,
-                    first_name=from_user.first_name,
-                    last_name=from_user.last_name,
-                    language_code=from_user.language_code or "en"
+                # Update in-memory set immediately for 0ms latency
+                self.db_service.in_memory_users.add(from_user.id)
+                # Fire async non-blocking task for MySQL persistence so message processing is never delayed
+                asyncio.create_task(
+                    self.db_service.save_or_update_user(
+                        telegram_id=from_user.id,
+                        username=from_user.username,
+                        first_name=from_user.first_name,
+                        last_name=from_user.last_name,
+                        language_code=from_user.language_code or "en"
+                    )
                 )
-
             except Exception as e:
                 logging.error(f"UserTrackerMiddleware error for user {from_user.id}: {e}")
 
