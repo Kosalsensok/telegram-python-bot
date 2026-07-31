@@ -22,11 +22,13 @@ RESPONSE_TYPES = [
     "document_analysis",
     "table_analysis",
     "general_image_analysis",
+    "speech_to_text",
     # Aliases
     "email",
     "document",
     "table",
-    "general_image"
+    "general_image",
+    "stt"
 ]
 
 
@@ -490,6 +492,34 @@ def format_general_answer_telegram(data: Dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
+def format_speech_to_text_telegram(data: Dict[str, Any]) -> str:
+    """
+    Format Speech-to-Text audio transcription response for Telegram output.
+    Strips any stray headers like 'EMAIL ANALYSIS' or 'SMART AI ASSISTANT'.
+    Ensures clean line breaks (\n) for sub-bullet points (•) and numbered items.
+    """
+    raw_text = clean_broken_characters(data.get("raw_text") or data.get("summary_km") or data.get("summary") or "")
+
+    # Clean stray headers
+    formatted = re.sub(r'📧\s*<b>EMAIL ANALYSIS</b>\n?', '', raw_text, flags=re.IGNORECASE)
+    formatted = re.sub(r'🧠\s*<b>SMART AI ASSISTANT</b>\n?', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'🤖\s*<b>Smart AI Response</b>\n?', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'📧\s*EMAIL ANALYSIS\n?', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'🧠\s*SMART AI ASSISTANT\n?', '', formatted, flags=re.IGNORECASE)
+
+    # Ensure proper line breaks (\n) before bullet points (•) and sub-bullets
+    formatted = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', formatted)
+    # Ensure proper line breaks (\n) before numbered lists (e.g. 1., 2., 3.)
+    formatted = re.sub(r'(?<=\S)\s+(\d+\.\s+)', r'\n\1', formatted)
+
+    formatted = formatted.strip()
+
+    if not formatted.startswith("📝") and not formatted.startswith("🎙"):
+        return f"📝 <b>លទ្ធផលបំប្លែងសំឡេង (Transcription)</b>\n\n{formatted}"
+
+    return formatted
+
+
 def format_telegram_html(data: Dict[str, Any]) -> str:
     """
     Formats structured response into Telegram-Native Premium HTML message (Layer 1).
@@ -505,6 +535,8 @@ def format_telegram_html(data: Dict[str, Any]) -> str:
         return format_software_requirements_telegram(data)
     elif res_type in ["mathematics", "physics", "chemistry"]:
         return format_math_telegram(data)
+    elif res_type in ["speech_to_text", "stt"]:
+        return format_speech_to_text_telegram(data)
     elif res_type in ["email_analysis", "email"]:
         return format_email_telegram(data)
     elif res_type in ["document_analysis", "document"]:

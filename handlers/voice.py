@@ -97,6 +97,8 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
                     await memory.add_assistant_message_async(user_id, ai_response)
 
                 parsed_data = parse_ai_structured_response(ai_response, "🎙️ សំឡេងទៅជាអក្សរ (Speech-to-Text)")
+                parsed_data["response_type"] = "speech_to_text"
+                parsed_data["raw_text"] = ai_response
                 solution_id = generate_short_solution_id()
                 save_solution_cache(solution_id, ai_response, parsed_data, user_id, message.chat.id)
 
