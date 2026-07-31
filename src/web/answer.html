@@ -322,23 +322,25 @@
             </select>
           </div>
 
-          <!-- ACTION BUTTONS GRID -->
-          <div class="grid grid-cols-2 gap-2.5">
+          <!-- ACTION BUTTONS GRID (LARGE MOBILE TOUCH TARGETS) -->
+          <div class="grid grid-cols-2 gap-3">
             <button
               id="btn-start-record"
               onclick="startRecording()"
-              class="min-h-[46px] rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+              class="min-h-[54px] rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xl shadow-emerald-500/25 border border-emerald-400/40 transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation select-none"
             >
-              <span>▶️ ចាប់ផ្តើមថត</span>
+              <span class="text-base sm:text-lg">▶️</span>
+              <span>ចាប់ផ្តើមថត</span>
             </button>
 
             <button
               id="btn-stop-record"
               onclick="stopRecording()"
               disabled
-              class="min-h-[46px] rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2"
+              class="min-h-[54px] rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xl shadow-red-500/25 border border-red-400/40 transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation select-none"
             >
-              <span>⏹️ បញ្ឈប់ការថត</span>
+              <span class="text-base sm:text-lg">⏹️</span>
+              <span>បញ្ឈប់ការថត</span>
             </button>
           </div>
 
@@ -942,6 +944,40 @@
       }
     }
 
+    function setRecordingUIState(isRecording) {
+      const btnStart = document.getElementById('btn-start-record');
+      const btnStop = document.getElementById('btn-stop-record');
+      const dot = document.getElementById('recording-dot');
+
+      if (isRecording) {
+        if (btnStart) {
+          btnStart.disabled = true;
+          btnStart.classList.add('opacity-40');
+        }
+        if (btnStop) {
+          btnStop.disabled = false;
+          btnStop.classList.remove('opacity-40');
+          btnStop.classList.add('ring-4', 'ring-red-500/60', 'animate-pulse', 'shadow-2xl', 'shadow-red-500/60');
+        }
+        if (dot) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
+        }
+      } else {
+        if (btnStart) {
+          btnStart.disabled = false;
+          btnStart.classList.remove('opacity-40');
+        }
+        if (btnStop) {
+          btnStop.disabled = true;
+          btnStop.classList.add('opacity-40');
+          btnStop.classList.remove('ring-4', 'ring-red-500/60', 'animate-pulse', 'shadow-2xl', 'shadow-red-500/60');
+        }
+        if (dot) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+        }
+      }
+    }
+
     function startRecording() {
       if (!liveRecognition) {
         initLiveSpeechRecognition();
@@ -971,15 +1007,7 @@
           liveRecognition.lang = document.getElementById('live-lang-select')?.value || 'km-KH';
           liveRecognition.start();
           isLiveRecording = true;
-          
-          document.getElementById('btn-start-record').disabled = true;
-          document.getElementById('btn-stop-record').disabled = false;
-          
-          const dot = document.getElementById('recording-dot');
-          if (dot) {
-            dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
-          }
-          
+          setRecordingUIState(true);
           startRecordingTimer();
           showToast('🎙️ កំពុងថតសំឡេងប្រជុំ Real-time...');
           triggerHaptic('notification', 'success');
@@ -991,10 +1019,7 @@
 
       if (mediaRecorder) {
         isLiveRecording = true;
-        document.getElementById('btn-start-record').disabled = true;
-        document.getElementById('btn-stop-record').disabled = false;
-        const dot = document.getElementById('recording-dot');
-        if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
+        setRecordingUIState(true);
         startRecordingTimer();
         showToast('🎙️ កំពុងថតសំឡេងជាមួយ MediaRecorder...');
         triggerHaptic('notification', 'success');
@@ -1007,20 +1032,13 @@
       if (isLiveRecording) {
         isLiveRecording = false;
         stopRecordingTimer();
+        setRecordingUIState(false);
 
         if (liveRecognition) {
           try { liveRecognition.stop(); } catch(e) {}
         }
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           try { mediaRecorder.stop(); } catch(e) {}
-        }
-        
-        document.getElementById('btn-start-record').disabled = false;
-        document.getElementById('btn-stop-record').disabled = true;
-        
-        const dot = document.getElementById('recording-dot');
-        if (dot) {
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
         }
         
         const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
