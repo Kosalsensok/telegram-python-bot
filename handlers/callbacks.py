@@ -85,13 +85,9 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         formatted_users = format_user_count(total_users)
 
         welcome_text = (
-            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n\n"
-            f"សួស្ដី <b>{user_name}</b>! 👋\n"
-            "ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ អាចជួយអ្នកលើការវិភាគអត្ថបទ រូបភាព សំឡេង គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
-            "───────────────\n"
-            f"📊 <b>អ្នកប្រើប្រាស់សរុប៖</b> {total_users} នាក់\n"
-            "👑 <b>អ្នកបង្កើត៖</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n\n"
-            "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
+            f"👋 <b>សួស្ដី {user_name}! ស្វាគមន៍មកកាន់ Smart AI Assistant</b> 🤖\n\n"
+            "ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ អាចជួយអ្នកលើការវិភាគអត្ថបទ រូបភាព សំឡេង គណិតវិទ្យា និងការសរសេរកូដ។\n\n"
+            "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោមដើម្បីចាប់ផ្តើម៖</b>"
         )
         await safe_edit_message(callback.message, welcome_text, reply_markup=get_welcome_inline_keyboard(user_lang))
 
