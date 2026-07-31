@@ -87,7 +87,7 @@ def escape_tg_html(text: str) -> str:
 
 def _sanitize_outside_pre(text: str) -> str:
     valid_tag_pattern = re.compile(
-        r'</?(?:b|i|s|u|pre|code|blockquote|span)(?:\s+(?:class="[^"]*"|expandable))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
+        r'</?(?:b|i|s|u|pre|code|blockquote|span|tg-emoji)(?:\s+(?:class="[^"]*"|expandable|custom_emoji_id="[^"]*"))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
         re.IGNORECASE
     )
 

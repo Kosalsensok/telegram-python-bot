@@ -17,6 +17,11 @@ from services.db_service import DatabaseService
 from utils.user_count import format_user_count
 from utils.localization import STRINGS, MODE_NAMES, get_str
 from utils.memory import ConversationMemory
+from utils.emoji_utils import (
+    NE_ASK_AI, NE_ANALYZE_IMAGE, NE_SPEECH_TO_TEXT, NE_NAVIGATION,
+    NE_DONATE, NE_MINIAPP, NE_AI_MODES, NE_LANGUAGE, NE_HELP, NE_ABOUT,
+    NE_CROWN, NE_SPARKLES, NE_FIRE, NE_STATS, NE_LIGHTNING, NE_CHECK, NE_HOME
+)
 from config import BOT_DISPLAY_NAME, GEMINI_MODEL, RENDER_EXTERNAL_URL
 
 # Short in-memory lock dict for debouncing rapid button taps (idempotency protection)
@@ -60,7 +65,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         try:
             await callback.message.delete()
         except Exception:
-            await safe_edit_message(callback.message, "✅ Menu ត្រូវបានបិទ។")
+            await safe_edit_message(callback.message, f"{NE_CHECK} Menu ត្រូវបានបិទ។")
 
     # 2. Main Menu Navigation Callback
     @router.callback_query(F.data == "cb_back_main")
@@ -80,14 +85,26 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         formatted_users = format_user_count(total_users)
 
         welcome_text = (
-            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
+            f"{NE_LIGHTNING} <b>SMART AI ASSISTANT</b> {NE_ABOUT}\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
-            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            f"{NE_CROWN} <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            f"{NE_SPARKLES} <b>NewsEmoji Animated Pack:</b> <a href=\"https://t.me/addemoji/NewsEmoji\">NewsEmoji Pack</a> 📰\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"សួស្តី <b>{user_name}</b>! 👋\n\n"
-            "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
-            f"👥 <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
+            f"ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            f"👇 <b>បញ្ជីមុខងារចម្បង (Main Menu):</b>\n"
+            f"• {NE_ASK_AI} <b>សួរ AI</b>\n"
+            f"• {NE_ANALYZE_IMAGE} <b>វិភាគរូបភាព</b>\n"
+            f"• {NE_SPEECH_TO_TEXT} <b>សំឡេងទៅជាអក្សរ</b>\n"
+            f"• {NE_NAVIGATION} <b>បង្ហាញផ្លូវ &amp; ទីតាំង</b>\n"
+            f"• {NE_DONATE} <b>បរិច្ចាគ 2,000 ៛</b>\n"
+            f"• {NE_MINIAPP} <b>Mini App</b>\n"
+            f"• {NE_AI_MODES} <b>AI Modes</b>\n"
+            f"• {NE_LANGUAGE} <b>ភាសា</b>\n"
+            f"• {NE_HELP} <b>ជំនួយ</b>\n"
+            f"• {NE_ABOUT} <b>អំពី Bot</b>\n\n"
+            f"{NE_STATS} <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
         await safe_edit_message(callback.message, welcome_text, reply_markup=get_welcome_inline_keyboard(user_lang))
@@ -97,7 +114,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     async def callback_ask_ai(callback: types.CallbackQuery):
         await callback.answer()
         msg_text = (
-            "💬 <b>សួរសំណួរទៅកាន់ AI</b>\n"
+            f"{NE_ASK_AI} <b>សួរសំណួរទៅកាន់ AI (Ask AI)</b>\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
             "សូមវាយសំណួររបស់អ្នកជាអក្សរ (Text) រួចផ្ញើមកកាន់ Bot ឥឡូវនេះ!\n\n"
             "<i>ឧទាហរណ៍៖ \"សូមពន្យល់ពី Python Asyncio ឱ្យបានច្បាស់\"</i>"
@@ -114,14 +131,14 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
 
         mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
         msg_text = (
-            "🎙️ <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
+            f"{NE_SPEECH_TO_TEXT} <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "✨ <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
+            f"{NE_SPARKLES} <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
             "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
-            "1. 🎤 <b>និយាយសារសំឡេង (Voice Note):</b> ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ) រួចនិយាយសារសំឡេង\n"
-            "2. 🌐 <b>ថតសំឡេងក្នុង Mini App:</b> ចុចប៊ូតុង <i>\"🎙️ បើក Mini App ថតសំឡេង\"</i> ខាងក្រោម ដើម្បីថត និងបម្លែងសំឡេងផ្សាយផ្ទាល់\n"
+            f"1. {NE_SPEECH_TO_TEXT} <b>និយាយសារសំឡេង (Voice Note):</b> ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ) រួចនិយាយសារសំឡេង\n"
+            f"2. {NE_MINIAPP} <b>ថតសំឡេងក្នុង Mini App:</b> ចុចប៊ូតុង <i>\"🎙️ បើក Mini App ថតសំឡេង\"</i> ខាងក្រោម ដើម្បីថត និងបម្លែងសំឡេងផ្សាយផ្ទាល់\n"
             "3. 📁 <b>ផ្ញើ File សំឡេង:</b> ផ្ញើ File សំឡេង (.mp3, .m4a, .wav, .ogg) ចូលក្នុងឆាតនេះ\n\n"
-            "⚡ Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
+            f"{NE_LIGHTNING} Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
 
@@ -135,12 +152,12 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
 
         mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
         msg_text = (
-            "🎙️ <b>សូមផ្ញើសារសំឡេង (Voice Note) របស់អ្នកចូលក្នុង Bot ឥឡូវនេះ!</b>\n"
+            f"{NE_SPEECH_TO_TEXT} <b>សូមផ្ញើសារសំឡេង (Voice Note) របស់អ្នកចូលក្នុង Bot ឥឡូវនេះ!</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             "👉 <b>របៀបផ្ញើសារសំឡេង៖</b>\n"
             "1. ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ Telegram)\n"
             "2. និយាយសារសំឡេងរបស់អ្នក (Voice Note) ឬ ផ្ញើ File សំឡេង (.mp3, .m4a, .wav)\n"
-            "3. Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!\n\n"
+            f"3. {NE_LIGHTNING} Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!\n\n"
             "💡 <i>ប្រសិនបើលោកអ្នកចង់បើក Mini App ថតសំឡេងផ្សាយផ្ទាល់ សូមចុចប៊ូតុងខាងក្រោម៖</i>"
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
@@ -150,13 +167,13 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     async def callback_navigation(callback: types.CallbackQuery):
         await callback.answer()
         msg_text = (
-            "🗺️ <b>មុខងារបង្ហាញផ្លូវ & ស្វែងរកទីតាំង (Navigation & Direction)</b>\n"
+            f"{NE_NAVIGATION} <b>មុខងារបង្ហាញផ្លូវ & ស្វែងរកទីតាំង (Navigation & Direction)</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "✨ <b>ជួយស្វែងរកទីតាំង បង្ហាញផ្លូវ និងទិសដៅទៅកាន់គោលដៅ!</b>\n\n"
+            f"{NE_SPARKLES} <b>ជួយស្វែងរកទីតាំង បង្ហាញផ្លូវ និងទិសដៅទៅកាន់គោលដៅ!</b>\n\n"
             "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
             "1. <b>Share Location:</b> ចុចរូប Clip 📎 ➡️ ជ្រើសរើស <b>Location</b> ដើម្បីផ្ញើទីតាំង GPS\n"
             "2. <b>វាយសារសួរផ្លូវ:</b> វាយសារដូចជា <i>\"បង្ហាញផ្លូវទៅផ្សារថ្មី\"</i> ឬ <i>\"ទិសដៅទៅកាន់អាកាសយានដ្ឋានភ្នំពេញ\"</i>\n"
-            "3. Bot នឹងវិភាគទីតាំង និងផ្តល់ប៊ូតុង <b>Google Maps Direct Navigation</b> (នាំផ្លូវ) ភ្លាមៗ!"
+            f"3. {NE_LIGHTNING} Bot នឹងវិភាគទីតាំង និងផ្តល់ប៊ូតុង <b>Google Maps Direct Navigation</b> (នាំផ្លូវ) ភ្លាមៗ!"
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_welcome_inline_keyboard())
 

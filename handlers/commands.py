@@ -24,6 +24,12 @@ from utils.keyboard_utils import get_main_reply_keyboard
 from utils.memory import ConversationMemory
 from utils.user_count import format_user_count
 from utils.message_utils import send_safe_response
+from utils.emoji_utils import (
+    NE_ASK_AI, NE_ANALYZE_IMAGE, NE_SPEECH_TO_TEXT, NE_NAVIGATION,
+    NE_DONATE, NE_MINIAPP, NE_AI_MODES, NE_LANGUAGE, NE_HELP, NE_ABOUT,
+    NE_CROWN, NE_SPARKLES, NE_FIRE, NE_STATS, NE_LIGHTNING,
+    NE_BRAIN, NE_ROBOT, NE_HUNDRED, NE_WAVE, NE_USERS, NE_DOWN
+)
 from config import (
     BOT_DISPLAY_NAME,
     GEMINI_MODEL,
@@ -101,18 +107,15 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
 
         user_id_str = str(message.from_user.id) if message.from_user else "N/A"
         welcome_text = (
-            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n"
+            f"{NE_BRAIN} <b>SMART AI ASSISTANT</b> {NE_ROBOT}\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
-            "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
+            f"🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ {NE_HUNDRED}%</b> 🇰🇭\n"
+            f"{NE_CROWN} <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"សួស្តី <b>{escaped_user_name}</b>! 👋\n\n"
-            f"សូមស្វាគមន៍មកកាន់ <b>Smart AI Assistant Bot</b> 🤖\n"
-            f"<i>(ប្រព័ន្ធបានចាប់យក Telegram ID របស់អ្នក៖ <code>{user_id_str}</code>)</i>\n\n"
-            "✨ <i>សូមជូនពរឱ្យលោកអ្នកមានសុខភាពល្អ និងប្រកបដោយសេចក្តីសុខ!</i>\n\n"
-            f"👥 <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
-            "លោកអ្នកអាចចុចបញ្ជា /donate ដើម្បីចូលរួមបរិច្ចាគ $0.50 គាំទ្រការអភិវឌ្ឍន៍ AI សម្រាប់ឆ្នាំបន្ទាប់បាន។\n\n"
-            "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
+            f"សួស្តី <b>{escaped_user_name}</b>! {NE_WAVE}\n\n"
+            "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            f"{NE_USERS} <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
+            f"{NE_DOWN} <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
 
         if _GLOBAL_LOGO_FILE_ID:
@@ -201,6 +204,32 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "⚡ Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
         )
         await message.answer(stt_text, parse_mode="HTML", reply_markup=get_stt_banner_keyboard(mini_app_url))
+
+    @router.message(Command("emoji"))
+    @router.message(Command("newsemoji"))
+    async def cmd_newsemoji(message: types.Message):
+        """
+        Displays NewsEmoji Pack showcase and instant add link.
+        """
+        if message.from_user:
+            await _register_user(message.from_user, message.bot)
+
+        emoji_text = (
+            "📰 <b>SMART AI ASSISTANT - NEWSEMOJI PACK</b> 🗞️\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🔥 <b>បន្ថែម NewsEmoji Pack ចូលក្នុង Telegram របស់អ្នកឥឡូវនេះ!</b> 🔥\n\n"
+            "✨ <b>លក្ខណៈពិសេសរបស់ NewsEmoji:</b>\n"
+            "• 🌟 Telegram Custom Animated Emojis\n"
+            "• 📰 លេចធ្លោ & ឡូយខ្លាំងក្នុងការឆាត និងផុសព័ត៌មាន\n"
+            "• 💎 ប្រើប្រាស់បានទាំងក្នុង Private Chat, Group & Channel\n\n"
+            "👇 <b>ចុចប៊ូតុងខាងក្រោមដើម្បីបន្ថែម NewsEmoji ចូល Telegram ភ្លាមៗ៖</b>"
+        )
+        builder = InlineKeyboardBuilder()
+        builder.button(text="✨ បន្ថែម NewsEmoji Pack 📰", url="https://t.me/addemoji/NewsEmoji")
+        builder.button(text="🏠 Menu", callback_data="cb_back_main")
+        builder.adjust(1, 1)
+
+        await message.answer(emoji_text, parse_mode="HTML", reply_markup=builder.as_markup())
 
     @router.message(F.new_chat_members)
     async def handle_new_chat_members(message: types.Message):
