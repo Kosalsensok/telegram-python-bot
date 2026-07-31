@@ -69,7 +69,7 @@ class TestTelegramAIExperience(unittest.TestCase):
 
     def test_greeting_formatting(self):
         formatted = format_telegram_html({"response_type": "greeting"})
-        self.assertIn("សួស្តី!", formatted)
+        self.assertIn("Smart AI Assistant", formatted)
         self.assertNotIn("MATHEMATICS SOLUTION", formatted)
 
     def test_main_menu_inline_keyboard_structure(self):
