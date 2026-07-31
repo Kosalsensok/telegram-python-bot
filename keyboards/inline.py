@@ -253,25 +253,30 @@ def get_requirements_navigation_keyboard(
     mini_app_url: str = ""
 ) -> InlineKeyboardMarkup:
     """
-    Interactive Page Navigation inline keyboard for System Requirements.
+    Interactive Page Navigation inline keyboard in clean Khmer per user spec:
+    Row 1: [ 📋 សង្ខេប ] [ ✨ មុខងារ ]
+    Row 2: [ 👥 តួនាទី ] [ 🔄 លំហូរការងារ ]
+    Row 3: [ 🗄️ ទិន្នន័យ ] [ 🔌 API ]
+    Row 4: [ ◀️ ថយក្រោយ ] [ 📌 1 / 13 ] [ ទៅមុខ ▶️ ]
+    Row 5: [ 🏠 Menu ដើម ]
     """
     builder = InlineKeyboardBuilder()
     sid = solution_id[:16]
 
-    builder.button(text="📋 Overview", callback_data=f"req_overview:{sid}")
-    builder.button(text="💎 Features", callback_data=f"req_features:{sid}")
-    builder.button(text="👥 Roles", callback_data=f"req_roles:{sid}")
-    builder.button(text="🔁 User Flows", callback_data=f"req_flows:{sid}")
-    builder.button(text="🗄 Database", callback_data=f"req_database:{sid}")
+    builder.button(text="📋 សង្ខេប", callback_data=f"req_overview:{sid}")
+    builder.button(text="✨ មុខងារ", callback_data=f"req_features:{sid}")
+    builder.button(text="👥 តួនាទី", callback_data=f"req_roles:{sid}")
+    builder.button(text="🔄 លំហូរការងារ", callback_data=f"req_flows:{sid}")
+    builder.button(text="🗄️ ទិន្នន័យ", callback_data=f"req_database:{sid}")
     builder.button(text="🔌 API", callback_data=f"req_api:{sid}")
 
     prev_page = max(1, current_page - 1)
     next_page = min(total_pages, current_page + 1)
-    builder.button(text="◀ Prev", callback_data=f"req_page:{prev_page}:{sid}")
+    builder.button(text="◀️ ថយក្រោយ", callback_data=f"req_page:{prev_page}:{sid}")
     builder.button(text=f"📌 {current_page} / {total_pages}", callback_data=f"req_page:{current_page}:{sid}")
-    builder.button(text="Next ▶", callback_data=f"req_page:{next_page}:{sid}")
+    builder.button(text="ទៅមុខ ▶️", callback_data=f"req_page:{next_page}:{sid}")
 
-    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+    builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
     builder.adjust(2, 2, 2, 3, 1)
     return builder.as_markup()
 

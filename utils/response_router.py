@@ -353,20 +353,19 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
 
 def format_software_requirements_telegram(data: Dict[str, Any]) -> str:
     """
-    Format software requirements response for Telegram output (Phase 7 C).
+    Format software requirements response for Telegram output.
+    Uses clean Khmer header '📄 លទ្ធផលវិភាគឯកសារ' per user spec.
     """
-    title = clean_broken_characters(data.get("title", "SMART SYSTEM REQUIREMENTS"))
-    subtitle = clean_broken_characters(data.get("subtitle", "Advanced Functional Requirements"))
+    title = clean_broken_characters(data.get("title", ""))
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
-    tags = data.get("tags", ["POS", "Inventory", "Analytics"])
     sections = data.get("sections", [])
 
     parts = [
-        "━━━━━━━━━━━━━━━━━━",
-        f"🛒 <b>{title.upper()}</b>\n{subtitle}",
-        "━━━━━━━━━━━━━━━━━━",
-        f"\n<b>សេចក្តីសង្ខេប៖</b> {summary}"
+        "📄 <b>លទ្ធផលវិភាគឯកសារ</b>\n"
     ]
+    if summary:
+        clean_sum = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', summary)
+        parts.append(f"📌 <b>ទិដ្ឋភាពទូទៅ (Overview)៖</b>\n{clean_sum}")
 
     if tags:
         parts.append(f"🏷 <b>Tags:</b> {' · '.join(tags)}")
@@ -444,22 +443,29 @@ def format_email_telegram(data: Dict[str, Any]) -> str:
 def format_document_telegram(data: Dict[str, Any]) -> str:
     """
     Format document extraction response for Telegram output.
+    Uses clean Khmer header '📄 លទ្ធផលវិភាគឯកសារ' per user spec.
     """
-    title = clean_broken_characters(data.get("title", "Document Summary"))
+    title = clean_broken_characters(data.get("title", ""))
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
     sections = data.get("sections", [])
 
     parts = [
-        "📄 <b>DOCUMENT ANALYSIS</b>",
-        f"<b>{title}</b>",
-        f"\n{summary}"
+        "📄 <b>លទ្ធផលវិភាគឯកសារ</b>\n"
     ]
+    if summary:
+        clean_sum = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', summary)
+        parts.append(f"📌 <b>ទិដ្ឋភាពទូទៅ (Overview)៖</b>\n{clean_sum}")
+
     if sections:
         parts.append("")
         for sec in sections[:5]:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
-            parts.append(f"<b>• {heading}:</b>\n{content}")
+            clean_content = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', content)
+            if heading:
+                parts.append(f"• <b>{heading}៖</b>\n{clean_content}")
+            else:
+                parts.append(clean_content)
 
     return "\n".join(parts)
 

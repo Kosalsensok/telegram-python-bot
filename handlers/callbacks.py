@@ -375,11 +375,64 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     @router.callback_query(F.data.startswith("img_reanalyze:"))
     async def callback_img_reanalyze(callback: types.CallbackQuery):
         await callback.answer()
-        guide_msg = "🔁 <b>សូមផ្ញើរូបភាពម្តងទៀត</b> ដើម្បីឱ្យ AI ធ្វើការវិភាគឡើងវិញ!"
         try:
             await callback.message.reply(guide_msg, parse_mode="HTML")
         except Exception:
             pass
+
+    @router.callback_query(F.data.startswith("req_"))
+    async def callback_req_navigation(callback: types.CallbackQuery):
+        await callback.answer()
+        data = callback.data
+        parts = data.split(":")
+        action = parts[0]
+        sid = parts[-1] if len(parts) > 1 else ""
+
+        page_num = 1
+        section_titles = {
+            "req_overview": ("📋 សង្ខេប", 1),
+            "req_features": ("✨ មុខងារ", 2),
+            "req_roles": ("👥 តួនាទី", 3),
+            "req_flows": ("🔄 លំហូរការងារ", 4),
+            "req_database": ("🗄️ ទិន្នន័យ", 5),
+            "req_api": ("🔌 API", 6),
+        }
+
+        if action == "req_page" and len(parts) >= 3:
+            try:
+                page_num = int(parts[1])
+            except ValueError:
+                page_num = 1
+            sec_name = f"ទំព័រ {page_num}"
+        elif action in section_titles:
+            sec_name, page_num = section_titles[action]
+        else:
+            sec_name = "📄 ឯកសារ"
+
+        from utils.solution_card import get_solution_cache
+        sol = get_solution_cache(sid) if sid else None
+
+        msg_body = ""
+        if sol and sol.get("data"):
+            sol_data = sol["data"]
+            sections = sol_data.get("sections", [])
+            idx = page_num - 1
+            if 0 <= idx < len(sections):
+                sec = sections[idx]
+                heading = sec.get("heading_km") or sec.get("heading") or f"ផ្នែកទី {page_num}"
+                content = sec.get("content_km") or sec.get("content") or ""
+                clean_content = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', content)
+                msg_body = f"📄 <b>លទ្ធផលវិភាគឯកសារ</b>\n\n📌 <b>{heading}៖</b>\n{clean_content}"
+            else:
+                summary = sol_data.get("summary_km") or sol_data.get("summary") or ""
+                clean_sum = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', summary)
+                msg_body = f"📄 <b>លទ្ធផលវិភាគឯកសារ</b>\n\n📌 <b>{sec_name}៖</b>\n{clean_sum}"
+        else:
+            msg_body = f"📄 <b>លទ្ធផលវិភាគឯកសារ</b>\n\n📌 <b>{sec_name} (ទំព័រ {page_num}/13)</b>\n\n• សូមចុចប៊ូតុងខាងក្រោមដើម្បីមើលផ្នែកផ្សេងៗនៃឯកសារ។"
+
+        from keyboards.inline import get_requirements_navigation_keyboard
+        kb = get_requirements_navigation_keyboard(sid, current_page=page_num, total_pages=13)
+        await safe_edit_message(callback.message, msg_body, reply_markup=kb)
 
     @router.callback_query(F.data.startswith("math_latex:"))
     async def callback_math_latex(callback: types.CallbackQuery):
