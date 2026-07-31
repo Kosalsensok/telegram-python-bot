@@ -4,6 +4,7 @@ import os
 import random
 import re
 import time
+from typing import Optional
 from html import escape
 from aiogram import Router, types, F
 from aiogram.types import FSInputFile
@@ -38,15 +39,17 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
     """
     router = Router(name="commands_router")
 
+    _cached_logo_file_id: Optional[str] = None
+
     async def _register_user(from_user: types.User, bot: types.Bot = None):
         if db_service and from_user:
-            await db_service.save_or_update_user(
+            asyncio.create_task(db_service.save_or_update_user(
                 telegram_id=from_user.id,
                 username=from_user.username,
                 first_name=from_user.first_name,
                 last_name=from_user.last_name,
                 language_code=from_user.language_code or "en"
-            )
+            ))
 
     @router.message(Command("myid"))
     @router.message(Command("id"))
@@ -79,8 +82,9 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
     @router.message(F.text == "🏠 Menu")
     async def cmd_start(message: types.Message):
         """
-        Handle /start and /menu commands with user database registration and clean inline menu.
+        Handle /start and /menu commands with non-blocking registration and instant photo response.
         """
+        nonlocal _cached_logo_file_id
         if message.from_user:
             await _register_user(message.from_user, message.bot)
             user_name = message.from_user.first_name or "Friend"
@@ -111,16 +115,31 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
 
+        if _cached_logo_file_id:
+            try:
+                await message.answer_photo(
+                    photo=_cached_logo_file_id,
+                    caption=welcome_text,
+                    parse_mode="HTML",
+                    reply_markup=get_welcome_inline_keyboard()
+                )
+                return
+            except Exception as e:
+                logging.warning(f"Cached logo file_id expired/invalid: {e}, falling back to file upload")
+                _cached_logo_file_id = None
+
         logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.jpg")
         if os.path.exists(logo_path):
             try:
                 photo = FSInputFile(logo_path)
-                await message.answer_photo(
+                sent_msg = await message.answer_photo(
                     photo=photo,
                     caption=welcome_text,
                     parse_mode="HTML",
                     reply_markup=get_welcome_inline_keyboard()
                 )
+                if sent_msg and sent_msg.photo:
+                    _cached_logo_file_id = sent_msg.photo[-1].file_id
                 return
             except Exception as e:
                 logging.error(f"Error sending photo start message: {e}")
@@ -323,16 +342,31 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             "🔒 <b>Privacy:</b> Secure, in-memory image vision pipeline."
         )
 
+        if _cached_logo_file_id:
+            try:
+                await message.answer_photo(
+                    photo=_cached_logo_file_id,
+                    caption=about_text,
+                    parse_mode="HTML",
+                    reply_markup=get_welcome_inline_keyboard()
+                )
+                return
+            except Exception as e:
+                logging.warning(f"Cached logo file_id expired in about: {e}")
+                _cached_logo_file_id = None
+
         logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.jpg")
         if os.path.exists(logo_path):
             try:
                 photo = FSInputFile(logo_path)
-                await message.answer_photo(
+                sent_msg = await message.answer_photo(
                     photo=photo,
                     caption=about_text,
                     parse_mode="HTML",
                     reply_markup=get_welcome_inline_keyboard()
                 )
+                if sent_msg and sent_msg.photo:
+                    _cached_logo_file_id = sent_msg.photo[-1].file_id
                 return
             except Exception as e:
                 logging.error(f"Error sending photo about message: {e}")

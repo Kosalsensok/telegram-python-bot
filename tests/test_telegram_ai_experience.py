@@ -75,13 +75,13 @@ class TestTelegramAIExperience(unittest.TestCase):
     def test_main_menu_inline_keyboard_structure(self):
         kb = get_welcome_inline_keyboard()
         buttons = kb.inline_keyboard
-        self.assertEqual(len(buttons), 5)  # 5 rows
+        self.assertEqual(len(buttons), 7)  # 7 rows
         self.assertEqual(buttons[0][0].text, "💬 សួរ AI")
         self.assertEqual(buttons[0][1].text, "🖼 វិភាគរូបភាព")
-        self.assertEqual(buttons[1][0].text, "💖 បរិច្ចាគ 2,000 ៛")
-        self.assertEqual(buttons[1][1].text, "🌐 Mini App")
-        self.assertEqual(buttons[2][0].text, "🎯 AI Modes")
-        self.assertEqual(buttons[4][1].text, "✕ បិទ Menu")
+        self.assertEqual(buttons[2][0].text, "💖 បរិច្ចាគ 2,000 ៛")
+        self.assertEqual(buttons[2][1].text, "🌐 Mini App")
+        self.assertEqual(buttons[3][0].text, "🎯 AI Modes")
+        self.assertEqual(buttons[6][1].text, "✕ បិទ Menu")
         # Ensure clean labels without commands
         for row in buttons:
             for btn in row:

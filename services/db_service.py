@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import time
 from typing import List, Dict, Any, Optional
 import aiomysql
 import pymysql
@@ -27,6 +28,8 @@ class DatabaseService:
         self.in_memory_user_stats: Dict[int, Dict[str, int]] = {}
         self.user_modes: Dict[int, str] = {}
         self.user_languages: Dict[int, str] = {}
+        self._cached_global_stats: Optional[Dict[str, Any]] = None
+        self._cached_global_stats_time: float = 0
 
 
     async def init_db(self) -> bool:
@@ -344,12 +347,20 @@ class DatabaseService:
     async def get_global_stats(self) -> Dict[str, Any]:
         """
         Retrieves global system statistics from MySQL database or in-memory fallback.
+        Uses 60-second high-speed TTL cache to prevent DB latency on /start command.
         """
+        now = time.time()
+        if self._cached_global_stats and (now - self._cached_global_stats_time < 60):
+            return self._cached_global_stats
+
         in_mem_users_cnt = len(self.in_memory_users)
         in_mem_msgs_cnt = self.in_memory_messages_count
 
         if not self.is_connected or not self.pool:
-            return {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
+            res = {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
+            self._cached_global_stats = res
+            self._cached_global_stats_time = now
+            return res
 
         try:
             sql_users = "SELECT COUNT(*) FROM users;"
@@ -364,13 +375,19 @@ class DatabaseService:
                     db_users = u_row[0] if u_row else 0
                     db_msgs = m_row[0] if m_row else 0
 
-                    return {
+                    res = {
                         "total_users": max(db_users, in_mem_users_cnt),
                         "total_messages": max(db_msgs, in_mem_msgs_cnt)
                     }
+                    self._cached_global_stats = res
+                    self._cached_global_stats_time = now
+                    return res
         except Exception as e:
             logging.error(f"Error fetching global stats from MySQL: {e}")
-        return {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
+        res = {"total_users": in_mem_users_cnt, "total_messages": in_mem_msgs_cnt}
+        self._cached_global_stats = res
+        self._cached_global_stats_time = now
+        return res
 
     async def close(self) -> None:
         """
