@@ -80,7 +80,7 @@ def get_location_router(gemini_service: GeminiService, memory: ConversationMemor
                 active_mode = await db_service.get_user_mode(user_id)
 
             ai_response = await gemini_service.generate_text_chat(
-                prompt=prompt,
+                user_prompt=prompt,
                 mode=active_mode
             )
 
