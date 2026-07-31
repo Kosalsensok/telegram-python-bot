@@ -277,6 +277,102 @@
 
       </div>
     </div>
+
+    <!-- ACCORDION 2: LIVE MEETING RECORDING & TRANSCRIPTION -->
+    <div class="border border-borderdark rounded-2xl bg-darkcard shadow-xl overflow-hidden mt-4">
+      <!-- ACCORDION HEADER -->
+      <div
+        class="flex items-center justify-between p-4 sm:p-5 bg-cardsecondary/60 cursor-pointer border-b border-borderdark/60 select-none hover:bg-cardsecondary transition-colors"
+        onclick="toggleLiveAccordion()"
+      >
+        <div class="flex items-center space-x-3">
+          <span class="p-2 rounded-xl bg-purple-500/20 text-purple-400 text-lg">🎙️</span>
+          <span class="font-moul-heading text-sm sm:text-base text-white tracking-wide">
+            ២. ថតសំឡេងប្រជុំ & បំលែងជាអក្សរ (Live Transcription)
+          </span>
+        </div>
+        <span id="live-accordion-arrow" class="text-purple-400 text-xs transition-transform duration-200">▼</span>
+      </div>
+
+      <!-- ACCORDION CONTENT WORKSPACE -->
+      <div id="live-accordion-body" class="p-4 sm:p-6 space-y-5">
+        
+        <!-- INFO BOX -->
+        <div class="bg-cardsecondary border border-borderdark rounded-xl p-3.5 sm:p-4 space-y-2.5">
+          <h3 class="font-bold text-sm sm:text-base text-white flex items-center gap-2">
+            🎙️ ថតសំឡេងប្រជុំ & បំលែងជាអក្សរ Real-time
+          </h3>
+          <p class="text-xs sm:text-sm text-textsecondary leading-relaxed">
+            ចុចប៊ូតុងខាងក្រោមដើម្បីចាប់ផ្តើមថត និងមើលអក្សរដែលបាននិយាយក្នុងពេលប្រជុំភ្លាមៗ (Khmer 🇰🇭 / English 🇺🇸)។
+          </p>
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="text-[11px] sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">🔴 Real-Time Speech</span>
+            <span class="text-[11px] sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">🇰🇭 ភាសាខ្មែរ</span>
+            <span class="text-[11px] sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🇺🇸 English</span>
+          </div>
+        </div>
+
+        <!-- LANGUAGE SELECTOR & CONTROL BUTTONS -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs font-bold text-textsecondary">🌐 ជ្រើសរើសភាសា (Language):</label>
+            <select id="live-lang-select" onchange="changeLiveLanguage()" class="bg-darknavy border border-borderdark rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-primaryblue">
+              <option value="km-KH" selected>🇰🇭 ភាសាខ្មែរ (Khmer)</option>
+              <option value="en-US">🇺🇸 English (US)</option>
+            </select>
+          </div>
+
+          <!-- ACTION BUTTONS GRID -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <button
+              id="btn-start-record"
+              onclick="startRecording()"
+              class="min-h-[46px] rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+            >
+              <span>▶️ ចាប់ផ្តើមថត</span>
+            </button>
+
+            <button
+              id="btn-stop-record"
+              onclick="stopRecording()"
+              disabled
+              class="min-h-[46px] rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2"
+            >
+              <span>⏹️ បញ្ឈប់ការថត</span>
+            </button>
+          </div>
+
+          <!-- SECONDARY TOOL BUTTONS -->
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="copyLiveTranscript()" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
+              📋 ចម្លងអត្ថបទ
+            </button>
+            <button onclick="clearLiveTranscript()" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
+              🧹 សម្អាត
+            </button>
+            <button onclick="sendLiveToBot()" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-cardsecondary border border-borderdark hover:bg-borderdark/50 active:scale-95 text-textprimary text-xs font-semibold transition-all flex items-center justify-center gap-1 shadow-sm">
+              📤 ផ្ញើទៅ Bot
+            </button>
+          </div>
+        </div>
+
+        <!-- LIVE TRANSCRIPT DISPLAY BOX -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-textsecondary">
+            <span id="live-status-indicator" class="flex items-center gap-1.5">
+              <span id="recording-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+              <span>អត្ថបទដែលបាននិយាយ (Live Transcript)៖</span>
+            </span>
+            <span id="live-char-count" class="text-[11px] font-normal">0 តួអក្សរ</span>
+          </div>
+          <div
+            id="live-transcript"
+            class="bg-darknavy border border-borderdark rounded-xl p-4 min-h-[140px] max-h-[280px] overflow-y-auto text-sm sm:text-base leading-relaxed text-textprimary whitespace-pre-wrap font-kantumruy"
+          ><em class="text-textsecondary/60">អក្សរដែលបាននិយាយក្នុងពេលប្រជុំនឹងបង្ហាញនៅទីនេះ...</em></div>
+        </div>
+
+      </div>
+    </div>
   </main>
 
   <!-- BOTTOM CONTROL: CLOSE APP BUTTON -->
@@ -727,6 +823,174 @@
     }
 
     // Smooth macOS MacBook Cursor Follower
+    // LIVE MEETING RECORDING & SPEECH RECOGNITION (WEB SPEECH API)
+    let liveRecognition = null;
+    let isLiveRecording = false;
+    let currentLiveTranscript = "";
+
+    function initLiveSpeechRecognition() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        liveRecognition = new SpeechRecognition();
+        liveRecognition.continuous = true;
+        liveRecognition.interimResults = true;
+        liveRecognition.lang = document.getElementById('live-lang-select')?.value || 'km-KH';
+
+        liveRecognition.onresult = (event) => {
+          let interim = '';
+          let final = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              final += event.results[i][0].transcript + ' ';
+            } else {
+              interim += event.results[i][0].transcript;
+            }
+          }
+          if (final) {
+            currentLiveTranscript += final;
+          }
+          const fullText = (currentLiveTranscript + interim).trim();
+          const displayEl = document.getElementById('live-transcript');
+          if (displayEl) {
+            displayEl.innerText = fullText || '🎙️ កំពុងស្តាប់សំឡេង...';
+          }
+          const charCountEl = document.getElementById('live-char-count');
+          if (charCountEl) {
+            charCountEl.innerText = `${fullText.length.toLocaleString()} តួអក្សរ`;
+          }
+        };
+
+        liveRecognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          if (event.error === 'not-allowed') {
+            showToast('⚠️ សូមបើកសិទ្ធិប្រើប្រាស់ Microphone ក្នុង Browser');
+          } else if (event.error !== 'no-speech') {
+            showToast(`⚠️ Error: ${event.error}`);
+          }
+          stopRecording();
+        };
+
+        liveRecognition.onend = () => {
+          if (isLiveRecording) {
+            try {
+              liveRecognition.start();
+            } catch(e) {
+              stopRecording();
+            }
+          }
+        };
+      }
+    }
+
+    function toggleLiveAccordion() {
+      const body = document.getElementById('live-accordion-body');
+      const arrow = document.getElementById('live-accordion-arrow');
+      if (body && arrow) {
+        body.classList.toggle('hidden');
+        arrow.classList.toggle('rotate-180');
+        triggerHaptic('impact', 'light');
+      }
+    }
+
+    function changeLiveLanguage() {
+      const langSelect = document.getElementById('live-lang-select');
+      if (liveRecognition && langSelect) {
+        liveRecognition.lang = langSelect.value;
+        showToast(`🌐 បានប្តូរភាសាទៅជា: ${langSelect.value === 'km-KH' ? 'ភាសាខ្មែរ 🇰🇭' : 'English 🇺🇸'}`);
+        if (isLiveRecording) {
+          liveRecognition.stop();
+          setTimeout(() => {
+            try { liveRecognition.start(); } catch(e) {}
+          }, 300);
+        }
+      }
+    }
+
+    function startRecording() {
+      if (!liveRecognition) {
+        initLiveSpeechRecognition();
+      }
+      if (!liveRecognition) {
+        alert('Browser ឬ Telegram របស់អ្នកមិនគាំទ្រ Live Speech Recognition ទេ');
+        return;
+      }
+
+      try {
+        liveRecognition.lang = document.getElementById('live-lang-select')?.value || 'km-KH';
+        liveRecognition.start();
+        isLiveRecording = true;
+        
+        document.getElementById('btn-start-record').disabled = true;
+        document.getElementById('btn-stop-record').disabled = false;
+        
+        const dot = document.getElementById('recording-dot');
+        if (dot) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
+        }
+        
+        showToast('🎙️ ចាប់ផ្តើមថតសំឡេង Real-time...');
+        triggerHaptic('notification', 'success');
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    function stopRecording() {
+      if (liveRecognition && isLiveRecording) {
+        isLiveRecording = false;
+        try {
+          liveRecognition.stop();
+        } catch(e) {}
+        
+        document.getElementById('btn-start-record').disabled = false;
+        document.getElementById('btn-stop-record').disabled = true;
+        
+        const dot = document.getElementById('recording-dot');
+        if (dot) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+        }
+        
+        showToast('⏹️ បានបញ្ឈប់ការថតសំឡេង');
+        triggerHaptic('impact', 'medium');
+      }
+    }
+
+    function copyLiveTranscript() {
+      const text = document.getElementById('live-transcript')?.innerText;
+      if (!text || text.includes('អក្សរដែលបាននិយាយក្នុងពេលប្រជុំ')) {
+        showToast('គ្មានអត្ថបទសម្រាប់ចម្លងទេ');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('📋 បានចម្លងអត្ថបទ Real-time');
+        triggerHaptic('impact', 'light');
+      });
+    }
+
+    function clearLiveTranscript() {
+      currentLiveTranscript = "";
+      const displayEl = document.getElementById('live-transcript');
+      if (displayEl) {
+        displayEl.innerHTML = '<em class="text-textsecondary/60">អក្សរដែលបាននិយាយក្នុងពេលប្រជុំនឹងបង្ហាញនៅទីនេះ...</em>';
+      }
+      document.getElementById('live-char-count').innerText = '0 តួអក្សរ';
+      showToast('🧹 បានសម្អាតអត្ថបទ Real-time');
+    }
+
+    function sendLiveToBot() {
+      const text = document.getElementById('live-transcript')?.innerText;
+      if (!text || text.includes('អក្សរដែលបាននិយាយក្នុងពេលប្រជុំ')) {
+        showToast('គ្មានអត្ថបទសម្រាប់ផ្ញើទេ');
+        return;
+      }
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.sendData(JSON.stringify({ type: 'live_transcript', text: text }));
+        showToast('📤 បានផ្ញើអត្ថបទទៅកាន់ Bot');
+      } else {
+        copyLiveTranscript();
+      }
+    }
+
     (function initMacCursor() {
       const follower = document.createElement('div');
       follower.id = 'mac-cursor-follower';
