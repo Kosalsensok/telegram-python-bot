@@ -359,9 +359,10 @@
         <!-- LIVE TRANSCRIPT DISPLAY BOX -->
         <div class="space-y-1.5">
           <div class="flex items-center justify-between text-xs font-bold text-textsecondary">
-            <span id="live-status-indicator" class="flex items-center gap-1.5">
+            <span id="live-status-indicator" class="flex items-center gap-1.5 flex-wrap">
               <span id="recording-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
               <span>អត្ថបទដែលបាននិយាយ (Live Transcript)៖</span>
+              <span id="recording-timer" class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[11px] font-mono font-bold hidden animate-pulse">⏱️ 00:00</span>
             </span>
             <span id="live-char-count" class="text-[11px] font-normal">0 តួអក្សរ</span>
           </div>
@@ -908,20 +909,57 @@
 
     let mediaRecorder = null;
     let audioChunks = [];
+    let recordingTimerInterval = null;
+    let recordingSeconds = 0;
+
+    function startRecordingTimer() {
+      stopRecordingTimer();
+      recordingSeconds = 0;
+      updateTimerDisplay();
+      const timerBadge = document.getElementById('recording-timer');
+      if (timerBadge) {
+        timerBadge.classList.remove('hidden');
+      }
+      recordingTimerInterval = setInterval(() => {
+        recordingSeconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function stopRecordingTimer() {
+      if (recordingTimerInterval) {
+        clearInterval(recordingTimerInterval);
+        recordingTimerInterval = null;
+      }
+    }
+
+    function updateTimerDisplay() {
+      const timerBadge = document.getElementById('recording-timer');
+      if (timerBadge) {
+        const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+        const secs = String(recordingSeconds % 60).padStart(2, '0');
+        timerBadge.innerText = `⏱️ ${mins}:${secs}`;
+      }
+    }
 
     function startRecording() {
       if (!liveRecognition) {
         initLiveSpeechRecognition();
       }
 
-      // Request getUserMedia microphone access for dual-engine fallback
+      // Cross-Platform Microphone getUserMedia Request (iOS, Android, Windows, macOS)
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        navigator.mediaDevices.getUserMedia({ 
+          audio: { 
+            echoCancellation: true, 
+            noiseSuppression: true 
+          } 
+        }).then(stream => {
           try {
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-            mediaRecorder.start();
+            mediaRecorder.start(1000);
           } catch(e) {}
         }).catch(err => {
           console.warn("Microphone access notice:", err);
@@ -942,6 +980,7 @@
             dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
           }
           
+          startRecordingTimer();
           showToast('🎙️ កំពុងថតសំឡេងប្រជុំ Real-time...');
           triggerHaptic('notification', 'success');
           return;
@@ -956,6 +995,7 @@
         document.getElementById('btn-stop-record').disabled = false;
         const dot = document.getElementById('recording-dot');
         if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
+        startRecordingTimer();
         showToast('🎙️ កំពុងថតសំឡេងជាមួយ MediaRecorder...');
         triggerHaptic('notification', 'success');
       } else {
@@ -966,6 +1006,8 @@
     function stopRecording() {
       if (isLiveRecording) {
         isLiveRecording = false;
+        stopRecordingTimer();
+
         if (liveRecognition) {
           try { liveRecognition.stop(); } catch(e) {}
         }
@@ -981,7 +1023,9 @@
           dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
         }
         
-        showToast('⏹️ បានបញ្ឈប់ការថតសំឡេងប្រជុំ');
+        const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+        const secs = String(recordingSeconds % 60).padStart(2, '0');
+        showToast(`⏹️ បានបញ្ឈប់ការថតសំឡេងប្រជុំ (សរុប ${mins}:${secs})`);
         triggerHaptic('impact', 'medium');
       }
     }
@@ -1000,6 +1044,12 @@
 
     function clearLiveTranscript() {
       currentLiveTranscript = "";
+      stopRecordingTimer();
+      recordingSeconds = 0;
+      const timerBadge = document.getElementById('recording-timer');
+      if (timerBadge) {
+        timerBadge.classList.add('hidden');
+      }
       const displayEl = document.getElementById('live-transcript');
       if (displayEl) {
         displayEl.innerHTML = '<em class="text-textsecondary/60">អក្សរដែលបាននិយាយក្នុងពេលប្រជុំនឹងបង្ហាញនៅទីនេះ...</em>';
