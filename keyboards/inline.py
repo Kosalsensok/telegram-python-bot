@@ -5,17 +5,13 @@ from utils.localization import STRINGS, MODE_NAMES
 
 def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     """
-    Build main menu inline keyboard with prominent ABA PayWay Donation button and Khmer Creator link.
-    Row 1: [💬 សួរ AI] [🖼 វិភាគរូបភាព]
-    Row 2: [💖 បរិច្ចាគ 2,000 ៛] [🌐 Mini App]
-    Row 3: [🎯 AI Modes] [🌍 ភាសា]
-    Row 4: [ℹ️ ជំនួយ] [🤖 អំពី Bot]
-    Row 5: [👑 អ្នកបង្កើត (Creator)]
-    Row 6: [🔐 ឯកជនភាព] [✕ បិទ Menu]
+    Build main menu inline keyboard with prominent Speech-to-Text, Navigation, and Donation buttons.
     """
     builder = InlineKeyboardBuilder()
     builder.button(text="💬 សួរ AI" if lang == "km" else "💬 Ask AI", callback_data="cb_ask_ai")
     builder.button(text="🖼 វិភាគរូបភាព" if lang == "km" else "🖼 Analyze Image", callback_data="cb_analyze_image")
+    builder.button(text="🎙️ សំឡេងទៅជាអក្សរ" if lang == "km" else "🎙️ Speech-to-Text", callback_data="cb_speech_to_text")
+    builder.button(text="🗺️ បង្ហាញផ្លូវ & ទីតាំង" if lang == "km" else "🗺️ Navigation & Location", callback_data="cb_navigation")
     builder.button(text="💖 បរិច្ចាគ 2,000 ៛" if lang == "km" else "💖 Donate 2,000 KHR", callback_data="cb_donate")
     builder.button(text="🌐 Mini App", callback_data="cb_miniapp")
     builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
@@ -25,7 +21,7 @@ def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     builder.button(text="👑 អ្នកបង្កើត (Creator)" if lang == "km" else "👑 Creator (@kosalsensokpk)", url="https://t.me/kosalsensokpk")
     builder.button(text="🔐 ឯកជនភាព" if lang == "km" else "🔐 Privacy", callback_data="cb_privacy")
     builder.button(text="✕ បិទ Menu" if lang == "km" else "✕ Close Menu", callback_data="cb_close_menu")
-    builder.adjust(2, 2, 2, 2, 1, 2)
+    builder.adjust(2, 2, 2, 2, 2, 1, 2)
     return builder.as_markup()
 
 

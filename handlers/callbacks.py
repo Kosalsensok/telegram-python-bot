@@ -103,6 +103,36 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_welcome_inline_keyboard())
 
+    # 3b. Speech-to-Text Callback
+    @router.callback_query(F.data == "cb_speech_to_text")
+    async def callback_speech_to_text(callback: types.CallbackQuery):
+        await callback.answer()
+        msg_text = (
+            "🎙️ <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "✨ <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
+            "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
+            "1. ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ)\n"
+            "2. និយាយសារសំឡេងរបស់អ្នក (Voice Note) ឬ ផ្ញើ File សំឡេង (.mp3, .m4a, .wav)\n"
+            "3. Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
+        )
+        await safe_edit_message(callback.message, msg_text, reply_markup=get_welcome_inline_keyboard())
+
+    # 3c. Navigation & Location Callback
+    @router.callback_query(F.data == "cb_navigation")
+    async def callback_navigation(callback: types.CallbackQuery):
+        await callback.answer()
+        msg_text = (
+            "🗺️ <b>មុខងារបង្ហាញផ្លូវ & ស្វែងរកទីតាំង (Navigation & Direction)</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "✨ <b>ជួយស្វែងរកទីតាំង បង្ហាញផ្លូវ និងទិសដៅទៅកាន់គោលដៅ!</b>\n\n"
+            "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
+            "1. <b>Share Location:</b> ចុចរូប Clip 📎 ➡️ ជ្រើសរើស <b>Location</b> ដើម្បីផ្ញើទីតាំង GPS\n"
+            "2. <b>វាយសារសួរផ្លូវ:</b> វាយសារដូចជា <i>\"បង្ហាញផ្លូវទៅផ្សារថ្មី\"</i> ឬ <i>\"ទិសដៅទៅកាន់អាកាសយានដ្ឋានភ្នំពេញ\"</i>\n"
+            "3. Bot នឹងវិភាគទីតាំង និងផ្តល់ប៊ូតុង <b>Google Maps Direct Navigation</b> (នាំផ្លូវ) ភ្លាមៗ!"
+        )
+        await safe_edit_message(callback.message, msg_text, reply_markup=get_welcome_inline_keyboard())
+
     # 4. Analyze Image Banner Callback
     @router.callback_query(F.data == "cb_analyze_image")
     async def callback_analyze_image(callback: types.CallbackQuery):
