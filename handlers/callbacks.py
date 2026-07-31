@@ -305,9 +305,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             "🇰🇭 <b>បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
             "👑 <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"⚡ <b>AI Engine:</b> Google Gemini ({GEMINI_MODEL})\n"
             "🌐 <b>Supported Languages:</b> 🇰🇭 Khmer & 🇬🇧 English\n"
-            "🛠 <b>Framework:</b> Python 3.11+ & Aiogram 3.x\n"
             "🔒 <b>Security:</b> Enterprise grade, privacy focused."
         )
         await safe_edit_message(callback.message, about_text, reply_markup=get_welcome_inline_keyboard())
