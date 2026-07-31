@@ -119,11 +119,11 @@ NEWS_EMOJI_MAP = {
 
 def get_news_emoji(emoji: str) -> str:
     """
-    Wraps an emoji with official Telegram HTML custom emoji tag (<tg-emoji custom_emoji_id="...">) if a NewsEmoji custom_emoji_id is available.
+    Wraps an emoji with official Telegram HTML custom emoji tag (<tg-emoji emoji-id="...">) if a NewsEmoji custom_emoji_id is available.
     """
     custom_id = NEWS_EMOJI_MAP.get(emoji.strip())
     if custom_id:
-        return f'<tg-emoji custom_emoji_id="{custom_id}">{emoji}</tg-emoji>'
+        return f'<tg-emoji emoji-id="{custom_id}">{emoji}</tg-emoji>'
     return emoji
 
 def apply_news_emojis(text: str) -> str:
@@ -136,8 +136,8 @@ def apply_news_emojis(text: str) -> str:
     sorted_emojis = sorted(NEWS_EMOJI_MAP.keys(), key=len, reverse=True)
     for e in sorted_emojis:
         cid = NEWS_EMOJI_MAP[e]
-        replacement = f'<tg-emoji custom_emoji_id="{cid}">{e}</tg-emoji>'
-        pattern = re.compile(rf'(?<!custom_emoji_id=")(?<!">){re.escape(e)}(?!\s*</tg-emoji>)')
+        replacement = f'<tg-emoji emoji-id="{cid}">{e}</tg-emoji>'
+        pattern = re.compile(rf'(?<!emoji-id=")(?<!custom_emoji_id=")(?<!">){re.escape(e)}(?!\s*</tg-emoji>)')
         text = pattern.sub(replacement, text)
     return text
 
