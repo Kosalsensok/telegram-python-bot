@@ -322,34 +322,31 @@ def format_greeting_telegram(data: Dict[str, Any]) -> str:
 
 def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     """
-    Format code answer response for Telegram output (Phase 7 B).
+    Format code answer response for Telegram output without header overhead.
     """
-    title = clean_broken_characters(data.get("title", "C++ Code Solution"))
-    subtitle = clean_broken_characters(data.get("subtitle", ""))
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
-    tags = data.get("tags", ["Code", "Implementation"])
     sections = data.get("sections", [])
+    code_info = data.get("code", {})
+    code_content = code_info.get("content", "") if isinstance(code_info, dict) else ""
+    code_lang = code_info.get("language", "cpp") if isinstance(code_info, dict) else "cpp"
 
-    parts = [
-        "💻 <b>CODE SOLUTION</b>",
-        f"<b>{title}</b>"
-    ]
-    if subtitle:
-        parts.append(f"<i>{subtitle}</i>")
-
+    parts = []
     if summary:
-        parts.append(f"\n<b>សង្ខេប៖</b> {summary}")
+        parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
 
-    if tags:
-        parts.append(f"🏷 <b>Tags:</b> {' · '.join(tags)}")
+    if code_content:
+        parts.append(f"\n💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{code_lang}\">{code_content}</code></pre>")
 
     if sections:
-        parts.append("")
-        for sec in sections[:4]:
-            step_num = sec.get("step_number", 1)
+        parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")
+        for sec in sections[:5]:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
-            parts.append(f"<b>{step_num}️⃣ {heading}</b>\n{content}")
+            content_clean = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', content)
+            if heading and heading.lower() not in ["code", "solution", "overview", "សង្ខេប"]:
+                parts.append(f"• <b>{heading}៖</b> {content_clean}")
+            elif content_clean:
+                parts.append(f"• {content_clean}")
 
     return "\n".join(parts)
 
@@ -471,22 +468,29 @@ def format_general_answer_telegram(data: Dict[str, Any]) -> str:
     """
     Format general answer response for Telegram output.
     """
-    title = clean_broken_characters(data.get("title", "Smart AI Response"))
+    title = clean_broken_characters(data.get("title", ""))
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
     sections = data.get("sections", [])
 
-    parts = [
-        f"🤖 <b>{title}</b>"
-    ]
-    if summary and summary != title:
-        parts.append(f"\n{summary}")
+    parts = []
+    if title and not any(t in title.lower() for t in ["smart ai", "assistant response", "general answer"]):
+        parts.append(f"📌 <b>{title}</b>")
+    elif summary:
+        parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
+
+    if summary and summary != title and not parts:
+        parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
 
     if sections:
-        parts.append("")
+        parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")
         for sec in sections[:5]:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
-            parts.append(f"<b>• {heading}</b>\n{content}")
+            content_clean = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', content)
+            if heading and not heading.lower().startswith("sec_"):
+                parts.append(f"• <b>{heading}៖</b> {content_clean}")
+            elif content_clean:
+                parts.append(f"• {content_clean}")
 
     return "\n".join(parts)
 

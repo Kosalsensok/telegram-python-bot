@@ -391,14 +391,26 @@ async def send_safe_response(message: types.Message, text: str, reply_markup=Non
 
     for i, chunk in enumerate(chunks):
         current_markup = reply_markup if i == len(chunks) - 1 else None
+        link_opts = None
         try:
-            await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup)
+            link_opts = types.LinkPreviewOptions(is_disabled=True)
+        except Exception:
+            link_opts = None
+
+        try:
+            if link_opts is not None:
+                await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup, link_preview_options=link_opts)
+            else:
+                await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup, disable_web_page_preview=True)
         except Exception as e:
             logging.warning(f"Failed to send HTML formatted message chunk, attempting plain text fallback: {e}")
             # Fallback: Strip HTML tags, unescape, and send as pure plain text without parse_mode
             plain_text = re.sub(r'<[^>]+>', '', chunk)
             plain_text = html.unescape(plain_text)
             try:
-                await message.reply(plain_text, parse_mode=None, reply_markup=current_markup)
+                if link_opts is not None:
+                    await message.reply(plain_text, parse_mode=None, reply_markup=current_markup, link_preview_options=link_opts)
+                else:
+                    await message.reply(plain_text, parse_mode=None, reply_markup=current_markup, disable_web_page_preview=True)
             except Exception as fallback_err:
                 logging.error(f"Fallback plain text message send failed: {fallback_err}")
