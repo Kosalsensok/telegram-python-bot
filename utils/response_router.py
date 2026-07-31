@@ -308,16 +308,15 @@ def format_greeting_telegram(data: Dict[str, Any]) -> str:
     Format standard greeting response for Telegram output (Phase 7 A).
     """
     return (
-        "👋 <b>សួស្តី!</b>\n"
-        "ខ្ញុំជា <b>Smart AI Assistant</b>។\n\n"
-        "ខ្ញុំអាចជួយអ្នកបានលើ៖\n"
-        "• 💻 ការសរសេរកូដ (Code Generation)\n"
-        "• 📐 គណិតវិទ្យា & វិទ្យាសាស្ត្រ (LaTeX Solver)\n"
-        "• 🖼 វិភាគរូបភាព (Vision OCR & Inspection)\n"
-        "• 🛒 Functional Requirements & Business Systems\n"
-        "• 📦 Project Prototype & Architecture\n"
-        "• 🧠 Technical Deep-Dive Explanations\n\n"
-        "👉 សូមផ្ញើសំណួររបស់អ្នក ឬចុច Menu ខាងក្រោម។"
+        "👋 <b>សួស្ដី!</b>\n"
+        "ខ្ញុំជា <b>Smart AI Assistant</b> 🤖\n\n"
+        "ខ្ញុំអាចជួយអ្នកលើ៖\n"
+        "• 💻 <b>សរសេរកូដ៖</b> កូដ និងដោះស្រាយ Error\n"
+        "• 📐 <b>លំហាត់៖</b> គណិត, រូប, គីមី (LaTeX Solver)\n"
+        "• 🖼️ <b>រូបភាព៖</b> វិភាគ និងស្កែនរូបភាព (Vision OCR)\n"
+        "• 🏗️ <b>ប្រព័ន្ធ AI៖</b> រៀបចំ Architecture & Requirements\n"
+        "• 💡 <b>ប្រឹក្សាយោបល់៖</b> ពន្យល់បច្ចេកវិទ្យា និងដំណោះស្រាយ\n\n"
+        "👉 <b>សូមផ្ញើសំណួរ ឬជ្រើសរើសមុខងារខាងក្រោម៖</b>"
     )
 
 

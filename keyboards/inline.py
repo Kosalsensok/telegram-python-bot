@@ -34,18 +34,21 @@ def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
 
 def get_greeting_inline_keyboard(mini_app_url: str = "") -> InlineKeyboardMarkup:
     """
-    Inline keyboard for Greeting responses.
+    Inline keyboard for Greeting responses (Clean 3-row layout).
+    Row 1: [ 💬 សួរ AI ] [ 🖼️ វិភាគរូបភាព ]
+    Row 2: [ 🎯 AI Modes ] [ 🌐 Mini App ]
+    Row 3: [ ℹ️ ជំនួយ ] [ ❌ បិទ Menu ]
     """
     builder = InlineKeyboardBuilder()
     builder.button(text="💬 សួរ AI", callback_data="cb_ask_ai")
-    builder.button(text="🖼 វិភាគរូបភាព", callback_data="cb_analyze_image")
+    builder.button(text="🖼️ វិភាគរូបភាព", callback_data="cb_analyze_image")
     builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
     if mini_app_url:
         builder.button(text="🌐 Mini App", web_app=WebAppInfo(url=mini_app_url))
     else:
         builder.button(text="🌐 Mini App", callback_data="cb_miniapp")
     builder.button(text="ℹ️ ជំនួយ", callback_data="cb_help")
-    builder.button(text="🏠 Menu", callback_data="cb_back_main")
+    builder.button(text="❌ បិទ Menu", callback_data="cb_close_menu")
     builder.adjust(2, 2, 2)
     return builder.as_markup()
 
