@@ -8,10 +8,10 @@
   <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Google Fonts: Kantumruy Pro & Moul -->
+  <!-- Google Fonts: Kantumruy Pro & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Moul&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -30,8 +30,8 @@
             textsecondary: '#b8c5d6'
           },
           fontFamily: {
-            moul: ['"Moul"', 'cursive', 'sans-serif'],
-            kantumruy: ['"Kantumruy Pro"', 'sans-serif']
+            moul: ['"Kantumruy Pro"', '"Inter"', 'sans-serif'],
+            kantumruy: ['"Kantumruy Pro"', '"Inter"', 'sans-serif']
           }
         }
       }
@@ -57,14 +57,15 @@
     body {
       background-color: var(--tg-theme-bg-color, var(--bg-color));
       color: var(--tg-theme-text-color, #f8fafc);
-      font-family: "Kantumruy Pro", sans-serif;
+      font-family: "Kantumruy Pro", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
       line-height: 1.8;
       -webkit-font-smoothing: antialiased;
     }
 
     .font-moul-heading {
-      font-family: "Moul", cursive, sans-serif;
-      line-height: 1.6;
+      font-family: "Kantumruy Pro", "Inter", sans-serif;
+      font-weight: 700;
+      line-height: 1.5;
     }
 
     /* ISSUE HIGHLIGHT STYLES */
@@ -126,11 +127,11 @@
       <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
       <span>🧠 SMART AI ASSISTANT OFFICIAL</span>
     </div>
-    <h1 class="font-moul-heading text-xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 tracking-wide">
+    <h1 class="font-bold text-xl sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 tracking-wide">
       Smart AI Assistant Mini App
     </h1>
-    <p class="text-xs sm:text-sm text-textsecondary font-kantumruy">
-      កម្មវិធីពិនិត្យ និងកែអក្ខរាវិរុទ្ធភាសាខ្មែរ AI កម្រិតខ្ពស់ (Powered by Google Gemini AI)
+    <p class="text-xs sm:text-sm text-textsecondary font-medium">
+      កម្មវិធីពិនិត្យកែអក្ខរាវិរុទ្ធ និងបំប្លែងសំឡេង AI កម្រិតខ្ពស់
     </p>
   </header>
 
@@ -146,11 +147,11 @@
           <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
             ✍️
           </div>
-          <span class="font-moul text-xs sm:text-base text-blue-300">
-            ១. ពិនិត្យអក្ខរាវិរុទ្ធ (Khmer Spelling)
+          <span class="font-bold text-xs sm:text-base text-blue-300">
+            ១. ✍️ ពិនិត្យអក្ខរាវិរុទ្ធខ្មែរ (Khmer Spelling)
           </span>
         </div>
-        <span id="accordion-arrow" class="text-blue-400 text-xs transition-transform duration-200">▼</span>
+        <span id="accordion-arrow" class="text-blue-400 text-xs transition-transform duration-200">▲</span>
       </div>
 
       <!-- ACCORDION CONTENT WORKSPACE -->
@@ -287,20 +288,20 @@
       >
         <div class="flex items-center space-x-3">
           <span class="p-2 rounded-xl bg-purple-500/20 text-purple-400 text-lg">🎙️</span>
-          <span class="font-moul-heading text-sm sm:text-base text-white tracking-wide">
-            ២. ថតសំឡេងប្រជុំ & បំលែងជាអក្សរ (Live Transcription)
+          <span class="font-bold text-sm sm:text-base text-white tracking-wide">
+            ២. 🎙️ ថតសំឡេងប្រជុំ & បំប្លែងជាអក្សរ (Live Transcription)
           </span>
         </div>
         <span id="live-accordion-arrow" class="text-purple-400 text-xs transition-transform duration-200">▼</span>
       </div>
 
       <!-- ACCORDION CONTENT WORKSPACE -->
-      <div id="live-accordion-body" class="p-4 sm:p-6 space-y-5">
+      <div id="live-accordion-body" class="p-4 sm:p-6 space-y-5 hidden">
         
         <!-- INFO BOX -->
         <div class="bg-cardsecondary border border-borderdark rounded-xl p-3.5 sm:p-4 space-y-2.5">
           <h3 class="font-bold text-sm sm:text-base text-white flex items-center gap-2">
-            🎙️ ថតសំឡេងប្រជុំ & បំលែងជាអក្សរ Real-time
+            🎙️ ថតសំឡេងប្រជុំ & បំប្លែងជាអក្សរ Real-time
           </h3>
           <p class="text-xs sm:text-sm text-textsecondary leading-relaxed">
             ចុចប៊ូតុងខាងក្រោមដើម្បីចាប់ផ្តើមថត និងមើលអក្សរដែលបាននិយាយក្នុងពេលប្រជុំភ្លាមៗ (Khmer 🇰🇭 / English 🇺🇸)។
@@ -384,7 +385,7 @@
       onclick="if(window.Telegram?.WebApp) Telegram.WebApp.close();"
       class="w-full min-h-[44px] rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 font-bold text-xs sm:text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
     >
-      <span>✕ បិទ App (Close)</span>
+      <span>❌ បិទ App</span>
     </button>
   </footer>
 
@@ -467,9 +468,11 @@
     function toggleAccordion() {
       const body = document.getElementById('accordion-body');
       const arrow = document.getElementById('accordion-arrow');
-      body.classList.toggle('hidden');
-      arrow.classList.toggle('rotate-180');
-      triggerHaptic('impact', 'light');
+      if (body && arrow) {
+        const isHidden = body.classList.toggle('hidden');
+        arrow.innerText = isHidden ? '▼' : '▲';
+        triggerHaptic('impact', 'light');
+      }
     }
 
     function updateCounters() {
@@ -889,8 +892,8 @@
       const body = document.getElementById('live-accordion-body');
       const arrow = document.getElementById('live-accordion-arrow');
       if (body && arrow) {
-        body.classList.toggle('hidden');
-        arrow.classList.toggle('rotate-180');
+        const isHidden = body.classList.toggle('hidden');
+        arrow.innerText = isHidden ? '▼' : '▲';
         triggerHaptic('impact', 'light');
       }
     }
