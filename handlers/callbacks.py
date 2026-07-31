@@ -131,34 +131,25 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
 
         mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
         msg_text = (
-            f"{NE_SPEECH_TO_TEXT} <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"{NE_SPARKLES} <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
-            "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
-            f"1. {NE_SPEECH_TO_TEXT} <b>និយាយសារសំឡេង (Voice Note):</b> ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ) រួចនិយាយសារសំឡេង\n"
-            f"2. {NE_MINIAPP} <b>ថតសំឡេងក្នុង Mini App:</b> ចុចប៊ូតុង <i>\"🎙️ បើក Mini App ថតសំឡេង\"</i> ខាងក្រោម ដើម្បីថត និងបម្លែងសំឡេងផ្សាយផ្ទាល់\n"
-            "3. 📁 <b>ផ្ញើ File សំឡេង:</b> ផ្ញើ File សំឡេង (.mp3, .m4a, .wav, .ogg) ចូលក្នុងឆាតនេះ\n\n"
-            f"{NE_LIGHTNING} Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
+            "🎙️ <b>បំប្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n\n"
+            "លោកអ្នកអាចផ្ញើសារសំឡេង (Voice Note) ឬ File សំឡេង (.mp3, .m4a, .wav) ចូលក្នុងឆាតនេះជាការស្រេច!\n\n"
+            "🌐 គាំទ្រភាសាខ្មែរ និងអង់គ្លេស"
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
 
     # 3b-2. STT Voice Prompt Alert Callback
     @router.callback_query(F.data == "cb_stt_record_prompt")
     async def callback_stt_record_prompt(callback: types.CallbackQuery):
-        await callback.answer("🎙️ សូមផ្ញើសារសំឡេង (Voice Note) របស់អ្នកចូលក្នុង Bot ឥឡូវនេះ!", show_alert=True)
+        await callback.answer("🎙️ លោកអ្នកអាចផ្ញើសារសំឡេង (Voice Note) ចូលក្នុងឆាតនេះជាការស្រេច!", show_alert=True)
         user_id = callback.from_user.id if callback.from_user else 0
         if db_service:
             await db_service.set_user_mode(user_id, "speech_to_text")
 
         mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
         msg_text = (
-            f"{NE_SPEECH_TO_TEXT} <b>សូមផ្ញើសារសំឡេង (Voice Note) របស់អ្នកចូលក្នុង Bot ឥឡូវនេះ!</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "👉 <b>របៀបផ្ញើសារសំឡេង៖</b>\n"
-            "1. ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ Telegram)\n"
-            "2. និយាយសារសំឡេងរបស់អ្នក (Voice Note) ឬ ផ្ញើ File សំឡេង (.mp3, .m4a, .wav)\n"
-            f"3. {NE_LIGHTNING} Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!\n\n"
-            "💡 <i>ប្រសិនបើលោកអ្នកចង់បើក Mini App ថតសំឡេងផ្សាយផ្ទាល់ សូមចុចប៊ូតុងខាងក្រោម៖</i>"
+            "🎙️ <b>បំប្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n\n"
+            "លោកអ្នកអាចផ្ញើសារសំឡេង (Voice Note) ឬ File សំឡេង (.mp3, .m4a, .wav) ចូលក្នុងឆាតនេះជាការស្រេច!\n\n"
+            "🌐 គាំទ្រភាសាខ្មែរ និងអង់គ្លេស"
         )
         await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
 

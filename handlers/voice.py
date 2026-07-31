@@ -15,16 +15,17 @@ from config import RENDER_EXTERNAL_URL
 
 DEFAULT_SPEECH_TO_TEXT_PROMPT = (
     "🎙️ **ភារកិច្ចចម្បងរបស់អ្នក (Speech-to-Text & AI Analysis):**\n\n"
-    "1. **បម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text Transcription):**\n"
+    "1. **បំប្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text Transcription):**\n"
     "   - ស្តាប់សំឡេងនេះដោយយកចិត្តទុកដាក់ខ្ពស់។\n"
-    "   - បម្លែងរាល់ពាក្យពេចន៍ដែលនិយាយក្នុងសំឡេងនេះទៅជាអក្សរឲ្យបានច្បាស់លាស់ ត្រឹមត្រូវ និងឥតខ្ចោះ (គាំទ្រទាំងភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸)។\n\n"
+    "   - បំប្លែងរាល់ពាក្យពេចន៍ដែលនិយាយក្នុងសំឡេងនេះទៅជាអក្សរឲ្យបានច្បាស់លាស់ ត្រឹមត្រូវ និងឥតខ្ចោះ (គាំទ្រទាំងភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸)។\n\n"
     "2. **ឆ្លើយតប និងពន្យល់ខ្លឹមសារ (AI Response & Explanation):**\n"
     "   - ឆ្លើយតបសំណួរ ឬពន្យល់ខ្លឹមសារនៃសារសំឡេងនេះជាភាសាខ្មែរឲ្យបានក្បោះក្បាយ ច្បាស់លាស់ និងមានប្រយោជន៍។\n\n"
-    "**សូមរៀបចំទម្រង់ឆ្លើយតបជា ២ ផ្នែកច្បាស់លាស់ដូចខាងក្រោម៖**\n\n"
-    "🎙️ **១. អត្ថបទដើមចេញពីសំឡេង (Speech-to-Text):**\n"
-    "[សរសេរអត្ថបទពេញលេញដែលបម្លែងចេញពីសំឡេងនៅទីនេះ]\n\n"
-    "💡 **២. ចម្លើយ និងការបកស្រាយ (AI Answer & Explanation):**\n"
-    "[សរសេរចម្លើយបកស្រាយពេញលេញនៅទីនេះ]"
+    "**សូមរៀបចំទម្រង់ឆ្លើយតបជាទម្រង់ស្អាត ខ្លីខ្លឹម ដូចខាងក្រោម៖**\n\n"
+    "📝 **លទ្ធផលបំប្លែងសំឡេង៖**\n"
+    "\" [ សរសេរអត្ថបទពេញលេញដែលបំប្លែងចេញពីសំឡេងនៅទីនេះ ] \"\n\n"
+    "─────────────────\n"
+    "💡 **ចម្លើយ និងការបកស្រាយ៖**\n"
+    "[ សរសេរចម្លើយបកស្រាយខ្លី ខ្លឹម ច្បាស់លាស់នៅទីនេះ ]"
 )
 
 
@@ -69,6 +70,7 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
                 pass
 
             from utils.thinking_animation import DynamicThinkingAnimation, VOICE_THINKING_STEPS
+            from keyboards.inline import get_stt_banner_keyboard
 
             async with DynamicThinkingAnimation(message, VOICE_THINKING_STEPS) as anim:
                 file_info = await message.bot.get_file(voice.file_id)
@@ -104,7 +106,7 @@ def get_voice_router(gemini_service: GeminiService, memory: ConversationMemory =
                     mini_app_url = f"{base_url}/answer/{solution_id}"
 
                 formatted_html = format_telegram_html(parsed_data)
-                keyboard = get_requirements_navigation_keyboard(solution_id, current_page=1, total_pages=13, mini_app_url=mini_app_url)
+                keyboard = get_stt_banner_keyboard(mini_app_url)
 
             await send_safe_response(message, formatted_html, reply_markup=keyboard)
 

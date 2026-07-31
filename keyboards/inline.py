@@ -167,8 +167,9 @@ from config import RENDER_EXTERNAL_URL
 
 def get_stt_banner_keyboard(mini_app_url: str = "") -> InlineKeyboardMarkup:
     """
-    Interactive guidance keyboard for Speech-to-Text mode with direct Mini App & Voice Record action buttons.
-    Ensures valid WebApp URL or callback fallback for 100% functionality.
+    Clean 100% User-Friendly guidance keyboard for Speech-to-Text mode per spec:
+    [ 🎙️ បើក Mini App ថតសំឡេង ]
+    [ 💬 សួរ AI ] | [ 🏠 Menu ដើម ]
     """
     builder = InlineKeyboardBuilder()
     
@@ -180,14 +181,11 @@ def get_stt_banner_keyboard(mini_app_url: str = "") -> InlineKeyboardMarkup:
     if valid_webapp_url:
         builder.button(text="🎙️ បើក Mini App ថតសំឡេង", web_app=WebAppInfo(url=valid_webapp_url))
     else:
-        builder.button(text="🌐 បើក Mini App ថតសំឡេង", callback_data="cb_miniapp")
+        builder.button(text="🎙️ បើក Mini App ថតសំឡេង", callback_data="cb_miniapp")
     
-    builder.button(text="🎤 ផ្ញើសារសំឡេងចូល Bot", callback_data="cb_stt_record_prompt")
     builder.button(text="💬 សួរ AI", callback_data="cb_ask_ai")
-    builder.button(text="🖼 វិភាគរូបភាព", callback_data="cb_analyze_image")
-    builder.button(text="🏠 Menu", callback_data="cb_back_main")
-    builder.button(text="✕ បិទ Menu", callback_data="cb_close_menu")
-    builder.adjust(1, 1, 2, 2)
+    builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
+    builder.adjust(1, 2)
     return builder.as_markup()
 
 
