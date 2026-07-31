@@ -119,35 +119,6 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         )
 
         try:
-            if _GLOBAL_LOGO_FILE_ID:
-                try:
-                    await message.answer_photo(
-                        photo=_GLOBAL_LOGO_FILE_ID,
-                        caption=welcome_text,
-                        parse_mode="HTML",
-                        reply_markup=get_welcome_inline_keyboard()
-                    )
-                    return
-                except Exception as e:
-                    logging.warning(f"Cached logo file_id expired/invalid: {e}, falling back to file upload")
-                    _GLOBAL_LOGO_FILE_ID = None
-
-            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo.jpg")
-            if os.path.exists(logo_path):
-                try:
-                    photo = FSInputFile(logo_path)
-                    sent_msg = await message.answer_photo(
-                        photo=photo,
-                        caption=welcome_text,
-                        parse_mode="HTML",
-                        reply_markup=get_welcome_inline_keyboard()
-                    )
-                    if sent_msg and sent_msg.photo:
-                        _GLOBAL_LOGO_FILE_ID = sent_msg.photo[-1].file_id
-                    return
-                except Exception as e:
-                    logging.error(f"Error sending photo start message: {e}")
-
             await message.answer(
                 welcome_text,
                 parse_mode="HTML",
