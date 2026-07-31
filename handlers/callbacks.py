@@ -85,26 +85,12 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         formatted_users = format_user_count(total_users)
 
         welcome_text = (
-            f"{NE_LIGHTNING} <b>SMART AI ASSISTANT</b> {NE_ABOUT}\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            "🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ 100%</b> 🇰🇭\n"
-            f"{NE_CROWN} <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
-            f"{NE_SPARKLES} <b>NewsEmoji Animated Pack:</b> <a href=\"https://t.me/addemoji/NewsEmoji\">NewsEmoji Pack</a> 📰\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"សួស្តី <b>{user_name}</b>! 👋\n\n"
-            f"ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
-            f"👇 <b>បញ្ជីមុខងារចម្បង (Main Menu):</b>\n"
-            f"• {NE_ASK_AI} <b>សួរ AI</b>\n"
-            f"• {NE_ANALYZE_IMAGE} <b>វិភាគរូបភាព</b>\n"
-            f"• {NE_SPEECH_TO_TEXT} <b>សំឡេងទៅជាអក្សរ</b>\n"
-            f"• {NE_NAVIGATION} <b>បង្ហាញផ្លូវ &amp; ទីតាំង</b>\n"
-            f"• {NE_DONATE} <b>បរិច្ចាគ 2,000 ៛</b>\n"
-            f"• {NE_MINIAPP} <b>Mini App</b>\n"
-            f"• {NE_AI_MODES} <b>AI Modes</b>\n"
-            f"• {NE_LANGUAGE} <b>ភាសា</b>\n"
-            f"• {NE_HELP} <b>ជំនួយ</b>\n"
-            f"• {NE_ABOUT} <b>អំពី Bot</b>\n\n"
-            f"{NE_STATS} <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
+            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n\n"
+            f"សួស្ដី <b>{user_name}</b>! 👋\n"
+            "ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ អាចជួយអ្នកលើការវិភាគអត្ថបទ រូបភាព សំឡេង គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            "───────────────\n"
+            f"📊 <b>អ្នកប្រើប្រាស់សរុប៖</b> {total_users} នាក់\n"
+            "👑 <b>អ្នកបង្កើត៖</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n\n"
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
         await safe_edit_message(callback.message, welcome_text, reply_markup=get_welcome_inline_keyboard(user_lang))

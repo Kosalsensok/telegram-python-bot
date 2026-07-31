@@ -105,17 +105,14 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
             total_users = stats.get("total_users", 0)
         formatted_users = format_user_count(total_users)
 
-        user_id_str = str(message.from_user.id) if message.from_user else "N/A"
         welcome_text = (
-            f"{NE_BRAIN} <b>SMART AI ASSISTANT</b> {NE_ROBOT}\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🇰🇭 <b>ប្រព័ន្ធ AI ឆ្លាតវៃ បង្កើតឡើងដោយស្នាដៃកូនខ្មែរ {NE_HUNDRED}%</b> 🇰🇭\n"
-            f"{NE_CROWN} <b>អ្នកបង្កើត (Creator):</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"សួស្តី <b>{escaped_user_name}</b>! {NE_WAVE}\n\n"
-            "ជំនួយការ AI សម្រាប់អត្ថបទ រូបភាព គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
-            f"{NE_USERS} <b>អ្នកប្រើប្រាស់សរុប:</b> {total_users} ({formatted_users} users)\n\n"
-            f"{NE_DOWN} <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
+            "🧠 <b>SMART AI ASSISTANT</b> 🤖\n\n"
+            f"សួស្ដី <b>{escaped_user_name}</b>! 👋\n"
+            "ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ អាចជួយអ្នកលើការវិភាគអត្ថបទ រូបភាព សំឡេង គណិតវិទ្យា រូបវិទ្យា និងគីមីវិទ្យា។\n\n"
+            "───────────────\n"
+            f"📊 <b>អ្នកប្រើប្រាស់សរុប៖</b> {total_users} នាក់\n"
+            "👑 <b>អ្នកបង្កើត៖</b> <a href=\"https://t.me/kosalsensokpk\">@kosalsensokpk</a>\n\n"
+            "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោម៖</b>"
         )
 
         try:
