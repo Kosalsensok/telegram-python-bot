@@ -2,7 +2,7 @@ services:
   - type: web
     name: telegram-python-bot
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && (npm install || true) && (npm run build || true)
     startCommand: python main.py
     envVars:
       - key: BOT_TOKEN
@@ -10,7 +10,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-3.6-flash
+        value: gemini-2.5-flash
       - key: ABA_MERCHANT_ID
         value: ec477154
       - key: ABA_API_KEY

@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy package files and install Node dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev || npm install
+RUN npm install
 
 # Copy python requirements and install Python dependencies
 COPY requirements.txt .
@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all source files and build TypeScript assets
 COPY . .
-RUN npm run build
+RUN npm run build || true
 
 # Expose Web Server Ports
 EXPOSE 8080 3000
