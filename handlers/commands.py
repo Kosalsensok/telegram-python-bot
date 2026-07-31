@@ -177,6 +177,31 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         )
         await message.answer(msg_text, parse_mode="HTML", reply_markup=builder.as_markup())
 
+    @router.message(Command("stt"))
+    @router.message(Command("voice"))
+    async def cmd_stt(message: types.Message):
+        """
+        Handle /stt and /voice commands for instant Speech-to-Text mode.
+        """
+        if message.from_user:
+            await _register_user(message.from_user, message.bot)
+            if db_service:
+                await db_service.set_user_mode(message.from_user.id, "speech_to_text")
+
+        from keyboards.inline import get_stt_banner_keyboard
+        mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
+        stt_text = (
+            "🎙️ <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "✨ <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
+            "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
+            "1. 🎤 <b>និយាយសារសំឡេង (Voice Note):</b> ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ) រួចនិយាយសារសំឡេង\n"
+            "2. 🌐 <b>ថតសំឡេងក្នុង Mini App:</b> ចុចប៊ូតុង <i>\"🎙️ បើក Mini App ថតសំឡេង\"</i> ខាងក្រោម ដើម្បីថត និងបម្លែងសំឡេងផ្សាយផ្ទាល់\n"
+            "3. 📁 <b>ផ្ញើ File សំឡេង:</b> ផ្ញើ File សំឡេង (.mp3, .m4a, .wav, .ogg) ចូលក្នុងឆាតនេះ\n\n"
+            "⚡ Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
+        )
+        await message.answer(stt_text, parse_mode="HTML", reply_markup=get_stt_banner_keyboard(mini_app_url))
+
     @router.message(F.new_chat_members)
     async def handle_new_chat_members(message: types.Message):
         """

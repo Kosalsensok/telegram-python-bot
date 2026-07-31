@@ -9,10 +9,12 @@ from utils.message_utils import send_safe_response, markdown_to_telegram_html, s
 from utils.response_router import parse_ai_structured_response, format_telegram_html, detect_response_type_from_text
 from utils.solution_card import save_solution_cache, generate_short_solution_id
 from utils.localization import format_ai_result, get_str
+from config import RENDER_EXTERNAL_URL
 from keyboards.inline import (
     get_welcome_inline_keyboard,
     get_mode_inline_keyboard,
     get_greeting_inline_keyboard,
+    get_stt_banner_keyboard,
     get_ai_result_contextual_keyboard,
     get_error_retry_keyboard
 )
@@ -76,6 +78,23 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 "• Screenshot\n• ឯកសារ\n• អត្ថបទ\n• តារាង\n• រូបមន្ត\n• ផលិតផល"
             )
             await message.answer(banner_text, parse_mode="HTML", reply_markup=get_image_analysis_banner_keyboard())
+            return
+
+        if "សំឡេងទៅជាអក្សរ" in user_text or "Speech-to-Text" in user_text:
+            if db_service:
+                await db_service.set_user_mode(user_id, "speech_to_text")
+            mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
+            stt_text = (
+                "🎙️ <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "✨ <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
+                "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
+                "1. 🎤 <b>និយាយសារសំឡេង (Voice Note):</b> ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ) រួចនិយាយសារសំឡេង\n"
+                "2. 🌐 <b>ថតសំឡេងក្នុង Mini App:</b> ចុចប៊ូតុង <i>\"🎙️ បើក Mini App ថតសំឡេង\"</i> ខាងក្រោម ដើម្បីថត និងបម្លែងសំឡេងផ្សាយផ្ទាល់\n"
+                "3. 📁 <b>ផ្ញើ File សំឡេង:</b> ផ្ញើ File សំឡេង (.mp3, .m4a, .wav, .ogg) ចូលក្នុងឆាតនេះ\n\n"
+                "⚡ Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
+            )
+            await message.answer(stt_text, parse_mode="HTML", reply_markup=get_stt_banner_keyboard(mini_app_url))
             return
 
         if "របៀបសួរសំណួរ" in user_text or "Help" in user_text:

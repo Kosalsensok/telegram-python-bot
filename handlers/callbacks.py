@@ -8,6 +8,7 @@ from keyboards.inline import (
     get_language_inline_keyboard, 
     get_mode_inline_keyboard,
     get_image_analysis_banner_keyboard,
+    get_stt_banner_keyboard,
     get_ai_result_contextual_keyboard,
     get_image_result_contextual_keyboard,
     get_math_answer_keyboard
@@ -107,16 +108,22 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     @router.callback_query(F.data == "cb_speech_to_text")
     async def callback_speech_to_text(callback: types.CallbackQuery):
         await callback.answer()
+        user_id = callback.from_user.id if callback.from_user else 0
+        if db_service:
+            await db_service.set_user_mode(user_id, "speech_to_text")
+
+        mini_app_url = RENDER_EXTERNAL_URL if RENDER_EXTERNAL_URL else ""
         msg_text = (
             "🎙️ <b>មុខងារបម្លែងសំឡេងទៅជាអក្សរ (Speech-to-Text)</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             "✨ <b>គាំទ្រភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 យ៉ាងត្រឹមត្រូវខ្ពស់!</b>\n\n"
             "👉 <b>របៀបប្រើប្រាស់៖</b>\n"
-            "1. ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ)\n"
-            "2. និយាយសារសំឡេងរបស់អ្នក (Voice Note) ឬ ផ្ញើ File សំឡេង (.mp3, .m4a, .wav)\n"
-            "3. Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
+            "1. 🎤 <b>និយាយសារសំឡេង (Voice Note):</b> ចុចលើរូប <b>មេក្រូ 🎤</b> (នៅខាងស្តាំក្រោមនៃប្រអប់សារ) រួចនិយាយសារសំឡេង\n"
+            "2. 🌐 <b>ថតសំឡេងក្នុង Mini App:</b> ចុចប៊ូតុង <i>\"🎙️ បើក Mini App ថតសំឡេង\"</i> ខាងក្រោម ដើម្បីថត និងបម្លែងសំឡេងផ្សាយផ្ទាល់\n"
+            "3. 📁 <b>ផ្ញើ File សំឡេង:</b> ផ្ញើ File សំឡេង (.mp3, .m4a, .wav, .ogg) ចូលក្នុងឆាតនេះ\n\n"
+            "⚡ Bot នឹងបម្លែងសំឡេងទៅជាអក្សរ និងវិភាគឆ្លើយតបយ៉ាងក្បោះក្បាយភ្លាមៗ!"
         )
-        await safe_edit_message(callback.message, msg_text, reply_markup=get_welcome_inline_keyboard())
+        await safe_edit_message(callback.message, msg_text, reply_markup=get_stt_banner_keyboard(mini_app_url))
 
     # 3c. Navigation & Location Callback
     @router.callback_query(F.data == "cb_navigation")
