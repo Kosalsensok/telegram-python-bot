@@ -7,7 +7,7 @@ def get_fallback_router(db_service: DatabaseService = None) -> Router:
     """
     router = Router(name="fallback_router")
 
-    @router.message(F.video | F.sticker | F.contact | F.location | F.animation)
+    @router.message(F.video | F.sticker | F.contact | F.animation)
     async def handle_unsupported_messages(message: types.Message):
         """
         Catch-all handler for media types not yet supported for direct text conversion (voice, video, stickers).

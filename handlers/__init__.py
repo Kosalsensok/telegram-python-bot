@@ -4,6 +4,7 @@ from .text import get_text_router
 from .image import get_image_router
 from .document import get_document_router
 from .voice import get_voice_router
+from .location import get_location_router
 from .fallback import get_fallback_router
 from .admin import get_admin_router
 
@@ -14,6 +15,7 @@ __all__ = [
     "get_image_router",
     "get_document_router",
     "get_voice_router",
+    "get_location_router",
     "get_fallback_router",
     "get_admin_router"
 ]

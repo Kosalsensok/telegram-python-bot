@@ -38,6 +38,7 @@ from handlers import (
     get_image_router,
     get_document_router,
     get_voice_router,
+    get_location_router,
     get_fallback_router,
     get_admin_router
 )
@@ -1057,6 +1058,7 @@ async def main():
     image_router = get_image_router(gemini_service, memory, db_service)
     document_router = get_document_router(gemini_service, memory, db_service)
     voice_router = get_voice_router(gemini_service, memory, db_service)
+    location_router = get_location_router(gemini_service, memory, db_service)
     text_router = get_text_router(gemini_service, memory, db_service)
     fallback_router = get_fallback_router(db_service)
 
@@ -1066,10 +1068,11 @@ async def main():
     dp.include_router(image_router)
     dp.include_router(document_router)
     dp.include_router(voice_router)
+    dp.include_router(location_router)
     dp.include_router(text_router)
     dp.include_router(fallback_router)
 
-    logging.info("Routers and Middleware registered successfully: [UserTrackerMiddleware, Commands, Callbacks, Admin, Image, Document, Voice, Text, Fallback]")
+    logging.info("Routers and Middleware registered successfully: [UserTrackerMiddleware, Commands, Callbacks, Admin, Image, Document, Voice, Location, Text, Fallback]")
 
     # 6. Delete any pending webhook updates to ensure smooth Long Polling
     try:
