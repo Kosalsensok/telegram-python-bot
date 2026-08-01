@@ -506,25 +506,34 @@ def format_speech_to_text_telegram(data: Dict[str, Any]) -> str:
     """
     Format Speech-to-Text audio transcription response for Telegram output.
     - Converts **bold** to <b>bold</b> so Telegram HTML renders cleanly without raw **.
-    - Strips top headers like '🧠 SMART AI ASSISTANT', '📌 សង្ខេប', '🏷 Tags', and raw numbered headers.
+    - Strips top headers like '🧠 SMART AI ASSISTANT', '📌 សង្ខេប', '🏷 Tags', and duplicate '📝 លទ្ធផលបំប្លែងសំឡេង'.
     - Standardizes sections:
         📝 <b>លទ្ធផលបំប្លែងសំឡេង៖</b>
         💬 <b>អត្ថបទដែលបាននិយាយ៖</b>
         🤖 <b>ចម្លើយ AI៖</b>
-        🔗 <b>ប្រភពឯកសារយោង៖</b>
+        💡 <b>ចំណុចសំខាន់ៗដែលត្រូវដឹង៖</b>
+        🔗 <b>ប្រភព និងឯកសារយោង៖</b>
     """
     raw_text = clean_broken_characters(data.get("raw_text") or data.get("summary_km") or data.get("summary") or "")
 
-    # Clean stray headers, quote markers, and tags
+    # Clean stray headers, quote markers, duplicate headers and tags
     formatted = re.sub(r'🧠\s*\**SMART AI ASSISTANT\**\n?', '', raw_text, flags=re.IGNORECASE)
-    formatted = re.sub(r'📌\s*\**សង្ខេប៖\**.*?\n', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'🏷\s*\**Tags:\**.*?\n', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'•\s*SpeechToText.*?\n', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'•\s*KhmerTranscription.*?\n', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'•\s*Greeting.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'📌\s*\**សង្ខេប\**.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'🏷\s*\**Tags\**.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'•\s*(?:AI|CPlusPlus|Programming|SpeechToText|KhmerTranscription|Greeting)\b.*?\n', '', formatted, flags=re.IGNORECASE)
     formatted = re.sub(r'1️⃣\s*\**លទ្ធផលបំប្លែងសំឡេង.*?\n', '', formatted, flags=re.IGNORECASE)
     formatted = re.sub(r'2️⃣\s*\**ចម្លើយ.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'📝\s*\**លទ្ធផលបំប្លែងសំឡេង\**.*?\n?', '', formatted, flags=re.IGNORECASE)
     formatted = re.sub(r'─{3,}', '', formatted)
+
+    # Auto-wrap naked C++ code blocks if not already in triple backticks
+    if "```" not in formatted and "#include" in formatted:
+        def _wrap_naked_cpp(m):
+            raw_c = m.group(0).strip()
+            # Remove any raw C++ title line
+            raw_c = re.sub(r'^(?:C\+\+|cpp)\s*\n?', '', raw_c, flags=re.IGNORECASE)
+            return f'\n```cpp\n{raw_c}\n```\n'
+        formatted = re.sub(r'(?:C\+\+|cpp)?\s*\n?(#include\s*<[\s\S]+?return\s+0;\s*\})', _wrap_naked_cpp, formatted, flags=re.IGNORECASE)
 
     # Convert **bold** to <b>bold</b> cleanly
     formatted = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', formatted)
@@ -542,10 +551,11 @@ def format_speech_to_text_telegram(data: Dict[str, Any]) -> str:
     # Standardize section headers if present or missing
     formatted = re.sub(r'📜\s*<b>អត្ថបទដែលបានបំប្លែង\**', '💬 <b>អត្ថបទដែលបាននិយាយ៖</b>', formatted)
     formatted = re.sub(r'💡\s*<b>ចម្លើយ និងការបកស្រាយ\**', '🤖 <b>ចម្លើយ AI៖</b>', formatted)
-    formatted = re.sub(r'🔗\s*<b>ប្រភព និងឯកសារយោង.*?\**', '🔗 <b>ប្រភពឯកសារយោង៖</b>', formatted)
+    formatted = re.sub(r'🔗\s*<b>ប្រភព និងឯកសារយោង.*?\**', '🔗 <b>ប្រភព និងឯកសារយោង៖</b>', formatted)
+    formatted = re.sub(r'🔗\s*<b>ប្រភពឯកសារយោង.*?\**', '🔗 <b>ប្រភព និងឯកសារយោង៖</b>', formatted)
 
-    if not formatted.startswith("📝"):
-        formatted = f"📝 <b>លទ្ធផលបំប្លែងសំឡេង៖</b>\n\n{formatted}"
+    # Prepend header ONCE at the top
+    formatted = f"📝 <b>លទ្ធផលបំប្លែងសំឡេង៖</b>\n\n{formatted}"
 
     return formatted
 
