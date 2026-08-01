@@ -505,27 +505,47 @@ def format_general_answer_telegram(data: Dict[str, Any]) -> str:
 def format_speech_to_text_telegram(data: Dict[str, Any]) -> str:
     """
     Format Speech-to-Text audio transcription response for Telegram output.
-    Strips any stray headers like 'EMAIL ANALYSIS' or 'SMART AI ASSISTANT'.
-    Ensures clean line breaks (\n) for sub-bullet points (•) and numbered items.
+    - Converts **bold** to <b>bold</b> so Telegram HTML renders cleanly without raw **.
+    - Strips top headers like '🧠 SMART AI ASSISTANT', '📌 សង្ខេប', '🏷 Tags', and raw numbered headers.
+    - Standardizes sections:
+        📝 <b>លទ្ធផលបំប្លែងសំឡេង៖</b>
+        💬 <b>អត្ថបទដែលបាននិយាយ៖</b>
+        🤖 <b>ចម្លើយ AI៖</b>
+        🔗 <b>ប្រភពឯកសារយោង៖</b>
     """
     raw_text = clean_broken_characters(data.get("raw_text") or data.get("summary_km") or data.get("summary") or "")
 
-    # Clean stray headers
-    formatted = re.sub(r'📧\s*<b>EMAIL ANALYSIS</b>\n?', '', raw_text, flags=re.IGNORECASE)
-    formatted = re.sub(r'🧠\s*<b>SMART AI ASSISTANT</b>\n?', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'🤖\s*<b>Smart AI Response</b>\n?', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'📧\s*EMAIL ANALYSIS\n?', '', formatted, flags=re.IGNORECASE)
-    formatted = re.sub(r'🧠\s*SMART AI ASSISTANT\n?', '', formatted, flags=re.IGNORECASE)
+    # Clean stray headers, quote markers, and tags
+    formatted = re.sub(r'🧠\s*\**SMART AI ASSISTANT\**\n?', '', raw_text, flags=re.IGNORECASE)
+    formatted = re.sub(r'📌\s*\**សង្ខេប៖\**.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'🏷\s*\**Tags:\**.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'•\s*SpeechToText.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'•\s*KhmerTranscription.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'•\s*Greeting.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'1️⃣\s*\**លទ្ធផលបំប្លែងសំឡេង.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'2️⃣\s*\**ចម្លើយ.*?\n', '', formatted, flags=re.IGNORECASE)
+    formatted = re.sub(r'─{3,}', '', formatted)
+
+    # Convert **bold** to <b>bold</b> cleanly
+    formatted = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', formatted)
+    formatted = re.sub(r'(?<!\*)\*(?!\*)([\s\S]+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', formatted)
 
     # Ensure proper line breaks (\n) before bullet points (•) and sub-bullets
-    formatted = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', formatted)
-    # Ensure proper line breaks (\n) before numbered lists (e.g. 1., 2., 3.)
+    formatted = re.sub(r'(?<=\S)\s*(•|\-)\s+', r'\n• ', formatted)
+    # Ensure proper line breaks (\n) before numbered lists
     formatted = re.sub(r'(?<=\S)\s+(\d+\.\s+)', r'\n\1', formatted)
 
+    # Clean orphan asterisks
+    formatted = re.sub(r'\*+', '', formatted)
     formatted = formatted.strip()
 
-    if not formatted.startswith("📝") and not formatted.startswith("🎙"):
-        return f"📝 <b>លទ្ធផលបំប្លែងសំឡេង (Transcription)</b>\n\n{formatted}"
+    # Standardize section headers if present or missing
+    formatted = re.sub(r'📜\s*<b>អត្ថបទដែលបានបំប្លែង\**', '💬 <b>អត្ថបទដែលបាននិយាយ៖</b>', formatted)
+    formatted = re.sub(r'💡\s*<b>ចម្លើយ និងការបកស្រាយ\**', '🤖 <b>ចម្លើយ AI៖</b>', formatted)
+    formatted = re.sub(r'🔗\s*<b>ប្រភព និងឯកសារយោង.*?\**', '🔗 <b>ប្រភពឯកសារយោង៖</b>', formatted)
+
+    if not formatted.startswith("📝"):
+        formatted = f"📝 <b>លទ្ធផលបំប្លែងសំឡេង៖</b>\n\n{formatted}"
 
     return formatted
 
