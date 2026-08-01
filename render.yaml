@@ -2,7 +2,7 @@ services:
   - type: web
     name: telegram-python-bot
     env: python
-    buildCommand: pip install -r requirements.txt && (npm install || true) && (npm run build || true)
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python main.py
     envVars:
       - key: BOT_TOKEN
