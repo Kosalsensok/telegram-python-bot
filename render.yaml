@@ -10,7 +10,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-flash-lite-latest
       - key: ABA_MERCHANT_ID
         value: ec477154
       - key: ABA_API_KEY

@@ -16,9 +16,9 @@ class GeminiService:
     """
     def __init__(self, api_key: str, primary_model: str = "gemini-flash-lite-latest", max_concurrency: int = 15):
         self.api_key = api_key
-        self.primary_model = primary_model
+        self.primary_model = primary_model or "gemini-flash-lite-latest"
         # Priority model list including verified working models
-        self.models = list(dict.fromkeys([primary_model, "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-pro-latest"]))
+        self.models = list(dict.fromkeys([self.primary_model, "gemini-flash-lite-latest", "gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-1.5-pro"]))
         self.client = genai.Client(api_key=api_key)
         
         # High-concurrency semaphore to protect network sockets and prevent HTTP 429 rate limit spikes
@@ -31,7 +31,7 @@ class GeminiService:
 
     def update_primary_model(self, new_model: str):
         self.primary_model = new_model
-        self.models = list(dict.fromkeys([new_model, "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-pro-latest"]))
+        self.models = list(dict.fromkeys([new_model, "gemini-flash-lite-latest", "gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-1.5-pro"]))
 
     def _get_cache_key(self, prompt: str, mode: str = "general", history: Optional[List[Dict[str, str]]] = None) -> str:
         """Generates MD5 hash cache key for prompt, mode and last history item."""
