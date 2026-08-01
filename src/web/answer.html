@@ -865,19 +865,20 @@
           console.error('Speech recognition error:', event.error);
           if (event.error === 'not-allowed') {
             showToast('⚠️ សូមបើកសិទ្ធិប្រើប្រាស់ Microphone ក្នុង Browser');
-          } else if (event.error !== 'no-speech') {
-            showToast(`⚠️ Error: ${event.error}`);
+          } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            showToast(`⚠️ Notice: ${event.error}`);
           }
-          stopRecording();
         };
 
         liveRecognition.onend = () => {
           if (isLiveRecording) {
-            try {
-              liveRecognition.start();
-            } catch(e) {
-              stopRecording();
-            }
+            setTimeout(() => {
+              if (isLiveRecording && liveRecognition) {
+                try {
+                  liveRecognition.start();
+                } catch(e) {}
+              }
+            }, 300);
           }
         };
       }
@@ -899,7 +900,7 @@
         liveRecognition.lang = langSelect.value;
         showToast(`🌐 បានប្តូរភាសាទៅជា: ${langSelect.value === 'km-KH' ? 'ភាសាខ្មែរ 🇰🇭' : 'English 🇺🇸'}`);
         if (isLiveRecording) {
-          liveRecognition.stop();
+          try { liveRecognition.stop(); } catch(e) {}
           setTimeout(() => {
             try { liveRecognition.start(); } catch(e) {}
           }, 300);
@@ -977,17 +978,31 @@
     }
 
     function startRecording() {
+      if (isLiveRecording) return;
+
       if (!liveRecognition) {
         initLiveSpeechRecognition();
       }
 
-      // Cross-Platform Microphone getUserMedia Request (iOS, Android, Windows, macOS)
+      const doStartSpeech = () => {
+        if (liveRecognition) {
+          try {
+            liveRecognition.lang = document.getElementById('live-lang-select')?.value || 'km-KH';
+            liveRecognition.start();
+          } catch(e) {
+            console.warn("SpeechRecognition start notice:", e);
+          }
+        }
+        isLiveRecording = true;
+        setRecordingUIState(true);
+        startRecordingTimer();
+        showToast('🎙️ កំពុងថតសំឡេងប្រជុំ Real-time...');
+        triggerHaptic('notification', 'success');
+      };
+
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ 
-          audio: { 
-            echoCancellation: true, 
-            noiseSuppression: true 
-          } 
+          audio: { echoCancellation: true, noiseSuppression: true } 
         }).then(stream => {
           try {
             mediaRecorder = new MediaRecorder(stream);
@@ -995,34 +1010,13 @@
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
             mediaRecorder.start(1000);
           } catch(e) {}
+          doStartSpeech();
         }).catch(err => {
           console.warn("Microphone access notice:", err);
+          doStartSpeech();
         });
-      }
-
-      if (liveRecognition) {
-        try {
-          liveRecognition.lang = document.getElementById('live-lang-select')?.value || 'km-KH';
-          liveRecognition.start();
-          isLiveRecording = true;
-          setRecordingUIState(true);
-          startRecordingTimer();
-          showToast('🎙️ កំពុងថតសំឡេងប្រជុំ Real-time...');
-          triggerHaptic('notification', 'success');
-          return;
-        } catch(e) {
-          console.warn("SpeechRecognition notice:", e);
-        }
-      }
-
-      if (mediaRecorder) {
-        isLiveRecording = true;
-        setRecordingUIState(true);
-        startRecordingTimer();
-        showToast('🎙️ កំពុងថតសំឡេងជាមួយ MediaRecorder...');
-        triggerHaptic('notification', 'success');
       } else {
-        alert('Browser ឬ Telegram របស់អ្នកមិនគាំទ្រការប្រើប្រាស់ មីក្រូហ្វូន ទេ');
+        doStartSpeech();
       }
     }
 
