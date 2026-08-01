@@ -181,17 +181,31 @@ def format_image_analysis_result(
 ) -> str:
     """
     Format image analysis result cleanly per Telegram spec:
+    Strips top headers like '🧠 SMART AI ASSISTANT', '📌 សង្ខេប', or '🏷️ Tags'.
+    Ensures clean sub-bullet line breaks (\n• ).
     """
+    import re
     ans_strip = answer.strip()
-    if "IMAGE ANALYSIS" in ans_strip or "━━━━━━━━━━━━━━━━━━" in ans_strip:
+    
+    # Strip any stray headers
+    ans_strip = re.sub(r'🧠\s*<b>SMART AI ASSISTANT</b>\n?', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'🖼\s*<b>IMAGE ANALYSIS</b>\n?', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'📌\s*<b>សង្ខេប៖</b>.*?\n', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'🏷\s*<b>Tags:</b>.*?\n', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'🧠\s*SMART AI ASSISTANT\n?', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'🖼\s*IMAGE ANALYSIS\n?', '', ans_strip, flags=re.IGNORECASE)
+
+    # Ensure clean line breaks before bullets and sub-bullets
+    ans_strip = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', ans_strip)
+    ans_strip = re.sub(r'(?<=\S)\s+(\d+\.\s+)', r'\n\1', ans_strip)
+
+    if ans_strip.startswith("📝") or ans_strip.startswith("🖼"):
         return ans_strip
 
-    res = "🖼 **IMAGE ANALYSIS**\n━━━━━━━━━━━━━━━━━━━\n\n"
-    res += f"• 📌 **ប្រភេទរូបភាព:** {detected_type.strip()}\n"
-    if observation:
-        res += f"• 🔎 **អ្វីដែលបានរកឃើញ:** {observation.strip()}\n"
-    res += f"• ✅ **ចម្លើយ:**\n{ans_strip}\n"
-    if suggestion:
-        res += f"\n• 💡 **សំណើ / ព័ត៌មានបន្ថែម:**\n{suggestion.strip()}\n"
+    res = "📝 <b>លទ្ធផលនៃការវិភាគចំណុចប្រទាក់ (UI/UX Analysis)៖</b>\n\n"
+    res += ans_strip
+    if suggestion and "សំណើ" not in ans_strip and "ព័ត៌មានបន្ថែម" not in ans_strip:
+        sug_clean = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', suggestion.strip())
+        res += f"\n\n💡 <b>សំណើ / ព័ត៌មានបន្ថែម៖</b>\n{sug_clean}"
     return res.strip()
 

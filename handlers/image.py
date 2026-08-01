@@ -104,13 +104,25 @@ def get_image_router(gemini_service: GeminiService, memory: ConversationMemory =
             clean_html = markdown_to_telegram_html(formatted_result)
             chunks = split_html_message(clean_html, max_length=3800)
 
-            # Step 6: Edit the same status message into final result
+            link_opts = None
+            try:
+                link_opts = types.LinkPreviewOptions(is_disabled=True)
+            except Exception:
+                link_opts = None
+
+            # Step 6: Edit the same status message into final result with disabled link previews
             if chunks:
                 try:
-                    await loading_msg.edit_text(chunks[0], parse_mode="HTML", reply_markup=keyboard if len(chunks) == 1 else None)
+                    if link_opts is not None:
+                        await loading_msg.edit_text(chunks[0], parse_mode="HTML", reply_markup=keyboard if len(chunks) == 1 else None, link_preview_options=link_opts)
+                    else:
+                        await loading_msg.edit_text(chunks[0], parse_mode="HTML", reply_markup=keyboard if len(chunks) == 1 else None, disable_web_page_preview=True)
                     for chunk in chunks[1:]:
                         current_markup = keyboard if chunk == chunks[-1] else None
-                        await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup)
+                        if link_opts is not None:
+                            await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup, link_preview_options=link_opts)
+                        else:
+                            await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup, disable_web_page_preview=True)
                 except Exception as edit_err:
                     logging.warning(f"edit_text failed for user {user_id}, falling back to send_safe_response: {edit_err}")
                     await send_safe_response(message, formatted_result, reply_markup=keyboard)
