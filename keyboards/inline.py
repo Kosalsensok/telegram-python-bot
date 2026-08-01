@@ -55,17 +55,12 @@ def get_greeting_inline_keyboard(mini_app_url: str = "") -> InlineKeyboardMarkup
 
 def get_mode_inline_keyboard(current_mode: str = "general", lang: str = "km") -> InlineKeyboardMarkup:
     """
-    Build compact AI Operating Modes selection inline keyboard per prompt spec:
-    🎯 ជ្រើសរើស AI Mode
-    ━━━━━━━━━━━━━━━━━━
-    [💬 General Assistant]
-    [📐 Standard Math]
-    [🇰🇭 Khmer Math]
-    [🧪 Chemistry]
-    [⚛️ Physics]
-    [🖼 Image Analysis]
-    [📧 Email Assistant]
-    [← ត្រឡប់ក្រោយ]
+    Build compact 2-column AI Operating Modes selection inline keyboard per spec:
+    Row 1: [ 💬 General Assistant ] [ 📐 Standard Math ]
+    Row 2: [ 🇰🇭 Khmer Math ]       [ 🧪 Chemistry ]
+    Row 3: [ ⚛️ Physics ]            [ 🖼 Image Analysis ]
+    Row 4: [ 📧 Email Assistant ]
+    Row 5: [ ⬅️ ត្រឡប់ក្រោយ ]
     """
     builder = InlineKeyboardBuilder()
     
@@ -83,8 +78,8 @@ def get_mode_inline_keyboard(current_mode: str = "general", lang: str = "km") ->
         prefix = "✅ " if mode_key == current_mode else ""
         builder.button(text=f"{prefix}{mode_label}", callback_data=f"set_mode_{mode_key}")
 
-    builder.button(text="← ត្រឡប់ក្រោយ" if lang == "km" else "← Back", callback_data="cb_back_main")
-    builder.adjust(1, 1, 1, 1, 1, 1, 1, 1)
+    builder.button(text="⬅️ ត្រឡប់ក្រោយ" if lang == "km" else "⬅️ Back", callback_data="cb_back_main")
+    builder.adjust(2, 2, 2, 1, 1)
     return builder.as_markup()
 
 

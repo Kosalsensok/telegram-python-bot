@@ -185,9 +185,8 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             current_mode = await db_service.get_user_mode(user_id)
 
         mode_text = (
-            "🎯 <b>ជ្រើសរើស AI Mode</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n\n"
-            "សូមជ្រើសរើស AI Mode ដែលសមស្របនឹងសំណួររបស់អ្នក៖"
+            "🎯 <b>ជ្រើសរើស AI Mode</b>\n\n"
+            "សូមជ្រើសរើស Mode ដែលសមស្របនឹងសំណួររបស់អ្នក៖"
         )
         await safe_edit_message(callback.message, mode_text, reply_markup=get_mode_inline_keyboard(current_mode))
 
@@ -206,9 +205,8 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
 
         await callback.answer(f"✅ បានកំណត់ Mode: {selected_mode.upper()}")
         mode_text = (
-            "🎯 <b>ជ្រើសរើស AI Mode</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n\n"
-            f"✅ Mode ត្រូវបានប្តូរទៅជា៖ <b>{selected_mode.upper()}</b>"
+            "🎯 <b>ជ្រើសរើស AI Mode</b>\n\n"
+            f"សូមជ្រើសរើស Mode ដែលសមស្របនឹងសំណួររបស់អ្នក៖"
         )
         await safe_edit_message(callback.message, mode_text, reply_markup=get_mode_inline_keyboard(selected_mode))
 
