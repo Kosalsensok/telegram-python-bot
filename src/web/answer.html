@@ -1037,7 +1037,52 @@
         const secs = String(recordingSeconds % 60).padStart(2, '0');
         showToast(`⏹️ បានបញ្ឈប់ការថតសំឡេងប្រជុំ (សរុប ${mins}:${secs})`);
         triggerHaptic('impact', 'medium');
+
+        setTimeout(() => {
+          const displayEl = document.getElementById('live-transcript');
+          const currentText = displayEl ? displayEl.innerText.trim() : '';
+
+          if ((!currentText || currentText.includes('អត្ថបទដែលបាននិយាយក្នុងពេលប្រជុំ') || currentText === '🎙️ កំពុងស្តាប់សំឡេង...') && audioChunks.length > 0) {
+            transcribeRecordedAudioWithAI();
+          }
+        }, 500);
       }
+    }
+
+    function transcribeRecordedAudioWithAI() {
+      if (audioChunks.length === 0) return;
+      const displayEl = document.getElementById('live-transcript');
+      if (displayEl) {
+        displayEl.innerHTML = '<em class="text-amber-400 font-bold animate-pulse">✨ 🤖 កំពុងបំប្លែងសំឡេងដោយ AI... សូមរង់ចាំមួយភ្លែត!</em>';
+      }
+      const audioBlob = new Blob(audioChunks, { type: mediaRecorder?.mimeType || 'audio/webm' });
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = function() {
+        const base64Audio = reader.result.split(',')[1];
+        fetch('/api/transcribe_audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio: base64Audio, mimeType: audioBlob.type || 'audio/webm' })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.text) {
+            currentLiveTranscript = data.text;
+            if (displayEl) displayEl.innerText = data.text;
+            const charCountEl = document.getElementById('live-char-count');
+            if (charCountEl) charCountEl.innerText = `${data.text.length.toLocaleString()} តួអក្សរ`;
+            showToast('✅ បានបំប្លែងសំឡេងជាអក្សរជោគជ័យដោយ AI!');
+            triggerHaptic('notification', 'success');
+          } else {
+            if (displayEl) displayEl.innerText = '⚠️ មិនអាចបំប្លែងសំឡេងបានទេ។ សូមព្យាយាមថតម្តងទៀត!';
+          }
+        })
+        .catch(err => {
+          console.error("Transcribe API error:", err);
+          if (displayEl) displayEl.innerText = '⚠️ បរាជ័យក្នុងការផ្ញើទៅកាន់ AI Server។';
+        });
+      };
     }
 
     function copyLiveTranscript() {

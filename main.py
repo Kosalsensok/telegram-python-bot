@@ -886,7 +886,42 @@ def make_aba_webhook_handler(bot=None):
     return handle_aba_webhook
 
 
-async def start_health_server(bot=None):
+async def handle_transcribe_audio_api(request):
+    """API endpoint for Mini App audio recording transcription using Gemini Audio AI."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"success": False, "message": "Invalid JSON payload."}, status=400)
+
+    audio_b64 = data.get("audio", "")
+    mime_type = data.get("mimeType", "audio/webm")
+    if not audio_b64:
+        return web.json_response({"success": False, "message": "No audio data provided."}, status=400)
+
+    try:
+        import base64
+        audio_bytes = base64.b64decode(audio_b64)
+        gemini_svc = request.app.get("gemini_service")
+        if not gemini_svc:
+            from config import GEMINI_API_KEY, GEMINI_MODEL
+            from services.gemini_service import GeminiService
+            gemini_svc = GeminiService(api_key=GEMINI_API_KEY, primary_model=GEMINI_MODEL)
+
+        prompt = (
+            "🎙️ ភារកិច្ច៖ សូមបំប្លែងសំឡេងនេះទៅជាអក្សរភាសាខ្មែរឲ្យបានច្បាស់លាស់ ត្រឹមត្រូវ និងឥតខ្ចោះ។\n"
+            "សរសេរតែអត្ថបទដែលបាននិយាយក្នុងសំឡេងនេះប៉ុណ្ណោះ គ្មានការបន្ថែមពាក្យផ្សេងឡើយ។"
+        )
+        transcribed_text = await gemini_svc.generate_document_chat(audio_bytes, mime_type, prompt)
+        return web.json_response({
+            "success": True,
+            "text": transcribed_text.strip()
+        }, status=200)
+    except Exception as e:
+        logging.error(f"Error in transcribe audio API: {e}")
+        return web.json_response({"success": False, "message": str(e)}, status=500)
+
+
+async def start_health_server(bot=None, gemini_service=None):
     """Starts a lightweight web server for Render Free Web Service deployment, ABA PayWay Webhook, and Telegram Mini App."""
     global GLOBAL_BOT
     if bot:
@@ -899,6 +934,9 @@ async def start_health_server(bot=None):
         port = 8080
 
     app = web.Application()
+    if gemini_service:
+        app["gemini_service"] = gemini_service
+
     app.router.add_get("/", handle_health_check)
     app.router.add_get("/health", handle_health_check)
     app.router.add_get("/ping", handle_health_check)
@@ -910,6 +948,7 @@ async def start_health_server(bot=None):
     app.router.add_get("/answer/{solution_id}", handle_mini_app)
     app.router.add_get("/api/solution/{solution_id}", handle_solution_api)
     app.router.add_post("/api/spell-check", handle_spell_check_api)
+    app.router.add_post("/api/transcribe_audio", handle_transcribe_audio_api)
 
     # ABA PayWay Donation routes
     app.router.add_get("/donate_checkout", handle_donate_checkout)
@@ -1036,7 +1075,7 @@ async def main():
     # Start HTTP Health Server for Render Web Service & ABA Webhook Notification Receiver
     runner = None
     try:
-        runner = await start_health_server(bot=bot)
+        runner = await start_health_server(bot=bot, gemini_service=gemini_service)
     except Exception as e:
         logging.warning(f"Could not start HTTP health server: {e}")
 
