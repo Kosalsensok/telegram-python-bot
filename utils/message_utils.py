@@ -279,8 +279,8 @@ def _format_text_block(text: str) -> str:
     text = re.sub(r'(?<!_)_(?!_)([\s\S]+?)(?<!_)_(?!_)', r'<i>\1</i>', text)
 
     # Step 5: Clean orphan asterisks if any remain
-    text = re.sub(r'(?<=\s|^)\*\*(?=\s|$)', '', text)
-    text = re.sub(r'(?<=\s|^)\*(?=\s|$)', '', text)
+    text = re.sub(r'(?<![\w*])\*\*(?![\w*])', '', text)
+    text = re.sub(r'(?<![\w*])\*(?![\w*])', '', text)
 
     # Step 6: Strikethrough ~~text~~ -> <s>text</s>
     text = re.sub(r'~~([\s\S]+?)~~', r'<s>\1</s>', text)
