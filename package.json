@@ -4,9 +4,9 @@
   "description": "Production-Ready Telegram AI Math Solver Bot with KaTeX and Playwright Rendering",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "pip install --upgrade pip && pip install -r requirements.txt && tsc || tsc",
+    "start": "python main.py || node dist/index.js",
+    "dev": "python main.py",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",

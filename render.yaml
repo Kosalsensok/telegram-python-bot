@@ -20,4 +20,17 @@ services:
       - key: SERVER_URL
         sync: false
 
+  - type: web
+    name: telegram-math-web
+    env: python
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-lite-latest
+
 
