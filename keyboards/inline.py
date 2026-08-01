@@ -127,17 +127,16 @@ def get_ai_result_contextual_keyboard(solution_id: str = "") -> InlineKeyboardMa
 
 def get_image_result_contextual_keyboard(solution_id: str = "") -> InlineKeyboardMarkup:
     """
-    Contextual buttons for Image Analysis results per spec:
-    [💬 សួរអំពីរូបនេះ]
-    [🔁 វិភាគម្ដងទៀត]
-    [🏠 Menu]
+    Contextual buttons for Image Analysis results per user spec:
+    Row 1: [ 💬 សួរអំពីប្រធានបទនេះ ] [ 🔄 វិភាគម្តងទៀត ]
+    Row 2: [ 🏠 Menu ដើម ]
     """
     builder = InlineKeyboardBuilder()
     sid = solution_id[:16] if solution_id else "def"
-    builder.button(text="💬 សួរអំពីរូបនេះ", callback_data=f"img_ask:{sid}")
-    builder.button(text="🔁 វិភាគម្ដងទៀត", callback_data=f"img_reanalyze:{sid}")
-    builder.button(text="🏠 Menu", callback_data="cb_back_main")
-    builder.adjust(1, 1, 1)
+    builder.button(text="💬 សួរអំពីប្រធានបទនេះ", callback_data=f"img_ask:{sid}")
+    builder.button(text="🔄 វិភាគម្តងទៀត", callback_data=f"img_reanalyze:{sid}")
+    builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
+    builder.adjust(2, 1)
     return builder.as_markup()
 
 

@@ -181,31 +181,42 @@ def format_image_analysis_result(
 ) -> str:
     """
     Format image analysis result cleanly per Telegram spec:
-    Strips top headers like '🧠 SMART AI ASSISTANT', '📌 សង្ខេប', or '🏷️ Tags'.
-    Ensures clean sub-bullet line breaks (\n• ).
+    - Converts **bold** to <b>bold</b> so Telegram HTML renders cleanly without raw **.
+    - Strips top headers like '🧠 SMART AI ASSISTANT', '📌 សង្ខេប', '🏷 Tags', and raw technical jargon.
+    - Ensures clean line breaks (\n• ) for all bullet points.
     """
     import re
     ans_strip = answer.strip()
     
-    # Strip any stray headers
-    ans_strip = re.sub(r'🧠\s*<b>SMART AI ASSISTANT</b>\n?', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'🖼\s*<b>IMAGE ANALYSIS</b>\n?', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'📌\s*<b>សង្ខេប៖</b>.*?\n', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'🏷\s*<b>Tags:</b>.*?\n', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'🧠\s*SMART AI ASSISTANT\n?', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'🖼\s*IMAGE ANALYSIS\n?', '', ans_strip, flags=re.IGNORECASE)
+    # Strip any stray headers and tags lines
+    ans_strip = re.sub(r'🧠\s*\**SMART AI ASSISTANT\**\n?', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'🖼\s*\**IMAGE ANALYSIS\**\n?', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'📌\s*\**សង្ខេប៖\**.*?\n', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'🏷\s*\**Tags:\**.*?\n', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'•\s*TelegramMiniApp.*?\n', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'•\s*SpeechToText.*?\n', '', ans_strip, flags=re.IGNORECASE)
+    ans_strip = re.sub(r'•\s*LiveTranscription.*?\n', '', ans_strip, flags=re.IGNORECASE)
 
-    # Ensure clean line breaks before bullets and sub-bullets
+    # Convert **bold** to <b>bold</b> cleanly
+    ans_strip = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', ans_strip)
+    ans_strip = re.sub(r'\*([^\*]+)\*', r'<b>\1</b>', ans_strip)
+
+    # Ensure clean line breaks before bullets and numbered items
     ans_strip = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', ans_strip)
     ans_strip = re.sub(r'(?<=\S)\s+(\d+\.\s+)', r'\n\1', ans_strip)
 
-    if ans_strip.startswith("📝") or ans_strip.startswith("🖼"):
+    # Clean any orphan asterisks
+    ans_strip = re.sub(r'\*+', '', ans_strip)
+    ans_strip = ans_strip.strip()
+
+    if ans_strip.startswith("📝"):
         return ans_strip
 
-    res = "📝 <b>លទ្ធផលនៃការវិភាគចំណុចប្រទាក់ (UI/UX Analysis)៖</b>\n\n"
+    res = "📝 <b>លទ្ធផលនៃការវិភាគមុខងារ (UI Analysis)៖</b>\n\n"
     res += ans_strip
     if suggestion and "សំណើ" not in ans_strip and "ព័ត៌មានបន្ថែម" not in ans_strip:
-        sug_clean = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', suggestion.strip())
-        res += f"\n\n💡 <b>សំណើ / ព័ត៌មានបន្ថែម៖</b>\n{sug_clean}"
+        sug_clean = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', suggestion.strip())
+        sug_clean = re.sub(r'(?<=\S)\s*(\-|\•|\*)\s+', r'\n• ', sug_clean)
+        res += f"\n\n💡 <b>ចំណុចបន្ថែម៖</b>\n{sug_clean}"
     return res.strip()
 

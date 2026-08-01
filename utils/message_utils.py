@@ -270,18 +270,22 @@ def _format_text_block(text: str) -> str:
     # Step 2: Markdown Headers (# Header, ## Header, ### Header) -> <b>Header</b>
     text = re.sub(r'^(#{1,6})\s+(.+)$', r'<b>\2</b>', text, flags=re.MULTILINE)
 
-    # Step 3: Bold **text** or __text__ -> <b>text</b>
-    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
-    text = re.sub(r'__(.+?)__', r'<b>\1</b>', text)
+    # Step 3: Bold **text** or __text__ -> <b>text</b> (supports multiline)
+    text = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', text)
+    text = re.sub(r'__([\s\S]+?)__', r'<b>\1</b>', text)
 
-    # Step 4: Italic *text* or _text_ -> <i>text</i>
-    text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
-    text = re.sub(r'(?<!_)_(?!_)(.+?)(?<!_)_(?!_)', r'<i>\1</i>', text)
+    # Step 4: Italic *text* or _text_ -> <i>text</i> (supports multiline)
+    text = re.sub(r'(?<!\*)\*(?!\*)([\s\S]+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
+    text = re.sub(r'(?<!_)_(?!_)([\s\S]+?)(?<!_)_(?!_)', r'<i>\1</i>', text)
 
-    # Step 5: Strikethrough ~~text~~ -> <s>text</s>
-    text = re.sub(r'~~(.+?)~~', r'<s>\1</s>', text)
+    # Step 5: Clean orphan asterisks if any remain
+    text = re.sub(r'(?<=\s|^)\*\*(?=\s|$)', '', text)
+    text = re.sub(r'(?<=\s|^)\*(?=\s|$)', '', text)
 
-    # Step 6: Links [title](url) -> <a href="url">title</a>
+    # Step 6: Strikethrough ~~text~~ -> <s>text</s>
+    text = re.sub(r'~~([\s\S]+?)~~', r'<s>\1</s>', text)
+
+    # Step 7: Links [title](url) -> <a href="url">title</a>
     text = re.sub(r'\[([^\]]+)\]\((https?://[^\s\)]+)\)', r'<a href="\2">\1</a>', text)
 
     return text
