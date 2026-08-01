@@ -358,6 +358,7 @@ def format_software_requirements_telegram(data: Dict[str, Any]) -> str:
     """
     title = clean_broken_characters(data.get("title", ""))
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
+    tags = data.get("tags") or []
     sections = data.get("sections", [])
 
     parts = [
