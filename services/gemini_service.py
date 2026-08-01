@@ -64,32 +64,32 @@ class GeminiService:
 
     def _sync_generate_content(self, model: str, contents: list, mode: str = "general") -> str:
         """
-        Synchronous internal API request call with mode system instruction.
+        Synchronous internal API request call with mode system instruction and automatic model fallback loop.
         """
         prompt_instruction = get_prompt_for_mode(mode)
         config = genai_types.GenerateContentConfig(
             system_instruction=prompt_instruction
         ) if prompt_instruction else None
         
-        try:
-            response = self.client.models.generate_content(
-                model=model,
-                contents=contents,
-                config=config
-            )
-        except Exception as err:
-            err_str = str(err)
-            if ("429" in err_str or "503" in err_str or "404" in err_str or "RESOURCE_EXHAUSTED" in err_str or "UNAVAILABLE" in err_str or "NOT_FOUND" in err_str) and model != "gemini-flash-lite-latest":
-                logging.warning(f"GeminiService: {model} issue ({err_str[:80]}), falling back to gemini-flash-lite-latest")
+        fallback_models = list(dict.fromkeys([model, "gemini-flash-lite-latest", "gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-1.5-pro"]))
+
+        last_err = None
+        for current_model in fallback_models:
+            try:
                 response = self.client.models.generate_content(
-                    model="gemini-flash-lite-latest",
+                    model=current_model,
                     contents=contents,
                     config=config
                 )
-            else:
-                raise err
-        if response and response.text:
-            return response.text
+                if response and response.text:
+                    return response.text
+            except Exception as err:
+                last_err = err
+                logging.warning(f"GeminiService: Model {current_model} call notice: {err}. Trying next fallback...")
+                continue
+
+        if last_err:
+            raise last_err
         raise ValueError("Empty response received from Gemini API.")
 
     async def generate_text_chat(
