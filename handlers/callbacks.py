@@ -375,6 +375,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
     @router.callback_query(F.data.startswith("img_reanalyze:"))
     async def callback_img_reanalyze(callback: types.CallbackQuery):
         await callback.answer()
+        guide_msg = "🔁 <b>សូមផ្ញើរូបភាពម្តងទៀត</b> ដើម្បីឱ្យ AI ធ្វើការវិភាគឡើងវិញ!"
         try:
             await callback.message.reply(guide_msg, parse_mode="HTML")
         except Exception:
