@@ -148,45 +148,29 @@ def format_ai_result(
     answer: str,
     explanation: str = "",
     tips: str = "",
-    header_title: str = ""
+    header_title: str = "SMART AI ASSISTANT"
 ) -> str:
     """
     Format standard AI text response cleanly per Telegram spec:
-    - Strips metadata overhead (🧠 SMART AI ASSISTANT, 📌 សង្ខេប, 🏷 Tags, 1️⃣ headers).
-    - Formats sub-bullets and code explanations with clean line breaks (\n• ).
+    Avoids duplicating header if answer already starts with standard header.
     """
-    import re
     ans_strip = answer.strip()
+    if "SMART AI ASSISTANT" in ans_strip or "SMART AI" in ans_strip or "━━━━━━━━━━━━━━━━━━" in ans_strip:
+        res = ans_strip
+        if explanation and "ព័ត៌មានលម្អិត" not in res:
+            res += f"\n\n📖 **ព័ត៌មានលម្អិត:**\n{explanation.strip()}"
+        if tips and "គន្លឹះ" not in res and "ចំណុចសំខាន់" not in res:
+            res += f"\n\n💡 **ចំណុចសំខាន់ / ព័ត៌មានបន្ថែម:**\n{tips.strip()}"
+        return res.strip()
 
-    # Strip metadata overhead
-    ans_strip = re.sub(r'🧠\s*\**SMART AI ASSISTANT\**\n?', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'📌\s*\**សង្ខេប\**.*?\n', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'🏷️?\s*\**Tags\**.*?\n', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'•\s*(?:CPP|CodeExplanation|Loops|AI|Programming)\b.*?\n', '', ans_strip, flags=re.IGNORECASE)
-    ans_strip = re.sub(r'1️⃣\s*\**\s*([^\n]+)', r'<b>\1</b>', ans_strip)
-    ans_strip = re.sub(r'─{3,}', '───────────────', ans_strip)
-
-    # Format arrow sub-bullets cleanly with line breaks
-    ans_strip = re.sub(r'(?<=\S)\s*-\s*([a-zA-Z0-9_\s=<+]+)->\s*', r'\n• `\1` ➔ ', ans_strip)
-    ans_strip = re.sub(r'(?<=\S)\s*-\s*', r'\n• ', ans_strip)
-
-    # Convert **bold** to <b>bold</b> cleanly
-    ans_strip = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', ans_strip)
-
-    # Ensure clean line breaks before bullets
-    ans_strip = re.sub(r'(?<=\S)\s*(•|\-)\s+', r'\n• ', ans_strip)
-
-    res = ans_strip
-    if explanation and "ព័ត៌មានលម្អិត" not in res and "ការដកស្រង់កូដ" not in res:
-        exp_clean = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', explanation.strip())
-        exp_clean = re.sub(r'(?<=\S)\s*(•|\-)\s+', r'\n• ', exp_clean)
-        res += f"\n\n💻 <b>ការដកស្រង់កូដ និងអត្ថន័យ៖</b>\n{exp_clean}"
-
-    if tips and "ចំណុចសំខាន់" not in res and "លទ្ធផល" not in res:
-        tips_clean = re.sub(r'\*\*([\s\S]+?)\*\*', r'<b>\1</b>', tips.strip())
-        tips_clean = re.sub(r'(?<=\S)\s*(•|\-)\s+', r'\n• ', tips_clean)
-        res += f"\n\n💡 <b>ចំណុចសំខាន់ៗដែលត្រូវដឹង៖</b>\n{tips_clean}"
-
+    res = f"🧠 **{header_title.upper()}**\n━━━━━━━━━━━━━━━━━━━\n\n"
+    if title:
+        res += f"• 📌 **ប្រធានបទ:** {title.strip()}\n"
+    res += f"• ✅ **ចម្លើយ:**\n{ans_strip}\n"
+    if explanation:
+        res += f"\n📖 **ព័ត៌មានលម្អិត:**\n{explanation.strip()}\n"
+    if tips:
+        res += f"\n• 💡 **ចំណុចសំខាន់ / ព័ត៌មានបន្ថែម:**\n{tips.strip()}\n"
     return res.strip()
 
 def format_image_analysis_result(
