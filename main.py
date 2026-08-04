@@ -31,7 +31,7 @@ from config import (
     USE_DATABASE
 )
 from services import GeminiService, DatabaseService, bot_profile_worker
-from utils import ConversationMemory, UserTrackerMiddleware
+from utils import ConversationMemory, UserTrackerMiddleware, UserThrottlingMiddleware
 from handlers import (
     get_command_router,
     get_callbacks_router,
@@ -1084,12 +1084,18 @@ async def main():
     except Exception as e:
         logging.warning(f"Could not start HTTP health server: {e}")
 
-    # Register User Tracking Outer Middleware
+    # Register User Tracking & User Throttling Outer Middlewares
     tracker_mw = UserTrackerMiddleware(db_service)
+    throttling_mw = UserThrottlingMiddleware(time_window=1.0, max_requests=2)
+    
+    dp.message.outer_middleware(throttling_mw)
+    dp.callback_query.outer_middleware(throttling_mw)
+    
     dp.message.outer_middleware(tracker_mw)
     dp.callback_query.outer_middleware(tracker_mw)
     dp.chat_member.outer_middleware(tracker_mw)
     dp.my_chat_member.outer_middleware(tracker_mw)
+
 
     # 4. Start Background Worker Tasks (Profile Updater + Keep Alive Pinger)
     profile_task: Optional[asyncio.Task] = asyncio.create_task(bot_profile_worker(bot, db_service))

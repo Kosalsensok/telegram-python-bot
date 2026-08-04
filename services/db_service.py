@@ -66,9 +66,10 @@ class DatabaseService:
                     db=self.database,
                     charset="utf8mb4",
                     autocommit=True,
-                    maxsize=10,
-                    minsize=1,
-                    connect_timeout=3
+                    maxsize=25,
+                    minsize=2,
+                    connect_timeout=5
+
                 ),
                 timeout=3.0
             )

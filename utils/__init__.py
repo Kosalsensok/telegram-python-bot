@@ -16,6 +16,8 @@ from .thinking_animation import (
 
 from .solution_card import render_solution_card
 
+from .user_throttling import UserThrottlingMiddleware
+
 __all__ = [
     "process_image_bytes",
     "split_message",
@@ -24,6 +26,7 @@ __all__ = [
     "ConversationMemory",
     "format_user_count",
     "UserTrackerMiddleware",
+    "UserThrottlingMiddleware",
     "DynamicThinkingAnimation",
     "TEXT_THINKING_STEPS",
     "IMAGE_GEN_STEPS",
@@ -34,4 +37,5 @@ __all__ = [
     "get_code_thinking_steps",
     "render_solution_card"
 ]
+
 
