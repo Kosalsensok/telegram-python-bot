@@ -33,8 +33,10 @@ class UserTrackerMiddleware(BaseMiddleware):
 
         if from_user and not from_user.is_bot and self.db_service:
             try:
+                is_new_user = from_user.id not in self.db_service.in_memory_users
                 # Update in-memory set immediately for 0ms latency
                 self.db_service.in_memory_users.add(from_user.id)
+                
                 # Fire async non-blocking task for MySQL persistence so message processing is never delayed
                 asyncio.create_task(
                     self.db_service.save_or_update_user(
@@ -45,8 +47,16 @@ class UserTrackerMiddleware(BaseMiddleware):
                         language_code=from_user.language_code or "en"
                     )
                 )
+
+                # Trigger instant bot profile update if a new user joins
+                bot_instance = data.get("bot")
+                if is_new_user and bot_instance:
+                    from services.bot_profile_service import update_bot_profile
+                    asyncio.create_task(update_bot_profile(bot_instance, self.db_service))
             except Exception as e:
                 logging.error(f"UserTrackerMiddleware error for user {from_user.id}: {e}")
 
         return await handler(event, data)
+
+
 

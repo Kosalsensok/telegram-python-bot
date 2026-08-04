@@ -355,25 +355,31 @@ class DatabaseService:
 
     async def get_global_stats(self) -> Dict[str, Any]:
         """
-        Retrieves global system statistics from in-memory cache instantly without blocking.
-        Uses background refresh every 60 seconds to prevent DB latency on /start command.
+        Retrieves global system statistics dynamically from in-memory cache and MySQL.
+        Guarantees that new users instantly update the active user count.
         """
         now = time.time()
         in_mem_users_cnt = len(self.in_memory_users)
         in_mem_msgs_cnt = self.in_memory_messages_count
 
-        current = self._cached_global_stats or {
-            "total_users": max(in_mem_users_cnt, 1),
-            "total_messages": max(in_mem_msgs_cnt, 1)
-        }
+        if not self._cached_global_stats:
+            self._cached_global_stats = {
+                "total_users": max(in_mem_users_cnt, 1),
+                "total_messages": max(in_mem_msgs_cnt, 1)
+            }
+            self._cached_global_stats_time = now
 
-        if not self._cached_global_stats or (now - self._cached_global_stats_time >= 60):
-            self._cached_global_stats = current
+        # Dynamically reflect in-memory changes instantly so new users are never missed
+        self._cached_global_stats["total_users"] = max(self._cached_global_stats.get("total_users", 0), in_mem_users_cnt, 1)
+        self._cached_global_stats["total_messages"] = max(self._cached_global_stats.get("total_messages", 0), in_mem_msgs_cnt, 1)
+
+        if now - self._cached_global_stats_time >= 30:
             self._cached_global_stats_time = now
             if self.is_connected and self.pool:
                 asyncio.create_task(self._refresh_global_stats_bg(in_mem_users_cnt, in_mem_msgs_cnt))
 
-        return current
+        return self._cached_global_stats
+
 
     async def _refresh_global_stats_bg(self, in_mem_users_cnt: int, in_mem_msgs_cnt: int):
         try:
