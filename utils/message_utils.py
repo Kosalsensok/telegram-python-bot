@@ -178,8 +178,8 @@ def markdown_to_telegram_html(text: str) -> str:
 
     # Match both standard Markdown ```...``` and HTML <pre>...</pre>
     code_block_pattern = re.compile(
-        r'(```([\w#+-]+)?\n?(.*?)```)|(<pre(?: [^>]*)?>.*?</pre>)',
-        re.DOTALL | re.IGNORECASE
+        r'(```([a-zA-Z0-9_+#-]+)?\n?([\s\S]*?)```)|(<pre(?: [^>]*)?>[\s\S]*?</pre>)',
+        re.IGNORECASE
     )
     
     parts = []
