@@ -13,7 +13,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-🟢%2024%2F7%20LIVE%20ONLINE-brightgreen?style=for-the-badge&logo=rss" alt="Live Status" />
-  <a href="https://t.me/mysmart_v2_2026_bot">
+  <a href="https://t.me/smart_ai_assistant_official_bot">
     <img src="https://img.shields.io/badge/Bot-@mysmart__v2__2026__bot-blueviolet?style=for-the-badge&logo=telegram" alt="Bot Demo" />
   </a>
   <img src="https://img.shields.io/badge/ABA_PayWay-Integrated-00A859?style=for-the-badge&logo=cashapp&logoColor=white" alt="ABA PayWay" />
@@ -159,7 +159,7 @@ SERVER_URL=https://telegram-python-bot-yt64.onrender.com
 
 ```mermaid
 flowchart TD
-    subgraph Client ["📱 Telegram Client (@mysmart_v2_2026_bot)"]
+    subgraph Client ["📱 Telegram Client (@smart_ai_assistant_official_bot)"]
         U[User Input / Photo / Voice / Code / /donate]
     end
 

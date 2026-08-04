@@ -830,7 +830,7 @@ def make_payment_success_handler(bot=None):
             </div>
         </div>
 
-        <a href="https://t.me/mysmart_v2_2026_bot" class="btn-return">📲 ត្រឡប់ទៅកាន់ Telegram វិញ</a>
+        <a href="https://t.me/smart_ai_assistant_official_bot" class="btn-return">📲 ត្រឡប់ទៅកាន់ Telegram វិញ</a>
     </div>
 </body>
 </html>"""

@@ -101,7 +101,7 @@ def cleanup_expired_solution_cache(max_size: int = 2000):
 def render_solution_card(
     solution_text: str,
     bot_branding: str = "Smart AI Assistant",
-    bot_username: str = "@mysmart_v2_2026_bot",
+    bot_username: str = "@smart_ai_assistant_official_bot",
     parsed_data: Optional[Dict[str, Any]] = None
 ) -> Optional[bytes]:
     """
@@ -149,7 +149,7 @@ def render_solution_card(
 def render_solution_pdf(
     solution_text: str,
     bot_branding: str = "Smart AI Assistant",
-    bot_username: str = "@mysmart_v2_2026_bot",
+    bot_username: str = "@smart_ai_assistant_official_bot",
     parsed_data: Optional[Dict[str, Any]] = None
 ) -> Optional[bytes]:
     """

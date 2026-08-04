@@ -40,7 +40,7 @@ function escapeHtml(unsafe: string): string {
 export function buildSolutionHtml(
   data: StructuredSolutionResult | any,
   botName: string = 'Smart AI Assistant',
-  botUsername: string = '@mysmart_v2_2026_bot'
+  botUsername: string = '@smart_ai_assistant_official_bot'
 ): string {
   const templatePath = path.join(__dirname, 'templates', 'solution.template.html');
   let templateHtml = fs.readFileSync(templatePath, 'utf8');
@@ -256,7 +256,7 @@ export async function renderSolutionToPNG(
   result: MathSolutionResult | StructuredSolutionResult | any,
   outputPath: string,
   botName: string = 'Smart AI Assistant',
-  botUsername: string = '@mysmart_v2_2026_bot'
+  botUsername: string = '@smart_ai_assistant_official_bot'
 ): Promise<string> {
   const htmlContent = buildSolutionHtml(result, botName, botUsername);
 

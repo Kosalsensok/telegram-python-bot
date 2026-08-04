@@ -6,7 +6,7 @@ dotenv.config();
 
 const envSchema = z.object({
   BOT_TOKEN: z.string().default(process.env.BOT_TOKEN || 'dummy_bot_token'),
-  BOT_USERNAME: z.string().default(process.env.BOT_USERNAME || 'mysmart_v2_2026_bot'),
+  BOT_USERNAME: z.string().default(process.env.BOT_USERNAME || 'smart_ai_assistant_official_bot'),
 
   AI_PROVIDER: z.enum(['openai', 'gemini']).default('gemini'),
   OPENAI_API_KEY: z.string().optional(),

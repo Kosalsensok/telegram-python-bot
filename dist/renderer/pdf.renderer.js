@@ -7,7 +7,7 @@ exports.renderSolutionToPDF = renderSolutionToPDF;
 const playwright_1 = __importDefault(require("playwright"));
 const image_renderer_1 = require("./image.renderer");
 const logger_1 = require("../utils/logger");
-async function renderSolutionToPDF(result, outputPath, botName = 'Smart AI Assistant', botUsername = '@mysmart_v2_2026_bot') {
+async function renderSolutionToPDF(result, outputPath, botName = 'Smart AI Assistant', botUsername = '@smart_ai_assistant_official_bot') {
     const htmlContent = (0, image_renderer_1.buildSolutionHtml)(result, botName, botUsername);
     const browser = await playwright_1.default.chromium.launch({
         headless: true,

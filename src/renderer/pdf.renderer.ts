@@ -8,7 +8,7 @@ export async function renderSolutionToPDF(
   result: MathSolutionResult | StructuredSolutionResult | any,
   outputPath: string,
   botName: string = 'Smart AI Assistant',
-  botUsername: string = '@mysmart_v2_2026_bot'
+  botUsername: string = '@smart_ai_assistant_official_bot'
 ): Promise<string> {
   const htmlContent = buildSolutionHtml(result, botName, botUsername);
 

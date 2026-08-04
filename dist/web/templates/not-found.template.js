@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.renderNotFoundHtml = renderNotFoundHtml;
 function renderNotFoundHtml(publicId, botUsername) {
-    const telegramBotUrl = `https://t.me/${botUsername || 'mysmart_v2_2026_bot'}`;
+    const telegramBotUrl = `https://t.me/${botUsername || 'smart_ai_assistant_official_bot'}`;
     return `<!DOCTYPE html>
 <html lang="km">
 <head>

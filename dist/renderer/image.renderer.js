@@ -40,7 +40,7 @@ function escapeHtml(unsafe) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
-function buildSolutionHtml(data, botName = 'Smart AI Assistant', botUsername = '@mysmart_v2_2026_bot') {
+function buildSolutionHtml(data, botName = 'Smart AI Assistant', botUsername = '@smart_ai_assistant_official_bot') {
     const templatePath = path_1.default.join(__dirname, 'templates', 'solution.template.html');
     let templateHtml = fs_1.default.readFileSync(templatePath, 'utf8');
     const resType = data.response_type || 'general_answer';
@@ -234,7 +234,7 @@ function buildSolutionHtml(data, botName = 'Smart AI Assistant', botUsername = '
         .replace('{{GENERATED_AT}}', nowStr);
     return templateHtml;
 }
-async function renderSolutionToPNG(result, outputPath, botName = 'Smart AI Assistant', botUsername = '@mysmart_v2_2026_bot') {
+async function renderSolutionToPNG(result, outputPath, botName = 'Smart AI Assistant', botUsername = '@smart_ai_assistant_official_bot') {
     const htmlContent = buildSolutionHtml(result, botName, botUsername);
     const browser = await getBrowser();
     const context = await browser.newContext({

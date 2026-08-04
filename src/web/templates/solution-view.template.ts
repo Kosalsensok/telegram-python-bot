@@ -17,7 +17,7 @@ export function renderSolutionViewHtml(solutionData: any, publicId: string, appU
   const modelName = solutionData.modelName || 'Smart AI Math Solver';
   const summaryText = solutionData.summary || 'សម្រួលកត្តានីមួយៗនៃផលគុណប្រភាគ រួចធ្វើការសម្រួលភាគយក និងភាគបែងដែលដូចគ្នាតាមលំនាំតទល់ (Telescoping Product)។';
 
-  const telegramBotUrl = `https://t.me/${botUsername || 'mysmart_v2_2026_bot'}`;
+  const telegramBotUrl = `https://t.me/${botUsername || 'smart_ai_assistant_official_bot'}`;
 
   return `<!DOCTYPE html>
 <html lang="km" data-theme="light">

@@ -9,7 +9,7 @@ const zod_1 = require("zod");
 dotenv_1.default.config();
 const envSchema = zod_1.z.object({
     BOT_TOKEN: zod_1.z.string().default(process.env.BOT_TOKEN || 'dummy_bot_token'),
-    BOT_USERNAME: zod_1.z.string().default(process.env.BOT_USERNAME || 'mysmart_v2_2026_bot'),
+    BOT_USERNAME: zod_1.z.string().default(process.env.BOT_USERNAME || 'smart_ai_assistant_official_bot'),
     AI_PROVIDER: zod_1.z.enum(['openai', 'gemini']).default('gemini'),
     OPENAI_API_KEY: zod_1.z.string().optional(),
     OPENAI_MODEL: zod_1.z.string().default('gpt-4o'),
