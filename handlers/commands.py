@@ -106,10 +106,13 @@ def get_command_router(memory: ConversationMemory, db_service: DatabaseService =
         formatted_users = format_user_count(total_users)
 
         welcome_text = (
-            f"👋 <b>សួស្ដី {escaped_user_name}! ស្វាគមន៍មកកាន់ Smart AI Assistant</b> 🤖\n\n"
+            f"👋 <b>សួស្ដី {escaped_user_name}! ស្វាគមន៍មកកាន់ Smart AI Assistant</b> 🤖\n"
+            f"👥 <b>អ្នកប្រើប្រាស់សរុប៖</b> {formatted_users} នាក់\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             "ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ អាចជួយអ្នកលើការវិភាគអត្ថបទ រូបភាព សំឡេង គណិតវិទ្យា និងការសរសេរកូដ។\n\n"
             "👇 <b>សូមជ្រើសរើសមុខងារខាងក្រោមដើម្បីចាប់ផ្តើម៖</b>"
         )
+
 
         try:
             await message.answer(

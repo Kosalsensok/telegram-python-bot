@@ -38,16 +38,9 @@ async def update_bot_profile(bot: Bot, db_service: DatabaseService = None) -> No
 
         formatted_count = format_user_count(total_count)
 
-        # 1. Update Bot Name (isolated try-except so Telegram name rate limits don't block short description)
-        if SHOW_USER_COUNT_IN_BOT_NAME and time.time() >= _name_update_cooldown_until:
-            if total_count > 0:
-                bot_name = f"{BOT_DISPLAY_NAME} • {formatted_count} Users"
-            else:
-                bot_name = BOT_DISPLAY_NAME
-
-            if len(bot_name) > 64:
-                bot_name = bot_name[:64]
-
+        # 1. Update Bot Name (Keep clean display name to prevent Telegram setMyName API rate-limit blocks)
+        if time.time() >= _name_update_cooldown_until:
+            bot_name = BOT_DISPLAY_NAME
             try:
                 await bot.set_my_name(name=bot_name)
             except Exception as e:
@@ -59,6 +52,7 @@ async def update_bot_profile(bot: Bot, db_service: DatabaseService = None) -> No
                     logging.info(f"Bot Name update rate-limited by Telegram. Cooldown for {retry_seconds}s.")
                 else:
                     logging.warning(f"Failed to update Bot Name: {error_msg}")
+
 
         # 2. Update Short Description (shown on profile card)
         short_desc = f"🤖 ជំនួយការ AI ឆ្លាតវៃ (Khmer & English) • 👥 {formatted_count} users"
