@@ -38,12 +38,16 @@ class DatabaseService:
         """
         try:
             # 1. Connect without selecting database to ensure DB creation
-            conn = await aiomysql.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                autocommit=True
+            conn = await asyncio.wait_for(
+                aiomysql.connect(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    connect_timeout=3,
+                    autocommit=True
+                ),
+                timeout=3.0
             )
             async with conn.cursor() as cur:
                 await cur.execute(
@@ -53,16 +57,20 @@ class DatabaseService:
             conn.close()
 
             # 2. Create connection pool to the database
-            self.pool = await aiomysql.create_pool(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                db=self.database,
-                charset="utf8mb4",
-                autocommit=True,
-                maxsize=10,
-                minsize=1
+            self.pool = await asyncio.wait_for(
+                aiomysql.create_pool(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    db=self.database,
+                    charset="utf8mb4",
+                    autocommit=True,
+                    maxsize=10,
+                    minsize=1,
+                    connect_timeout=3
+                ),
+                timeout=3.0
             )
 
             # 3. Create tables if they do not exist

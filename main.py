@@ -12,6 +12,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.types import BotCommand, ErrorEvent
+from aiogram.exceptions import TelegramConflictError, TelegramRetryAfter
 from aiohttp import web
 
 from config import (
@@ -1049,6 +1050,10 @@ async def main():
     # Register Global Exception Handler to catch any unhandled update errors
     @dp.error()
     async def global_error_handler(event: types.ErrorEvent):
+        from aiogram.exceptions import TelegramRetryAfter, TelegramConflictError
+        if isinstance(event.exception, (TelegramRetryAfter, TelegramConflictError)):
+            logging.warning(f"🛡 Telegram API Limit / Conflict caught: {event.exception}")
+            return True
         logging.error(f"🛡 Global Aiogram Exception Caught: {event.exception}", exc_info=event.exception)
         try:
             if event.update and event.update.message:
@@ -1164,6 +1169,14 @@ async def main():
         except asyncio.CancelledError:
             logging.info("Bot polling loop cancelled.")
             break
+        except TelegramConflictError:
+            retry_count += 1
+            logging.warning(f"⚠️ Telegram Conflict: Another bot instance is active (Attempt #{retry_count}). Waiting 30s before retry to avoid flood limits...")
+            await asyncio.sleep(30)
+        except TelegramRetryAfter as e:
+            wait_time = int(getattr(e, 'retry_after', 30))
+            logging.warning(f"⚠️ Telegram Rate Limit hit: retry after {wait_time}s. Backing off gracefully...")
+            await asyncio.sleep(wait_time + 1)
         except Exception as e:
             retry_count += 1
             logging.error(f"Error during bot execution (Attempt #{retry_count}): {e}. Retrying in 5 seconds...", exc_info=True)

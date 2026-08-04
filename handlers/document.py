@@ -6,6 +6,7 @@ from services.db_service import DatabaseService
 from services.gemini_service import GeminiService
 from utils.memory import ConversationMemory
 from utils.message_utils import send_safe_response
+from utils.thinking_animation import DynamicThinkingAnimation, get_doc_thinking_steps
 from utils.response_router import (
     parse_ai_structured_response,
     format_telegram_html
