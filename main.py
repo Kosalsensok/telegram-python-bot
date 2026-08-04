@@ -1124,9 +1124,9 @@ async def main():
 
     logging.info("Routers and Middleware registered successfully: [UserTrackerMiddleware, Commands, Callbacks, Admin, Image, Document, Voice, Location, Text, Fallback]")
 
-    # 6. Delete any pending webhook updates to ensure smooth Long Polling
+    # 6. Delete any pending webhook updates to ensure smooth Long Polling (preserve pending messages)
     try:
-        await bot.delete_webhook(drop_pending_updates=True)
+        await bot.delete_webhook(drop_pending_updates=False)
     except Exception as wh_err:
         logging.warning(f"Note on delete_webhook: {wh_err}")
 
@@ -1165,7 +1165,7 @@ async def main():
             break
         try:
             logging.info("⚡ Telegram Long Polling session active...")
-            await bot.delete_webhook(drop_pending_updates=True)
+            await bot.delete_webhook(drop_pending_updates=False)
             await dp.start_polling(bot, handle_signals=False)
             logging.warning("Telegram polling session ended. Reconnecting in 3 seconds...")
             await asyncio.sleep(3)
