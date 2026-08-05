@@ -167,6 +167,10 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                 )
                 formatted_html = markdown_to_telegram_html(formatted_result)
 
+            # Ensure HTML is 100% sanitized before sending so Telegram never rejects parse_mode="HTML"
+            from utils.message_utils import sanitize_telegram_html
+            formatted_html = sanitize_telegram_html(formatted_html)
+
             solution_id = generate_short_solution_id()
             save_solution_cache(solution_id, ai_response, parsed_data, user_id, message.chat.id)
 

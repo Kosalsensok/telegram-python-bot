@@ -143,15 +143,15 @@ def sanitize_telegram_html(text: str) -> str:
 
 def clean_code_content(raw_code: str) -> str:
     """
-    Strips any raw HTML tags (<b>, </b>, <i>, </i>, <code>, </code>, etc.) and line numbers from code block content.
-    Returns clean, pure executable code formatted safely for Telegram HTML.
+    Strips any raw HTML tags and line numbers from code block content,
+    and escapes raw '<', '>', and '&' so Telegram HTML parse_mode renders the code block properly.
     """
     if not raw_code:
         return ""
-    # Unescape existing HTML entities first to inspect original characters
+    # Unescape existing HTML entities first to inspect original code text
     text = html.unescape(raw_code)
-    # Strip any embedded HTML tags inside code blocks
-    text = re.sub(r'</?(?:b|i|s|u|code|span|div|p|blockquote|pre)(?:\s+[^>]*)?>', '', text, flags=re.IGNORECASE)
+    # Strip any embedded HTML formatting tags inside code blocks
+    text = re.sub(r'</?(?:b|i|s|u|code|pre|span|div|p|blockquote)(?:\s+[^>]*)?>', '', text, flags=re.IGNORECASE)
     # Strip line numbers if present (e.g. "1: #include" or "1 | #include")
     lines = text.split('\n')
     cleaned_lines = []
@@ -159,7 +159,7 @@ def clean_code_content(raw_code: str) -> str:
         cleaned_line = re.sub(r'^\s*\d+[:|]\s*', '', line)
         cleaned_lines.append(cleaned_line)
     clean_text = "\n".join(cleaned_lines).strip()
-    return escape_tg_html(clean_text)
+    return html.escape(clean_text)
 
 
 def markdown_to_telegram_html(text: str) -> str:

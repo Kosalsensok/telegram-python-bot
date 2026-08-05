@@ -333,7 +333,10 @@ def format_greeting_telegram(data: Dict[str, Any]) -> str:
 def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     """
     Format code answer response for Telegram output without header overhead.
+    Returns clean Telegram HTML with proper code blocks.
     """
+    from utils.message_utils import escape_tg_html, clean_code_content
+    
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
     sections = data.get("sections", [])
     code_info = data.get("code", {})
@@ -342,11 +345,12 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
 
     parts = []
     if summary:
-        parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
+        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary)}")
 
     if code_content:
-        escaped_code = html.escape(code_content)
-        parts.append(f"\n💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{code_lang}\">{escaped_code}</code></pre>")
+        clean_code = clean_code_content(code_content)
+        clean_lang = code_lang.lower().replace("+", "p").replace("#", "sharp")
+        parts.append(f"\n💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
 
     if sections:
         parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")
@@ -354,10 +358,14 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
             content_clean = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', content)
-            if heading and heading.lower() not in ["code", "solution", "overview", "សង្ខេប"]:
-                parts.append(f"• <b>{heading}៖</b> {content_clean}")
-            elif content_clean:
-                parts.append(f"• {content_clean}")
+            
+            safe_heading = escape_tg_html(heading)
+            safe_content = escape_tg_html(content_clean)
+            
+            if safe_heading and safe_heading.lower() not in ["code", "solution", "overview", "សង្ខេប"]:
+                parts.append(f"• <b>{safe_heading}៖</b> {safe_content}")
+            elif safe_content:
+                parts.append(f"• {safe_content}")
 
     return "\n".join(parts)
 
