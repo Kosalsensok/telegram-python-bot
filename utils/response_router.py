@@ -56,7 +56,7 @@ def contains_broken_characters(text: str) -> bool:
 def clean_broken_characters(text: str) -> str:
     """
     Sanitizes broken characters and replaces bullet boxes with clean bullet points or removes replacement glyphs.
-    Normalizes string to Unicode NFC.
+    Normalizes string to Unicode NFC and deduplicates stacked bullets or brackets.
     """
     if not text:
         return ""
@@ -64,6 +64,8 @@ def clean_broken_characters(text: str) -> str:
     text = re.sub(r'[\u25A1\u25A0\u25A2\u25A3\u25A4\u25A5]', '•', text)
     text = text.replace('\ufffd', '')
     text = re.sub(r'•\s*•+', '•', text)
+    text = re.sub(r'\[\s*\[', '[', text)
+    text = re.sub(r'\]\s*\]', ']', text)
     return text.strip()
 
 
@@ -345,21 +347,25 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
 
     parts = []
     if summary:
-        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary)}")
+        summary_clean = re.sub(r'\*+', '', summary)
+        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary_clean)}\n")
 
     if code_content:
         clean_code = clean_code_content(code_content)
         clean_lang = code_lang.lower().replace("+", "p").replace("#", "sharp")
-        parts.append(f"\n💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
+        parts.append(f"💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
 
     if sections:
         parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")
         for sec in sections[:5]:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
-            content_clean = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', content)
             
-            safe_heading = escape_tg_html(heading)
+            heading_clean = re.sub(r'\*+', '', heading)
+            content_clean = re.sub(r'\*+', '', content)
+            content_clean = re.sub(r'(?<=\S)\s*(•|\-)\s+', r'\n• ', content_clean)
+            
+            safe_heading = escape_tg_html(heading_clean)
             safe_content = escape_tg_html(content_clean)
             
             if safe_heading and safe_heading.lower() not in ["code", "solution", "overview", "សង្ខេប"]:

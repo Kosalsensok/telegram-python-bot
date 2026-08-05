@@ -47,6 +47,28 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertIn("&lt;iostream&gt;", formatted)
         self.assertIn('<pre><code class="language-cpp">#include &lt;iostream&gt;\nint main() { return 0; }</code></pre>', formatted)
 
+    def test_multi_backtick_code_block_parsing(self):
+        multi_backtick_code = "````cpp\n#include <iostream>\nint main() {\n    return 0;\n}\n````"
+        formatted = markdown_to_telegram_html(multi_backtick_code)
+        self.assertIn('<pre><code class="language-cpp">#include &lt;iostream&gt;\nint main() {\n    return 0;\n}</code></pre>', formatted)
+        self.assertNotIn("````", formatted)
+
+    def test_orphan_asterisks_and_spacing_cleaning(self):
+        raw_text = "📌 **សង្ខេប៖** 1 **កូដឧទាហរណ៍ C++ Loops**"
+        formatted = markdown_to_telegram_html(raw_text)
+        self.assertNotIn("**", formatted)
+        self.assertIn("📌 <b>សង្ខេប៖</b> 1 <b>កូដឧទាហរណ៍ C++ Loops</b>", formatted)
+
+    def test_contextual_inline_keyboard_3_row_hierarchy(self):
+        kb = get_ai_result_contextual_keyboard("test_sid")
+        rows = kb.inline_keyboard
+        self.assertEqual(len(rows), 3)  # 3 rows
+        self.assertEqual(len(rows[0]), 3)  # Row 1: 3 buttons (👍 ចូលចិត្ត, 👎 មិនចូលចិត្ត, 🔄 ធ្វើឡើងវិញ)
+        self.assertEqual(len(rows[1]), 2)  # Row 2: 2 buttons (💬 ពន្យល់បន្ថែម, 📋 ទម្រង់សាមញ្ញ)
+        self.assertEqual(len(rows[2]), 1)  # Row 3: 1 button (🏠 Menu ដើម)
+        self.assertEqual(rows[0][2].text, "🔄 ធ្វើឡើងវិញ")
+        self.assertEqual(rows[2][0].text, "🏠 Menu ដើម")
+
     def test_broken_character_detection_and_cleaning(self):
         dirty = "\u25A1 Feature 1: \u25A1 POS Checkout \uFFFD"
         self.assertTrue(contains_broken_characters(dirty))

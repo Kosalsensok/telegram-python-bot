@@ -165,9 +165,9 @@ def clean_code_content(raw_code: str) -> str:
 def markdown_to_telegram_html(text: str) -> str:
     """
     Converts standard Gemini Markdown & LaTeX into clean, valid Telegram HTML.
-    Processes code blocks separately, converts LaTeX formulas to Unicode, and applies
-    bold, italic, headers, links, and list formatting without breaking Telegram HTML parsing.
-    Strips HTML tags and line numbers from inside code blocks.
+    Processes code blocks separately (supporting 3 or more backticks), converts LaTeX formulas
+    to Unicode, and applies bold, italic, headers, links, and list formatting without breaking
+    Telegram HTML parsing. Strips HTML tags and line numbers from inside code blocks.
     """
     if not text:
         return ""
@@ -176,9 +176,9 @@ def markdown_to_telegram_html(text: str) -> str:
     if text.count("```") % 2 != 0:
         text += "\n```"
 
-    # Match both standard Markdown ```...``` and HTML <pre>...</pre>
+    # Match both standard Markdown ```...``` (or ````...````) and HTML <pre>...</pre>
     code_block_pattern = re.compile(
-        r'(```([a-zA-Z0-9_+#-]+)?\n?([\s\S]*?)```)|(<pre(?: [^>]*)?>[\s\S]*?</pre>)',
+        r'(```+([a-zA-Z0-9_+#-]+)?\s*\n?([\s\S]*?)```+)|(<pre(?: [^>]*)?>[\s\S]*?</pre>)',
         re.IGNORECASE
     )
     
@@ -194,12 +194,18 @@ def markdown_to_telegram_html(text: str) -> str:
             parts.append(_format_text_block(text_before))
 
         if match.group(1):
-            # It's a markdown ``` block
-            lang = match.group(2) or ""
+            # It's a markdown ``` or ```` block
+            raw_lang = match.group(2) or ""
             code_content = match.group(3)
             sanitized_code = clean_code_content(code_content)
-            if lang:
-                clean_lang = lang.lower().replace("+", "p").replace("#", "sharp")
+            
+            clean_lang = ""
+            if raw_lang:
+                m_lang = re.match(r'^([a-zA-Z0-9_+#-]+)', raw_lang.strip())
+                if m_lang:
+                    clean_lang = m_lang.group(1).lower().replace("+", "p").replace("#", "sharp")
+
+            if clean_lang:
                 parts.append(f'<pre><code class="language-{clean_lang}">{sanitized_code}</code></pre>')
             else:
                 parts.append(f'<pre>{sanitized_code}</pre>')
@@ -233,6 +239,7 @@ def _format_text_block(text: str) -> str:
     Formats standard text block for Telegram HTML:
     - Converts LaTeX math to clean Unicode text (fractions, multiplication, dots, etc.)
     - Converts markdown bold, italic, code, headers, strikethrough, and links to valid Telegram HTML.
+    - Cleans orphan asterisks (stray **) from numbers and Khmer text completely.
     """
     if not text:
         return ""
@@ -278,15 +285,17 @@ def _format_text_block(text: str) -> str:
     text = re.sub(r'(?<!\*)\*(?!\*)([\s\S]+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
     text = re.sub(r'(?<!_)_(?!_)([\s\S]+?)(?<!_)_(?!_)', r'<i>\1</i>', text)
 
-    # Step 5: Clean orphan asterisks if any remain
-    text = re.sub(r'(?<![\w*])\*\*(?![\w*])', '', text)
-    text = re.sub(r'(?<![\w*])\*(?![\w*])', '', text)
+    # Step 5: Clean orphan asterisks completely (stray ** or * attached to numbers or Khmer characters)
+    text = re.sub(r'\*+', '', text)
 
     # Step 6: Strikethrough ~~text~~ -> <s>text</s>
     text = re.sub(r'~~([\s\S]+?)~~', r'<s>\1</s>', text)
 
     # Step 7: Links [title](url) -> <a href="url">title</a>
     text = re.sub(r'\[([^\]]+)\]\((https?://[^\s\)]+)\)', r'<a href="\2">\1</a>', text)
+
+    # Step 8: Fix attached summary numbers spacing (e.g. 📌 <b>សង្ខេប៖</b>1 -> 📌 <b>សង្ខេប៖</b> 1)
+    text = re.sub(r'(📌\s*<b>សង្ខេប[៖:]</b>)\s*(\d+)', r'\1 \2', text)
 
     return text
 
