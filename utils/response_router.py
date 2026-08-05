@@ -332,6 +332,36 @@ def format_greeting_telegram(data: Dict[str, Any]) -> str:
     )
 
 
+def _safe_html_text(text: str) -> str:
+    """Preserves existing HTML tags (<b>, <i>, <code>) without double escaping."""
+    if not text:
+        return ""
+    text_str = text.strip()
+    if re.search(r'</?(?:b|i|code|pre|s|u|a)(?:\s+[^>]*)?>', text_str, re.IGNORECASE):
+        # Text already contains valid HTML tags, unescape double-escaped entities
+        text_str = text_str.replace("&lt;", "<").replace("&gt;", ">")
+        return text_str
+    from utils.message_utils import escape_tg_html
+    return escape_tg_html(text_str)
+
+
+def _is_code_statement(line: str) -> bool:
+    """Checks if a string looks like raw code statements rather than explanation."""
+    l = line.strip()
+    if not l:
+        return True
+    code_markers = [
+        "#include", "int main", "std::", "cout", "cin", "printf", "for (", "while (", "do {",
+        "return 0", "return ;", "using namespace", "int ", "float ", "char ",
+        "double ", "void ", "const ", "let ", "var ", "function ", "def ", "import ", "class "
+    ]
+    if any(marker in l for marker in code_markers):
+        return True
+    if (l.endswith(";") or l.endswith("{") or l.endswith("}") or l == "}" or l == "{") and len(l) < 40:
+        return True
+    return False
+
+
 def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     """
     Format code answer response for Telegram output adhering to 2027 Hyper-Clean Output Standards:
@@ -344,7 +374,7 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     💡 <b>ដំណើរការធ្វើការ (Execution Flow Step-by-step)</b>
     1️⃣ <b>Step 1:</b> [Explanation]
     """
-    from utils.message_utils import escape_tg_html, clean_code_content, sanitize_telegram_html
+    from utils.message_utils import clean_code_content, sanitize_telegram_html
 
     raw_text = data.get("raw_text") or ""
     if "⚡" in raw_text and ("📦" in raw_text or "───────────────────" in raw_text):
@@ -366,7 +396,6 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
         clean_lang = code_lang.lower().replace("+", "p").replace("#", "sharp")
         parts.append(f"<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
 
-    # Collect Core Components (🔹) and Steps (1️⃣)
     components = []
     steps = []
 
@@ -376,7 +405,6 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
 
             content = re.sub(r'```[\s\S]*?```', '', content)
-            content = re.sub(r'#include.*', '', content)
 
             heading_clean = re.sub(r'\*+', '', heading).strip()
             content_clean = re.sub(r'\*+', '', content).strip()
@@ -387,17 +415,34 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
             if content_clean:
                 lines = [l.strip() for l in content_clean.split("\n") if l.strip()]
                 for l in lines:
-                    l_clean = re.sub(r'^[•\-*🔹]\s*', '', l)
-                    if l_clean and not l_clean.startswith("```") and not l_clean.startswith("#include"):
-                        if "step" in l_clean.lower() or "លក្ខខណ្ឌ" in l_clean or "រត់" in l_clean or "ចាប់ផ្ដើម" in l_clean:
+                    if _is_code_statement(l):
+                        continue
+
+                    l_clean = re.sub(r'^[•\-*🔹💡]\s*', '', l).strip()
+                    if not l_clean or l_clean.startswith("```"):
+                        continue
+
+                    # Check if line is step execution or core component
+                    is_step = any(k in l_clean.lower() for k in ["step", "លក្ខខណ្ឌ", "រត់", "ចាប់ផ្ដើម", "ផ្ទៀងផ្ទាត់", "បន្តបន្ទាប់"])
+                    
+                    if is_step:
+                        clean_step_body = re.sub(r'^(?:(?:\d+️⃣|\d+[\.\:\)\s]+|step\s*\d+[\.\:\)]?)\s*)+', '', l_clean, flags=re.IGNORECASE).strip()
+                        if clean_step_body:
                             num_emoji = f"{len(steps)+1}️⃣" if len(steps) < 10 else f"[{len(steps)+1}]"
-                            steps.append(f"{num_emoji} {escape_tg_html(l_clean)}")
+                            steps.append(f"{num_emoji} {_safe_html_text(clean_step_body)}")
+                    else:
+                        kv = re.match(r'^([^:\n]{2,35}):\s*(.+)$', l_clean)
+                        if kv:
+                            term_part = _safe_html_text(kv.group(1).strip())
+                            desc_part = _safe_html_text(kv.group(2).strip())
+                            components.append(f"🔹 <b>{term_part}:</b> {desc_part}")
+                        elif heading_clean:
+                            term_part = _safe_html_text(heading_clean)
+                            desc_part = _safe_html_text(l_clean)
+                            components.append(f"🔹 <b>{term_part}:</b> {desc_part}")
+                            heading_clean = ""
                         else:
-                            if heading_clean:
-                                components.append(f"🔹 <b>{escape_tg_html(heading_clean)}:</b> {escape_tg_html(l_clean)}")
-                                heading_clean = ""
-                            else:
-                                components.append(f"🔹 {escape_tg_html(l_clean)}")
+                            components.append(f"🔹 {_safe_html_text(l_clean)}")
 
     if components:
         parts.append("<b>───────────────────</b>")

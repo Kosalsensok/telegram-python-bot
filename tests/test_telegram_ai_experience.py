@@ -59,6 +59,32 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertNotIn("**", formatted)
         self.assertIn("📌 <b>សង្ខេប៖</b> 1 <b>កូដឧទាហរណ៍ C++ Loops</b>", formatted)
 
+    def test_no_raw_html_tag_leak_and_code_filtering(self):
+        data = {
+            "summary": "C++ Loop Explanation",
+            "code": {"language": "cpp", "content": "#include <iostream>\nint main() { return 0; }"},
+            "sections": [
+                {
+                    "heading": "Core Components",
+                    "content": "Initialization (int i = 1): Start from 1\nfor (int i = 1; i <= 5; i++) {\nstd::cout << i;\n}"
+                },
+                {
+                    "heading": "Execution Flow",
+                    "content": "1. 1️⃣ Step 1: Start i = 1\n2. 2️⃣ Step 2: Loop running"
+                }
+            ]
+        }
+        from utils.response_router import format_code_answer_telegram
+        formatted = format_code_answer_telegram(data)
+        # Verify no raw escaped HTML tags like &lt;b&gt;
+        self.assertNotIn("&lt;b&gt;", formatted)
+        self.assertIn("<b>", formatted)
+        # Verify raw code statement is filtered out from components
+        self.assertNotIn("for (int i = 1; i &lt;= 5; i++)", formatted)
+        # Verify no duplicate numbering like "1. 1️⃣"
+        self.assertNotIn("1. 1️⃣", formatted)
+        self.assertIn("1️⃣ Start i = 1", formatted)
+
     def test_contextual_inline_keyboard_3_row_hierarchy(self):
         kb = get_ai_result_contextual_keyboard("test_sid")
         rows = kb.inline_keyboard

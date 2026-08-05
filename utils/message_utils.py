@@ -86,6 +86,9 @@ def escape_tg_html(text: str) -> str:
 
 
 def _sanitize_outside_pre(text: str) -> str:
+    # Unescape any double-escaped valid HTML tags (e.g. &lt;b&gt; -> <b>)
+    text = re.sub(r'&lt;(/?(?:b|i|s|u|code|pre|blockquote|span|tg-emoji|a)(?:\s+[^>]*)?)&gt;', r'<\1>', text, flags=re.IGNORECASE)
+
     valid_tag_pattern = re.compile(
         r'</?(?:b|i|s|u|pre|code|blockquote|span|tg-emoji)(?:\s+(?:class="[^"]*"|expandable|emoji-id="[^"]*"|custom_emoji_id="[^"]*"))*\s*>|<a\s+href="[^"]*"\s*>|</a>',
         re.IGNORECASE
