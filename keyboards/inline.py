@@ -111,7 +111,7 @@ def get_ai_result_contextual_keyboard(solution_id: str = "") -> InlineKeyboardMa
     Contextual buttons for text AI results per user UX spec:
     Row 1: [👍 ចូលចិត្ត] [👎 មិនចូលចិត្ត] [🔄 ធ្វើឡើងវិញ]
     Row 2: [💬 ពន្យល់បន្ថែម] [📋 ទម្រង់សាមញ្ញ]
-    Row 3: [🏠 Menu ដើម]
+    Row 3: [🏠 ម៉ឺនុយដើម]
     """
     builder = InlineKeyboardBuilder()
     sid = solution_id[:16] if solution_id else "def"
@@ -120,7 +120,7 @@ def get_ai_result_contextual_keyboard(solution_id: str = "") -> InlineKeyboardMa
     builder.button(text="🔄 ធ្វើឡើងវិញ", callback_data=f"ai_regen:{sid}")
     builder.button(text="💬 ពន្យល់បន្ថែម", callback_data=f"ai_explain:{sid}")
     builder.button(text="📋 ទម្រង់សាមញ្ញ", callback_data=f"ai_simple:{sid}")
-    builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
+    builder.button(text="🏠 ម៉ឺនុយដើម", callback_data="cb_back_main")
     builder.adjust(3, 2, 1)
     return builder.as_markup()
 

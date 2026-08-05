@@ -336,6 +336,14 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     """
     Format code answer response for Telegram output without header overhead.
     Returns clean Telegram HTML with proper code blocks.
+    Structure:
+    📌 <b>សង្ខេប៖</b> [Summary]
+
+    <pre><code class="language-cpp">...</code></pre>
+
+    💡 <b>ចំណុចសំខាន់ៗ៖</b>
+    • [Point 1]
+    • [Point 2]
     """
     from utils.message_utils import escape_tg_html, clean_code_content
     
@@ -347,33 +355,46 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
 
     parts = []
     if summary:
-        summary_clean = re.sub(r'\*+', '', summary)
-        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary_clean)}\n")
+        summary_clean = re.sub(r'\*+', '', summary).strip()
+        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary_clean)}")
 
     if code_content:
         clean_code = clean_code_content(code_content)
         clean_lang = code_lang.lower().replace("+", "p").replace("#", "sharp")
-        parts.append(f"💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
+        parts.append(f"<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
 
+    valid_points = []
     if sections:
-        parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")
         for sec in sections[:5]:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
             
-            heading_clean = re.sub(r'\*+', '', heading)
-            content_clean = re.sub(r'\*+', '', content)
-            content_clean = re.sub(r'(?<=\S)\s*(•|\-)\s+', r'\n• ', content_clean)
+            # Remove any raw markdown code blocks or code fences from content
+            content = re.sub(r'```[\s\S]*?```', '', content)
+            content = re.sub(r'#include.*', '', content)
             
-            safe_heading = escape_tg_html(heading_clean)
-            safe_content = escape_tg_html(content_clean)
+            heading_clean = re.sub(r'\*+', '', heading).strip()
+            content_clean = re.sub(r'\*+', '', content).strip()
             
-            if safe_heading and safe_heading.lower() not in ["code", "solution", "overview", "សង្ខេប"]:
-                parts.append(f"• <b>{safe_heading}៖</b> {safe_content}")
-            elif safe_content:
-                parts.append(f"• {safe_content}")
+            if heading_clean.lower() in ["code", "solution", "overview", "សង្ខេប", "ទិដ្ឋភាពទូទៅ (overview)", "ទិដ្ឋភាពទូទៅ", "ខ្លឹមសារ (content)", "ខ្លឹមសារ"]:
+                heading_clean = ""
 
-    return "\n".join(parts)
+            if content_clean:
+                lines = [l.strip() for l in content_clean.split("\n") if l.strip()]
+                for l in lines:
+                    l_clean = re.sub(r'^[•\-*]\s*', '', l)
+                    if l_clean and not l_clean.startswith("```") and not l_clean.startswith("#include"):
+                        if heading_clean:
+                            valid_points.append(f"• <b>{escape_tg_html(heading_clean)}៖</b> {escape_tg_html(l_clean)}")
+                            heading_clean = ""
+                        else:
+                            valid_points.append(f"• {escape_tg_html(l_clean)}")
+
+    if valid_points:
+        points_block = "💡 <b>ចំណុចសំខាន់ៗ៖</b>\n" + "\n".join(valid_points[:4])
+        parts.append(points_block)
+
+    return "\n\n".join([p for p in parts if p.strip()])
 
 
 def format_software_requirements_telegram(data: Dict[str, Any]) -> str:
@@ -500,31 +521,56 @@ def format_general_answer_telegram(data: Dict[str, Any]) -> str:
     """
     Format general answer response for Telegram output.
     """
+    from utils.message_utils import escape_tg_html, clean_code_content
     title = clean_broken_characters(data.get("title", ""))
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
     sections = data.get("sections", [])
+    code_info = data.get("code", {})
+    code_content = code_info.get("content", "") if isinstance(code_info, dict) else ""
+    code_lang = code_info.get("language", "cpp") if isinstance(code_info, dict) else "cpp"
 
     parts = []
-    if title and not any(t in title.lower() for t in ["smart ai", "assistant response", "general answer"]):
-        parts.append(f"📌 <b>{title}</b>")
-    elif summary:
-        parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
+    if summary:
+        summary_clean = re.sub(r'\*+', '', summary).strip()
+        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary_clean)}")
 
-    if summary and summary != title and not parts:
-        parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
+    if code_content:
+        clean_code = clean_code_content(code_content)
+        clean_lang = code_lang.lower().replace("+", "p").replace("#", "sharp")
+        parts.append(f"<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
 
+    valid_points = []
     if sections:
-        parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")
         for sec in sections[:5]:
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
-            content_clean = re.sub(r'(?<=\S)\s*(•|\-|\*)\s+', r'\n• ', content)
-            if heading and not heading.lower().startswith("sec_"):
-                parts.append(f"• <b>{heading}៖</b> {content_clean}")
-            elif content_clean:
-                parts.append(f"• {content_clean}")
+            
+            # Remove any raw markdown code blocks from section content
+            content = re.sub(r'```[\s\S]*?```', '', content)
+            content = re.sub(r'#include.*', '', content)
 
-    return "\n".join(parts)
+            heading_clean = re.sub(r'\*+', '', heading).strip()
+            content_clean = re.sub(r'\*+', '', content).strip()
+            
+            if heading_clean.lower() in ["code", "solution", "overview", "សង្ខេប", "ទិដ្ឋភាពទូទៅ (overview)", "ទិដ្ឋភាពទូទៅ", "ខ្លឹមសារ (content)", "ខ្លឹមសារ"]:
+                heading_clean = ""
+
+            if content_clean:
+                lines = [l.strip() for l in content_clean.split("\n") if l.strip()]
+                for l in lines:
+                    l_clean = re.sub(r'^[•\-*]\s*', '', l)
+                    if l_clean and not l_clean.startswith("```") and not l_clean.startswith("#include"):
+                        if heading_clean:
+                            valid_points.append(f"• <b>{escape_tg_html(heading_clean)}៖</b> {escape_tg_html(l_clean)}")
+                            heading_clean = ""
+                        else:
+                            valid_points.append(f"• {escape_tg_html(l_clean)}")
+
+    if valid_points:
+        points_block = "💡 <b>ចំណុចសំខាន់ៗ៖</b>\n" + "\n".join(valid_points[:4])
+        parts.append(points_block)
+
+    return "\n\n".join([p for p in parts if p.strip()])
 
 
 def format_speech_to_text_telegram(data: Dict[str, Any]) -> str:

@@ -67,7 +67,7 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertEqual(len(rows[1]), 2)  # Row 2: 2 buttons (💬 ពន្យល់បន្ថែម, 📋 ទម្រង់សាមញ្ញ)
         self.assertEqual(len(rows[2]), 1)  # Row 3: 1 button (🏠 Menu ដើម)
         self.assertEqual(rows[0][2].text, "🔄 ធ្វើឡើងវិញ")
-        self.assertEqual(rows[2][0].text, "🏠 Menu ដើម")
+        self.assertEqual(rows[2][0].text, "🏠 ម៉ឺនុយដើម")
 
     def test_broken_character_detection_and_cleaning(self):
         dirty = "\u25A1 Feature 1: \u25A1 POS Checkout \uFFFD"
