@@ -41,6 +41,46 @@ async def _execute_wandbox(code: str, compiler: str = "gcc-head") -> Optional[st
         logging.warning(f"Wandbox API execution failed: {e}")
     return None
 
+async def _execute_cpp_local(code: str, temp_dir: str) -> Optional[str]:
+    """
+    Fallback local execution for C/C++ using g++ if available on system.
+    """
+    cpp_file = os.path.join(temp_dir, "main.cpp")
+    exe_file = os.path.join(temp_dir, "main.exe" if os.name == 'nt' else "main")
+    
+    try:
+        with open(cpp_file, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        comp_proc = await asyncio.create_subprocess_exec(
+            "g++", cpp_file, "-o", exe_file,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=temp_dir
+        )
+        stdout, stderr = await asyncio.wait_for(comp_proc.communicate(), timeout=8.0)
+        if comp_proc.returncode != 0:
+            err_msg = stderr.decode('utf-8', errors='replace').strip()
+            return f"=== C++ COMPILATION ERROR ===\n{err_msg}"
+        
+        run_proc = await asyncio.create_subprocess_exec(
+            exe_file,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=temp_dir
+        )
+        stdout, stderr = await asyncio.wait_for(run_proc.communicate(), timeout=5.0)
+        out_str = stdout.decode('utf-8', errors='replace').strip()
+        err_str = stderr.decode('utf-8', errors='replace').strip()
+        
+        res = out_str
+        if err_str:
+            res += f"\n\n=== RUNTIME ERROR ===\n{err_str}"
+        return res if res else "(C/C++ code executed successfully with no output)"
+    except Exception as e:
+        logging.debug(f"Local C++ execution unavailable: {e}")
+        return None
+
 async def execute_code(language: str, code: str) -> Optional[Dict[str, Any]]:
     """
     Executes code locally (Python, JS, TS, Java) or via cloud compiler API for C/C++.
@@ -57,7 +97,7 @@ async def execute_code(language: str, code: str) -> Optional[Dict[str, Any]]:
     elif language in ["c++", "cpp", "c"]:
         language = "cpp"
         
-    # C/C++ execution via Wandbox cloud compiler
+    # C/C++ execution via Wandbox cloud compiler with local g++ fallback
     if language == "cpp":
         wandbox_out = await _execute_wandbox(code, "gcc-head")
         if wandbox_out is not None:
@@ -67,6 +107,19 @@ async def execute_code(language: str, code: str) -> Optional[Dict[str, Any]]:
                 "compile": {"output": ""},
                 "run": {"output": wandbox_out}
             }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_out = await _execute_cpp_local(code, temp_dir)
+            if local_out is not None:
+                return {
+                    "compile": {"output": ""},
+                    "run": {"output": local_out}
+                }
+        
+        return {
+            "compile": {"output": ""},
+            "run": {"output": "⚠️ C/C++ execution service temporarily unavailable (Cloud API offline and local compiler not found)."}
+        }
         
     supported_langs = {
         "python": {"ext": ".py", "cmd": [sys.executable]},

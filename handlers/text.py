@@ -149,26 +149,30 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
             # Parse structured output and format clean result
             parsed_data = parse_ai_structured_response(ai_response, user_text)
             
-            title = parsed_data.get("topic") or parsed_data.get("title") or user_text[:35]
-            answer = parsed_data.get("answer") or parsed_data.get("solution_summary") or ai_response
-            explanation = parsed_data.get("explanation") or parsed_data.get("details") or ""
-            tips = parsed_data.get("tips") or parsed_data.get("recommendation") or ""
+            res_type = parsed_data.get("response_type", "general_answer")
+            if res_type in ["code_answer", "software_requirements", "project_prototype", "system_architecture", "database_design", "api_design", "mathematics", "physics", "chemistry", "speech_to_text", "stt"]:
+                formatted_html = format_telegram_html(parsed_data)
+            else:
+                title = parsed_data.get("topic") or parsed_data.get("title") or user_text[:35]
+                answer = parsed_data.get("answer") or parsed_data.get("solution_summary") or ai_response
+                explanation = parsed_data.get("explanation") or parsed_data.get("details") or ""
+                tips = parsed_data.get("tips") or parsed_data.get("recommendation") or ""
 
-            formatted_result = format_ai_result(
-                title=title,
-                answer=answer,
-                explanation=explanation,
-                tips=tips,
-                header_title="SMART AI ASSISTANT"
-            )
+                formatted_result = format_ai_result(
+                    title=title,
+                    answer=answer,
+                    explanation=explanation,
+                    tips=tips,
+                    header_title="SMART AI ASSISTANT"
+                )
+                formatted_html = markdown_to_telegram_html(formatted_result)
 
             solution_id = generate_short_solution_id()
             save_solution_cache(solution_id, ai_response, parsed_data, user_id, message.chat.id)
 
             keyboard = get_ai_result_contextual_keyboard(solution_id)
 
-            clean_html = markdown_to_telegram_html(formatted_result)
-            chunks = split_html_message(clean_html, max_length=3800)
+            chunks = split_html_message(formatted_html, max_length=3800)
 
             # Step D: Edit the same loading message into the result
             if chunks:
@@ -179,7 +183,7 @@ def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, d
                         await message.reply(chunk, parse_mode="HTML", reply_markup=current_markup)
                 except Exception as edit_err:
                     logging.warning(f"edit_text failed for user {user_id}, falling back to send_safe_response: {edit_err}")
-                    await send_safe_response(message, formatted_result, reply_markup=keyboard)
+                    await send_safe_response(message, formatted_html, reply_markup=keyboard)
 
 
 

@@ -166,6 +166,16 @@ def parse_ai_structured_response(raw_text: str, user_prompt: str = "", default_p
         html_code_match = re.search(r'<pre(?: [^>]*)?>(?:<code(?: [^>]*)?>)?(.*?)(?:</code>)?</pre>', cleaned_raw, re.DOTALL | re.IGNORECASE)
         if html_code_match:
             extracted_code = html.unescape(html_code_match.group(1).strip())
+        else:
+            naked_cpp = re.search(r'(#include\s*<[\s\S]+?return\s+0;\s*\})', cleaned_raw)
+            if naked_cpp:
+                extracted_code = naked_cpp.group(1).strip()
+                detected_lang = "cpp"
+            else:
+                naked_py = re.search(r'(def\s+\w+\(.*?\):[\s\S]+?)(?=\n\n[A-Z]|\Z)', cleaned_raw)
+                if naked_py and ("print(" in naked_py.group(1) or "return " in naked_py.group(1)):
+                    extracted_code = naked_py.group(1).strip()
+                    detected_lang = "python"
 
     LANG_TO_EXT = {
         "cpp": ".cpp", "c": ".c", "python": ".py", "javascript": ".js",
@@ -335,7 +345,8 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
         parts.append(f"📌 <b>សង្ខេប៖</b> {summary}")
 
     if code_content:
-        parts.append(f"\n💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{code_lang}\">{code_content}</code></pre>")
+        escaped_code = html.escape(code_content)
+        parts.append(f"\n💻 <b>ឧទាហរណ៍កូដ {code_lang.upper()}៖</b>\n<pre><code class=\"language-{code_lang}\">{escaped_code}</code></pre>")
 
     if sections:
         parts.append("\n─────────────────\n💡 <b>ចំណុចសំខាន់ៗ៖</b>")

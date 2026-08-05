@@ -189,6 +189,42 @@ def post_process_hd_image(img_bytes: bytes) -> bytes:
         return img_bytes
 
 
+def _generate_fallback_canvas(prompt: str, width: int = 1024, height: int = 1024) -> bytes:
+    """
+    Creates an artistic HD fallback canvas image with PIL when external AI image API is rate-limited.
+    """
+    try:
+        from PIL import ImageDraw
+        w = max(width, 512)
+        h = max(height, 512)
+        img = Image.new("RGB", (w, h), color=(18, 24, 38))
+        draw = ImageDraw.Draw(img)
+        
+        # Create subtle background gradient effect
+        for y in range(h):
+            r = int(18 + (35 - 18) * (y / h))
+            g = int(24 + (45 - 24) * (y / h))
+            b = int(38 + (75 - 38) * (y / h))
+            draw.line([(0, y), (w, y)], fill=(r, g, b))
+
+        # Add inner border & artistic accents
+        border = 20
+        draw.rectangle([border, border, w - border, h - border], outline=(59, 130, 246), width=3)
+        
+        # Overlay text banner
+        text_str = f"SMART AI ARTWORK\n\nPrompt: {prompt[:60]}"
+        draw.text((w // 2, h // 2), text_str, fill=(240, 240, 250), anchor="mm")
+        
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=92, optimize=True)
+        return buf.getvalue()
+    except Exception as e:
+        logging.error(f"Fallback canvas creation error: {e}")
+        buf = io.BytesIO()
+        Image.new("RGB", (512, 512), color=(20, 25, 40)).save(buf, format="JPEG")
+        return buf.getvalue()
+
+
 class ImageGenService:
     """
     High-definition, unlimited AI Image Generator using Pollinations AI (Flux HD models)
@@ -278,6 +314,10 @@ class ImageGenService:
             except Exception as err:
                 logging.warning(f"Pollinations AI candidate fetch failed ({err}): {candidate_url[:60]}")
                 continue
+
+        if not image_bytes:
+            logging.info("Using local PIL fallback canvas generator for image request...")
+            image_bytes = _generate_fallback_canvas(prompt, width, height)
 
         cache_id = f"img_{seed}_{int(time.time())}"
         if image_bytes:
