@@ -334,19 +334,22 @@ def format_greeting_telegram(data: Dict[str, Any]) -> str:
 
 def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     """
-    Format code answer response for Telegram output without header overhead.
-    Returns clean Telegram HTML with proper code blocks.
-    Structure:
-    📌 <b>សង្ខេប៖</b> [Summary]
-
+    Format code answer response for Telegram output adhering to 2027 Hyper-Clean Output Standards:
+    ⚡ <b>ការបកស្រាយកូដ (Code Breakdown)</b>
     <pre><code class="language-cpp">...</code></pre>
-
-    💡 <b>ចំណុចសំខាន់ៗ៖</b>
-    • [Point 1]
-    • [Point 2]
+    <b>───────────────────</b>
+    📦 <b>ប្លុកសមាសភាគសំខាន់ៗ (Core Components)</b>
+    🔹 <b>[Term]:</b> [Explanation]
+    <b>───────────────────</b>
+    💡 <b>ដំណើរការធ្វើការ (Execution Flow Step-by-step)</b>
+    1️⃣ <b>Step 1:</b> [Explanation]
     """
-    from utils.message_utils import escape_tg_html, clean_code_content
-    
+    from utils.message_utils import escape_tg_html, clean_code_content, sanitize_telegram_html
+
+    raw_text = data.get("raw_text") or ""
+    if "⚡" in raw_text and ("📦" in raw_text or "───────────────────" in raw_text):
+        return sanitize_telegram_html(raw_text)
+
     summary = clean_broken_characters(data.get("summary_km") or data.get("summary") or "")
     sections = data.get("sections", [])
     code_info = data.get("code", {})
@@ -354,45 +357,57 @@ def format_code_answer_telegram(data: Dict[str, Any]) -> str:
     code_lang = code_info.get("language", "cpp") if isinstance(code_info, dict) else "cpp"
 
     parts = []
-    if summary:
-        summary_clean = re.sub(r'\*+', '', summary).strip()
-        parts.append(f"📌 <b>សង្ខេប៖</b> {escape_tg_html(summary_clean)}")
-
+    
+    # Block 1: Header & Code Breakdown
+    parts.append("⚡ <b>ការបកស្រាយកូដ (Code Breakdown)</b>")
+    
     if code_content:
         clean_code = clean_code_content(code_content)
         clean_lang = code_lang.lower().replace("+", "p").replace("#", "sharp")
         parts.append(f"<pre><code class=\"language-{clean_lang}\">{clean_code}</code></pre>")
 
-    valid_points = []
+    # Collect Core Components (🔹) and Steps (1️⃣)
+    components = []
+    steps = []
+
     if sections:
-        for sec in sections[:5]:
+        for idx, sec in enumerate(sections[:6]):
             heading = clean_broken_characters(sec.get("heading_km") or sec.get("heading") or "")
             content = clean_broken_characters(sec.get("content_km") or sec.get("content") or "")
-            
-            # Remove any raw markdown code blocks or code fences from content
+
             content = re.sub(r'```[\s\S]*?```', '', content)
             content = re.sub(r'#include.*', '', content)
-            
+
             heading_clean = re.sub(r'\*+', '', heading).strip()
             content_clean = re.sub(r'\*+', '', content).strip()
-            
+
             if heading_clean.lower() in ["code", "solution", "overview", "សង្ខេប", "ទិដ្ឋភាពទូទៅ (overview)", "ទិដ្ឋភាពទូទៅ", "ខ្លឹមសារ (content)", "ខ្លឹមសារ"]:
                 heading_clean = ""
 
             if content_clean:
                 lines = [l.strip() for l in content_clean.split("\n") if l.strip()]
                 for l in lines:
-                    l_clean = re.sub(r'^[•\-*]\s*', '', l)
+                    l_clean = re.sub(r'^[•\-*🔹]\s*', '', l)
                     if l_clean and not l_clean.startswith("```") and not l_clean.startswith("#include"):
-                        if heading_clean:
-                            valid_points.append(f"• <b>{escape_tg_html(heading_clean)}៖</b> {escape_tg_html(l_clean)}")
-                            heading_clean = ""
+                        if "step" in l_clean.lower() or "លក្ខខណ្ឌ" in l_clean or "រត់" in l_clean or "ចាប់ផ្ដើម" in l_clean:
+                            num_emoji = f"{len(steps)+1}️⃣" if len(steps) < 10 else f"[{len(steps)+1}]"
+                            steps.append(f"{num_emoji} {escape_tg_html(l_clean)}")
                         else:
-                            valid_points.append(f"• {escape_tg_html(l_clean)}")
+                            if heading_clean:
+                                components.append(f"🔹 <b>{escape_tg_html(heading_clean)}:</b> {escape_tg_html(l_clean)}")
+                                heading_clean = ""
+                            else:
+                                components.append(f"🔹 {escape_tg_html(l_clean)}")
 
-    if valid_points:
-        points_block = "💡 <b>ចំណុចសំខាន់ៗ៖</b>\n" + "\n".join(valid_points[:4])
-        parts.append(points_block)
+    if components:
+        parts.append("<b>───────────────────</b>")
+        comp_block = "📦 <b>ប្លុកសមាសភាគសំខាន់ៗ (Core Components)</b>\n\n" + "\n".join(components[:5])
+        parts.append(comp_block)
+
+    if steps:
+        parts.append("<b>───────────────────</b>")
+        steps_block = "💡 <b>ដំណើរការធ្វើការ (Execution Flow Step-by-step)</b>\n\n" + "\n".join(steps[:5])
+        parts.append(steps_block)
 
     return "\n\n".join([p for p in parts if p.strip()])
 
