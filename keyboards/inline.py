@@ -22,7 +22,7 @@ def get_welcome_inline_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
     builder.button(text="🎯 AI Modes", callback_data="cb_mode_menu")
     builder.button(text="🌐 Mini App", callback_data="cb_miniapp")
     
-    builder.button(text="💖 បរិច្ចាគ 2,000 ៛" if lang == "km" else "💖 Donate 2,000 KHR", callback_data="cb_donate")
+    builder.button(text="💖 បរិច្ចាគ (Donate)" if lang == "km" else "💖 Donate", callback_data="cb_donate")
     builder.button(text="ℹ️ ជំនួយ & អំពី Bot" if lang == "km" else "ℹ️ Help & About", callback_data="cb_about")
     
     builder.button(text="🔐 ឯកជនភាព" if lang == "km" else "🔐 Privacy", callback_data="cb_privacy")
@@ -303,3 +303,46 @@ def get_image_download_keyboard(cache_id: str = "", ratio_key: str = "1:1") -> I
 def get_image_gen_inline_keyboard(cache_id: str = "", ratio_key: str = "1:1") -> InlineKeyboardMarkup:
     """Alias for get_image_download_keyboard for backward compatibility."""
     return get_image_download_keyboard(cache_id, ratio_key)
+
+
+def get_donation_amount_keyboard(lang: str = "km") -> InlineKeyboardMarkup:
+    """
+    Build donation amount selection keyboard per user journey spec:
+    Row 1: [ 💵 2,000 ៛ ($0.50) ] [ 💵 4,000 ៛ ($1.00) ]
+    Row 2: [ 💵 20,000 ៛ ($5.00) ] [ 💵 40,000 ៛ ($10.00) ]
+    Row 3: [ ✏️ បញ្ចូលចំនួនផ្សេងទៀត (Custom Amount) ]
+    Row 4: [ 🏠 Menu ដើម ]
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="💵 2,000 ៛ ($0.50)", callback_data="donate_amt_2000")
+    builder.button(text="💵 4,000 ៛ ($1.00)", callback_data="donate_amt_4000")
+    builder.button(text="💵 20,000 ៛ ($5.00)", callback_data="donate_amt_20000")
+    builder.button(text="💵 40,000 ៛ ($10.00)", callback_data="donate_amt_40000")
+    builder.button(
+        text="✏️ បញ្ចូលចំនួនផ្សេងទៀត" if lang == "km" else "✏️ Custom Amount",
+        callback_data="donate_custom"
+    )
+    builder.button(
+        text="🏠 Menu ដើម" if lang == "km" else "🏠 Main Menu",
+        callback_data="cb_back_main"
+    )
+    builder.adjust(2, 2, 1, 1)
+    return builder.as_markup()
+
+
+def get_donation_qr_keyboard(open_app_url: str, checkout_url: str, lang: str = "km") -> InlineKeyboardMarkup:
+    """
+    Build KHQR payment action buttons:
+    Row 1: [ 📲 បើក App ABA Bank ដើម្បីទូទាត់ ]
+    Row 2: [ 🌐 ទំព័រ Web Checkout ]
+    Row 3: [ 🔄 ជ្រើសរើសចំនួនផ្សេងទៀត ]
+    Row 4: [ 🏠 Menu ដើម ]
+    """
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📲 បើក App ABA Bank ដើម្បីទូទាត់" if lang == "km" else "📲 Open ABA Mobile", url=open_app_url)
+    builder.button(text="🌐 ទំព័រ Web Checkout" if lang == "km" else "🌐 Web Checkout", url=checkout_url)
+    builder.button(text="🔄 ជ្រើសរើសចំនួនផ្សេងទៀត" if lang == "km" else "🔄 Change Amount", callback_data="cb_donate")
+    builder.button(text="🏠 Menu ដើម" if lang == "km" else "🏠 Main Menu", callback_data="cb_back_main")
+    builder.adjust(1, 1, 1, 1)
+    return builder.as_markup()
+

@@ -21,11 +21,87 @@ from keyboards.inline import (
 
 from utils.thinking_animation import DynamicThinkingAnimation, TEXT_THINKING_STEPS
 
+from aiogram.fsm.context import FSMContext
+from handlers.states import DonateStates
+
 def get_text_router(gemini_service: GeminiService, memory: ConversationMemory, db_service: DatabaseService = None) -> Router:
     """
     Construct text chat router with Fast AI Request Workflow and Loading State Editing.
     """
     router = Router(name="text_router")
+
+    @router.message(DonateStates.waiting_for_amount)
+    async def handle_custom_donate_amount(message: types.Message, state: FSMContext):
+        user_text = message.text.strip() if message.text else ""
+        if user_text.startswith("/") or "Menu" in user_text:
+            await state.clear()
+            return
+
+        import re
+        clean_num = re.sub(r'[^\d]', '', user_text)
+        if not clean_num or not clean_num.isdigit() or int(clean_num) < 1000:
+            error_msg = (
+                "⚠️ <b>ចំនួនទឹកប្រាក់មិនត្រឹមត្រូវ!</b>\n\n"
+                "សូមបញ្ចូលចំនួនទឹកប្រាក់ជាលេខ (យ៉ាងតិច 1,000 ៛)។\n"
+                "ឧទាហរណ៍៖ <code>5000</code>, <code>10000</code>, <code>20000</code>"
+            )
+            await message.reply(error_msg, parse_mode="HTML")
+            return
+
+        amount = clean_num
+        await state.clear()
+
+        chat_id = message.from_user.id if message.from_user else message.chat.id
+        from services.aba_payway import request_aba_payway_purchase
+        from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
+        from keyboards.inline import get_donation_qr_keyboard
+        import base64
+
+        first_name = message.from_user.first_name if message.from_user else "Donor"
+        username = message.from_user.username if message.from_user and message.from_user.username else ""
+
+        res = await request_aba_payway_purchase(
+            chat_id=chat_id,
+            merchant_id=ABA_MERCHANT_ID,
+            public_key=ABA_API_KEY,
+            payway_url=ABA_PAYWAY_URL,
+            server_url=SERVER_URL,
+            amount=amount,
+            first_name=first_name,
+            username=username
+        )
+
+        tran_id = res.get("tran_id", "")
+        req_time = res.get("req_time", "")
+        qr_image_b64 = res.get("qr_image", "")
+        checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount={amount}&req_time={req_time}&chat_id={chat_id}"
+        open_app_url = f"{SERVER_URL.rstrip('/')}/open_abapay?tran_id={tran_id}"
+
+        formatted_amount = f"{int(amount):,}"
+        message_text = (
+            f"🤖 <b>សូមស្កែន KHQR ខាងក្រោមដើម្បីបរិច្ចាគចំនួន {formatted_amount} ៛</b> 🚀\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            "សូមអរគុណសម្រាប់ការចូលរួមគាំទ្រប្រព័ន្ធ <b>Smart AI Assistant</b>! 🙏\n\n"
+            "👇 <b>សូមស្កែន KHQR ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់តាម ABA Mobile App៖</b>"
+        )
+        reply_markup = get_donation_qr_keyboard(open_app_url=open_app_url, checkout_url=checkout_url)
+
+        if qr_image_b64:
+            try:
+                clean_b64 = qr_image_b64.split(",")[-1] if "," in qr_image_b64 else qr_image_b64
+                img_bytes = base64.b64decode(clean_b64)
+                photo_file = types.BufferedInputFile(img_bytes, filename=f"aba_khqr_{tran_id}.png")
+                await message.answer_photo(
+                    photo=photo_file,
+                    caption=message_text,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup
+                )
+                return
+            except Exception as img_err:
+                logging.warning(f"Could not send custom KHQR photo: {img_err}")
+
+        await message.answer(message_text, parse_mode="HTML", reply_markup=reply_markup)
 
     @router.message(F.text & ~F.text.startswith("/"))
     async def handle_text_message(message: types.Message):

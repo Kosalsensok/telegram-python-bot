@@ -242,21 +242,20 @@ else:
         req_time = datetime.now().strftime("%Y%m%d%H%M%S")
         chat_str = str(chat_id)[-6:]
         time_str = str(int(time.time()))[-8:]
-        tran_id = f"D{chat_str}{time_str}"
-        amount = "2000"
         
-        checkout_url = f"{YOUR_SERVER_URL}/donate_checkout?tran_id={tran_id}&amount={amount}&req_time={req_time}&chat_id={chat_id}"
+        amounts = [("2000", "$0.50"), ("4000", "$1.00"), ("20000", "$5.00"), ("40000", "$10.00")]
+        keyboard = []
+        for amt, usd in amounts:
+            tran_id = f"D{chat_str}{time_str[:6]}{amt[-2:]}"
+            checkout_url = f"{YOUR_SERVER_URL}/donate_checkout?tran_id={tran_id}&amount={amt}&req_time={req_time}&chat_id={chat_id}"
+            keyboard.append([InlineKeyboardButton(f"💵 បរិច្ចាគ {int(amt):,} ៛ ({usd})", url=checkout_url)])
 
         message_text = (
             "🤖 **ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant** 🚀\n\n"
             "ដើម្បីជួយឱ្យប្រព័ន្ធ **Smart AI Assistant** អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
-            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន **2,000 ៛ ($0.50)** តាមរយៈ ABA Pay បាន។\n\n"
-            "សូមចុចប៊ូតុងខាងក្រោមដើម្បីធ្វើការបរិច្ចាគ៖"
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាតាមរយៈ ABA Pay KHQR បាន។\n\n"
+            "សូមជ្រើសរើសចំនួនទឹកប្រាក់ដែលលោកអ្នកចង់បរិច្ចាគ៖"
         )
-
-        keyboard = [
-            [InlineKeyboardButton("💖 បរិច្ចាគ 2,000 ៛ ($0.50) តាម ABA Pay", url=checkout_url)]
-        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(message_text, parse_mode="Markdown", reply_markup=reply_markup)

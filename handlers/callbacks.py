@@ -4,6 +4,8 @@ import re
 import time
 from typing import Dict
 from aiogram import Router, types, F
+from aiogram.fsm.context import FSMContext
+from handlers.states import DonateStates
 from keyboards.inline import (
     get_welcome_inline_keyboard, 
     get_language_inline_keyboard, 
@@ -12,7 +14,9 @@ from keyboards.inline import (
     get_stt_banner_keyboard,
     get_ai_result_contextual_keyboard,
     get_image_result_contextual_keyboard,
-    get_math_answer_keyboard
+    get_math_answer_keyboard,
+    get_donation_amount_keyboard,
+    get_donation_qr_keyboard
 )
 from services.db_service import DatabaseService
 from utils.user_count import format_user_count
@@ -459,14 +463,44 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         except Exception:
             pass
 
-    # 15. ABA PayWay Donation Callback
+    # 15. ABA PayWay Donation Callbacks
     @router.callback_query(F.data == "cb_donate")
-    async def callback_donate(callback: types.CallbackQuery):
+    async def callback_donate(callback: types.CallbackQuery, state: FSMContext = None):
         await callback.answer()
+        if state:
+            await state.clear()
+
+        message_text = (
+            "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            "ដើម្បីជួយឱ្យប្រព័ន្ធ <b>Smart AI Assistant</b> អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
+            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាតាមរយៈ ABA Pay KHQR បាន។\n\n"
+            "👇 <b>សូមជ្រើសរើស ឬ បញ្ចូលចំនួនទឹកប្រាក់ដែលលោកអ្នកចង់បរិច្ចាគ៖</b>"
+        )
+
+        try:
+            await callback.message.edit_text(
+                message_text,
+                parse_mode="HTML",
+                reply_markup=get_donation_amount_keyboard()
+            )
+        except Exception:
+            await callback.message.answer(
+                message_text,
+                parse_mode="HTML",
+                reply_markup=get_donation_amount_keyboard()
+            )
+
+    @router.callback_query(F.data.startswith("donate_amt_"))
+    async def callback_donate_preset(callback: types.CallbackQuery, state: FSMContext = None):
+        await callback.answer()
+        if state:
+            await state.clear()
+
+        amount = callback.data.split("_")[-1]
         chat_id = callback.from_user.id if callback.from_user else callback.message.chat.id
         from services.aba_payway import request_aba_payway_purchase
         from config import ABA_MERCHANT_ID, ABA_API_KEY, ABA_PAYWAY_URL, SERVER_URL
-        from aiogram.utils.keyboard import InlineKeyboardBuilder
         import base64
 
         first_name = callback.from_user.first_name if callback.from_user else "Donor"
@@ -478,7 +512,7 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
             public_key=ABA_API_KEY,
             payway_url=ABA_PAYWAY_URL,
             server_url=SERVER_URL,
-            amount="2000",
+            amount=amount,
             first_name=first_name,
             username=username
         )
@@ -486,22 +520,19 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         tran_id = res.get("tran_id", "")
         req_time = res.get("req_time", "")
         qr_image_b64 = res.get("qr_image", "")
-        checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount=2000&req_time={req_time}&chat_id={chat_id}"
+        checkout_url = f"{SERVER_URL.rstrip('/')}/donate_checkout?tran_id={tran_id}&amount={amount}&req_time={req_time}&chat_id={chat_id}"
         open_app_url = f"{SERVER_URL.rstrip('/')}/open_abapay?tran_id={tran_id}"
 
-        builder = InlineKeyboardBuilder()
-        builder.button(text="📲 បើក App ABA Bank ដើម្បីទូទាត់", url=open_app_url)
-        builder.button(text="🌐 ទំព័រ Web Checkout", url=checkout_url)
-        builder.button(text="🏠 Menu", callback_data="cb_back_main")
-        builder.adjust(1, 1, 1)
+        formatted_amount = f"{int(amount):,}" if amount.isdigit() else amount
 
         message_text = (
-            "🤖 <b>ចូលរួមគាំទ្រការអភិវឌ្ឍន៍ Smart AI Assistant</b> 🚀\n"
+            f"🤖 <b>សូមស្កែន KHQR ខាងក្រោមដើម្បីបរិច្ចាគចំនួន {formatted_amount} ៛</b> 🚀\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
-            "ដើម្បីជួយឱ្យប្រព័ន្ធ <b>Smart AI Assistant</b> អាចបន្តដំណើរការ និងអភិវឌ្ឍមុខងារថ្មីៗកាន់តែឆ្លាតវៃសម្រាប់ឆ្នាំក្រោយ "
-            "លោកអ្នកអាចចូលរួមបរិច្ចាគថវិកាចំនួន <b>2,000 ៛ ($0.50)</b> តាមរយៈ ABA Pay KHQR បាន។\n\n"
-            "👇 <b>សូមស្កែន KHQR ខាងលើ ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់៖</b>"
+            "សូមអរគុណសម្រាប់ការចូលរួមគាំទ្រប្រព័ន្ធ <b>Smart AI Assistant</b>! 🙏\n\n"
+            "👇 <b>សូមស្កែន KHQR ឬ ចុចប៊ូតុងខាងក្រោមដើម្បីទូទាត់តាម ABA Mobile App៖</b>"
         )
+
+        reply_markup = get_donation_qr_keyboard(open_app_url=open_app_url, checkout_url=checkout_url)
 
         if qr_image_b64:
             try:
@@ -512,16 +543,31 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
                     photo=photo_file,
                     caption=message_text,
                     parse_mode="HTML",
-                    reply_markup=builder.as_markup()
+                    reply_markup=reply_markup
                 )
                 return
             except Exception as img_err:
-                logging.warning(f"Could not send KHQR photo in callback: {img_err}")
+                logging.warning(f"Could not send KHQR photo in preset callback: {img_err}")
+
+        await callback.message.answer(message_text, parse_mode="HTML", reply_markup=reply_markup)
+
+    @router.callback_query(F.data == "donate_custom")
+    async def callback_donate_custom(callback: types.CallbackQuery, state: FSMContext):
+        await callback.answer()
+        await state.set_state(DonateStates.waiting_for_amount)
+
+        prompt_text = (
+            "✏️ <b>សូមបញ្ចូលចំនួនទឹកប្រាក់ដែលលោកអ្នកចង់បរិច្ចាគ (ជា៛)៖</b>\n\n"
+            "ឧទាហរណ៍៖ <code>5000</code>, <code>10000</code>, <code>50000</code>\n"
+            "<i>(អប្បបរមាចំនួន 1,000 ៛)</i>"
+        )
+        builder = InlineKeyboardBuilder()
+        builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
 
         try:
-            await callback.message.reply(message_text, parse_mode="HTML", reply_markup=builder.as_markup())
+            await callback.message.edit_text(prompt_text, parse_mode="HTML", reply_markup=builder.as_markup())
         except Exception:
-            await callback.message.answer(message_text, parse_mode="HTML", reply_markup=builder.as_markup())
+            await callback.message.answer(prompt_text, parse_mode="HTML", reply_markup=builder.as_markup())
 
     return router
 

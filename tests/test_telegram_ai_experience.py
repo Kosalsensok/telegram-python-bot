@@ -130,7 +130,7 @@ class TestTelegramAIExperience(unittest.TestCase):
         self.assertEqual(buttons[1][1].text, "🗺️ បង្ហាញផ្លូវ & ទីតាំង")
         self.assertEqual(buttons[2][0].text, "🎯 AI Modes")
         self.assertEqual(buttons[2][1].text, "🌐 Mini App")
-        self.assertEqual(buttons[3][0].text, "💖 បរិច្ចាគ 2,000 ៛")
+        self.assertEqual(buttons[3][0].text, "💖 បរិច្ចាគ (Donate)")
         self.assertEqual(buttons[3][1].text, "ℹ️ ជំនួយ & អំពី Bot")
         self.assertEqual(buttons[4][0].text, "🔐 ឯកជនភាព")
         self.assertEqual(buttons[4][1].text, "❌ បិទ Menu")
