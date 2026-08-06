@@ -4,6 +4,7 @@ import re
 import time
 from typing import Dict
 from aiogram import Router, types, F
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from handlers.states import DonateStates
 from keyboards.inline import (
@@ -258,7 +259,6 @@ def get_callbacks_router(db_service: DatabaseService = None, memory: Conversatio
         base_url = (RENDER_EXTERNAL_URL or "http://localhost:8080").rstrip('/')
         mini_app_url = f"{base_url}/answer/demo"
 
-        from aiogram.utils.keyboard import InlineKeyboardBuilder
         builder = InlineKeyboardBuilder()
         builder.button(text="🌐 បើក Telegram Mini App", web_app=types.WebAppInfo(url=mini_app_url))
         builder.button(text="🏠 Menu ដើម", callback_data="cb_back_main")
